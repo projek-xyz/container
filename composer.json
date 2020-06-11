@@ -1,6 +1,7 @@
 {
-    "name": "projek-xyz/psr-container",
-    "description": "PSR Container Implementation",
+    "name": "projek-xyz/container",
+    "description": "Dead Simple PSR 11 Container Implementation",
+    "keywords": ["psr", "psr-11", "container", "dependency", "di", "ioc"],
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -9,12 +10,16 @@
             "email": "ferywardiyanto@gmail.com"
         }
     ],
+    "support": {
+        "issues": "https://github.com/projek-xyz/container/issues",
+        "source": "https://github.com/projek-xyz/container"
+    },
     "scripts": {
         "spec": [
             "@lint",
             "@test"
         ],
-        "test": "kahlan --config=test/config.php --coverage=3",
+        "test": "kahlan --config=test/config.php --clover=test/clover.xml",
         "lint": "phpcs --standard=PSR2 -n -p src"
     },
     "autoload": {

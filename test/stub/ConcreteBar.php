@@ -1,6 +1,6 @@
 <?php
 
-namespace Projek\ContainerStub;
+namespace Stubs;
 
 class ConcreteBar extends AbstractFoo
 {

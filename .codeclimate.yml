@@ -1,9 +1,12 @@
 version: "2"
 
+checks:
+  method-complexity:
+    config:
+      threshold: 9
+
 engines:
   fixme:
-    enabled: true
-  phan:
     enabled: true
   phpcodesniffer:
     enabled: true
@@ -16,4 +19,3 @@ ratings:
 
 exclude_paths:
   - test/**/*
-  # - vendor/**/*

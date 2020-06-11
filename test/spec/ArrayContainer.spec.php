@@ -1,8 +1,8 @@
 <?php
 
 use Projek\Container;
-use Projek\Container\{ArrayContainer, ContainerInterface, Exception, NotFoundException, Resolver };
-use Projek\ContainerStub\ { Dummy, AbstractFoo, ConcreteBar };
+use Projek\Container\{ ArrayContainer, Exception };
+use Stubs\AbstractFoo;
 use function Kahlan\describe;
 use function Kahlan\expect;
 

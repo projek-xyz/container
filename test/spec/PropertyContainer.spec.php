@@ -2,7 +2,7 @@
 
 use Projek\Container;
 use Projek\Container\{ Exception, PropertyContainer };
-use Projek\ContainerStub\AbstractFoo;
+use Stubs\AbstractFoo;
 use function Kahlan\describe;
 use function Kahlan\expect;
 

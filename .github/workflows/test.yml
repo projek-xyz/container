@@ -48,8 +48,6 @@ jobs:
     - name: Install dependencies
       run: |
         composer install --prefer-dist --no-progress --no-suggest
-        curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > cc-test-reporter
-        chmod +x cc-test-reporter
 
     - name: Spec
       run: |
@@ -61,7 +59,6 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: test/lcov.info
-        flag-name: run-php-${{ matrix.php-versions }}
         parallel: true
 
   finish:
@@ -78,5 +75,6 @@ jobs:
 
     - name: CodeClimate Reports
       run: |
-        ./cc-test-reporter sum-coverage test/cc-reports.*.json -p 2
-        ./cc-test-reporter upload-coverage
+        curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > cc-test-reporter
+        chmod +x cc-test-reporter
+        ./cc-test-reporter sum-coverage -o - -p 4 test/cc-reports.*.json | ./cc-test-reporter upload-coverage --input -

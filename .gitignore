@@ -1,0 +1,33 @@
+# Generic
+# --------------------------
+Thumbs.db
+Desktop.ini
+Icon?
+.directory
+*.cache
+*.old
+*.log
+._
+*~
+
+# IDE Project Configurations
+# --------------------------
+/nbproject
+/.idea
+/.settings
+/.vscode
+.project
+*.sublime-*
+
+# Developments
+# --------------------------
+/vendor
+.php-version
+clover.xml
+_ide_helper.php
+_book
+
+# But Keep these
+# --------------------------
+!.htaccess
+!.gitkeep

@@ -52,6 +52,7 @@ jobs:
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: test/lcov.info
         flag-name: run-php-${{ matrix.php-versions }}
         parallel: true
 

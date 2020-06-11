@@ -25,6 +25,7 @@ nbproject
 vendor
 .php-version
 clover.xml
+lcov.info
 _ide_helper.php
 _book
 

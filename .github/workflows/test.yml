@@ -54,7 +54,7 @@ jobs:
     - name: Spec
       run: |
         composer spec
-        ./cc-test-reporter format-coverage -t lcov -o test/cc-reports.${{ matrix.php-versions }}.json ./test/lcov.info --exit-code $?
+        ./cc-test-reporter format-coverage -t lcov -o test/cc-reports.${{ matrix.php-versions }}.json ./test/lcov.info
 
     - name: Coveralls
       uses: coverallsapp/github-action@master

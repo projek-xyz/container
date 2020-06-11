@@ -1,0 +1,17 @@
+engines:
+  fixme:
+    enabled: true
+  phan:
+    enabled: true
+  phpcodesniffer:
+    enabled: true
+  phpmd:
+    enabled: true
+
+ratings:
+  paths:
+    - src/**.php
+
+exclude_paths:
+  - test/**/*
+  - vendor/**/*

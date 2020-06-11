@@ -47,7 +47,12 @@ jobs:
       run: composer install --prefer-dist --no-progress --no-suggest
 
     - name: Spec
-      run: composer spec
+      uses: paambaati/codeclimate-action@v2.2.4
+      env:
+        CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+      with:
+        coverageLocations: ${{github.workspace}}/test/lcov.info:lcov
+        coverageCommand: composer spec
 
     - name: Coveralls
       uses: coverallsapp/github-action@master

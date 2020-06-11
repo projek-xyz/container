@@ -46,13 +46,10 @@ jobs:
         restore-keys: ${{ runner.os }}-composer-
 
     - name: Install dependencies
-      run: |
-        composer install --prefer-dist --no-progress --no-suggest
+      run: composer install --prefer-dist --no-progress --no-suggest
 
     - name: Spec
-      run: |
-        composer spec
-        ./cc-test-reporter format-coverage -t lcov -o test/cc-reports.${{ matrix.php-versions }}.json ./test/lcov.info
+      run: composer spec
 
     - name: Coveralls
       uses: coverallsapp/github-action@master
@@ -61,10 +58,11 @@ jobs:
         path-to-lcov: test/lcov.info
         parallel: true
 
-  finish:
+  reports:
     name: Reports
     needs: test
     runs-on: ubuntu-latest
+
     steps:
     - name: Coveralls Reports
       uses: coverallsapp/github-action@master
@@ -72,9 +70,3 @@ jobs:
         github-token: ${{ secrets.github_token }}
         path-to-lcov: test/lcov.info
         parallel-finished: true
-
-    - name: CodeClimate Reports
-      run: |
-        curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > cc-test-reporter
-        chmod +x cc-test-reporter
-        ./cc-test-reporter sum-coverage -o - -p 4 test/cc-reports.*.json | ./cc-test-reporter upload-coverage --input -

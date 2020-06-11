@@ -39,5 +39,5 @@ jobs:
     - name: Install composer dependencies
       run: composer install --prefer-dist --no-progress --no-suggest
 
-    - name: Unit Test
-      run: vendor/bin/kahlan --config=test/config.php --coverage=3
+    - name: Spec
+      run: composer spec

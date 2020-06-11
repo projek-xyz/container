@@ -2,7 +2,9 @@
 
 namespace Projek;
 
-use Projek\Container\{ ContainerInterface, NotFoundException, Resolver };
+use Projek\Container\ContainerInterface;
+use Projek\Container\NotFoundException;
+use Projek\Container\Resolver;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 class Container implements ContainerInterface

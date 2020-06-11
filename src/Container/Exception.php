@@ -6,7 +6,7 @@ use Psr\Container\ContainerExceptionInterface;
 
 class Exception extends \RuntimeException implements ContainerExceptionInterface
 {
-    final static function unresolvable($abstract)
+    final public static function unresolvable($abstract)
     {
         if (! is_string($abstract)) {
             $abstract = gettype($abstract);
@@ -17,7 +17,7 @@ class Exception extends \RuntimeException implements ContainerExceptionInterface
         );
     }
 
-    final static function notInstantiable(string $class)
+    final public static function notInstantiable(string $class)
     {
         return new static(
             sprintf('Target "%s" is not instantiable.', $class)

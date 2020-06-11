@@ -4,12 +4,18 @@ on:
   pull_request:
     branches:
       - master
+    paths:
+      - src/*
+      - test/*
   push:
     branches:
       - master
+    paths:
+      - src/*
+      - test/*
 
 jobs:
-  run:
+  test:
     name: Runs on PHP ${{ matrix.php-versions }}
     runs-on: ubuntu-latest
     strategy:

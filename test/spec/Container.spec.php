@@ -3,7 +3,7 @@
 use Projek\Container;
 use Projek\Container\{ArrayContainer, ContainerInterface, Exception, NotFoundException, Resolver };
 use Psr\Container\ContainerInterface as PsrContainer;
-use Stubs\ { Dummy, AbstractFoo, ConcreteBar };
+use Stubs\ { Dummy, AbstractFoo, ConcreteBar, ServiceProvider};
 use function Kahlan\describe;
 use function Kahlan\expect;
 
@@ -26,6 +26,15 @@ describe(Container::class, function () {
 
     it('Should register it-self', function () {
         expect($this->c->get(PsrContainer::class))->toBeAnInstanceOf(PsrContainer::class);
+    });
+
+    it('Should resolve serive provider', function () {
+        $this->c->set('dummy', Dummy::class);
+        $this->c->set(AbstractFoo::class, ConcreteBar::class);
+
+        $this->c->set('myService', ServiceProvider::class);
+
+        expect($this->c->get('myService'))->toEqual('dummy lorem');
     });
 
     it('Should manage instance', function () {

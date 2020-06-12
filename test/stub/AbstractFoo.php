@@ -4,7 +4,7 @@ namespace Stubs;
 
 abstract class AbstractFoo
 {
-    public function lorem($text = 'lorem')
+    public function lorem(string $text = 'lorem')
     {
         return $text;
     }

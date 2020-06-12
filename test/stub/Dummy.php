@@ -4,9 +4,9 @@ namespace Stubs;
 
 class Dummy
 {
-    public function lorem(AbstractFoo $foo)
+    public function lorem(AbstractFoo $foo, $text = 'dummy lorem')
     {
-        return $foo->lorem();
+        return $foo->lorem($text);
     }
 }
 

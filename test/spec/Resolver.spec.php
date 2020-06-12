@@ -26,7 +26,7 @@ describe(Resolver::class, function () {
     it('could handle array callable', function () {
         expect(
             $this->r->handle([$this->dummy, 'lorem'])
-        )->toEqual('lorem');
+        )->toEqual('dummy lorem');
 
         expect(
             $this->r->handle([ConcreteBar::class, 'std'])

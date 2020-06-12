@@ -2,23 +2,8 @@
 
 namespace Projek\Container;
 
-final class PropertyContainer
+final class PropertyContainer extends AbstractContainer
 {
-    /**
-     * @var ContainerInterface
-     */
-    private $container;
-
-    /**
-     * Create new instance.
-     *
-     * @param ContainerInterface $container
-     */
-    public function __construct(ContainerInterface $container)
-    {
-        $this->container = $container;
-    }
-
     /**
      * @param string $name
      * @param mixed $instance

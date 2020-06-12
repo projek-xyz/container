@@ -2,23 +2,8 @@
 
 namespace Projek\Container;
 
-final class ArrayContainer implements \ArrayAccess
+final class ArrayContainer extends AbstractContainer implements \ArrayAccess
 {
-    /**
-     * @var ContainerInterface
-     */
-    private $container;
-
-    /**
-     * Create new instance.
-     *
-     * @param ContainerInterface $container
-     */
-    public function __construct(ContainerInterface $container)
-    {
-        $this->container = $container;
-    }
-
     /**
      * @param string $name
      * @param mixed $instance

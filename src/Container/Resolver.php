@@ -66,11 +66,7 @@ class Resolver
             return $this->createInstance($concrete);
         }
 
-        if ($concrete instanceof \Closure) {
-            return $concrete->bindTo($this->container);
-        }
-
-        if (is_object($concrete) || is_callable($concrete)) {
+        if ($concrete instanceof \Closure || is_object($concrete) || is_callable($concrete)) {
             return $concrete;
         }
 

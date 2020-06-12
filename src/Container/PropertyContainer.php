@@ -5,6 +5,14 @@ namespace Projek\Container;
 final class PropertyContainer extends AbstractContainer
 {
     /**
+     * Register a service as property.
+     *
+     * ```php
+     * $container->foo = function () {
+     *     return new Bar();
+     * }
+     * ```
+     *
      * @param string $name
      * @param mixed $instance
      * @return void
@@ -15,6 +23,12 @@ final class PropertyContainer extends AbstractContainer
     }
 
     /**
+     * Register a service as property.
+     *
+     * ```php
+     * $foo = $container->foo;
+     * ```
+     *
      * @param string $name
      * @return mixed
      */
@@ -28,6 +42,14 @@ final class PropertyContainer extends AbstractContainer
     }
 
     /**
+     * Register a service as property.
+     *
+     * ```php
+     * if (isset($container->foo)) {
+     *     // ...
+     * }
+     * ```
+     *
      * @param string $name
      * @return bool
      */
@@ -37,6 +59,12 @@ final class PropertyContainer extends AbstractContainer
     }
 
     /**
+     * Register a service as property.
+     *
+     * ```php
+     * unset($container->foo);
+     * ```
+     *
      * @param string $name
      * @return void
      */

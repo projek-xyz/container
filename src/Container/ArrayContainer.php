@@ -5,6 +5,14 @@ namespace Projek\Container;
 final class ArrayContainer extends AbstractContainer implements \ArrayAccess
 {
     /**
+     * Register a service as array.
+     *
+     * ```php
+     * $container['foo'] = function () {
+     *     return new Bar();
+     * }
+     * ```
+     *
      * @param string $name
      * @param mixed $instance
      * @return void
@@ -15,6 +23,12 @@ final class ArrayContainer extends AbstractContainer implements \ArrayAccess
     }
 
     /**
+     * Register a service as property.
+     *
+     * ```php
+     * $foo = $container['foo'];
+     * ```
+     *
      * @param string $name
      * @return mixed
      */
@@ -28,6 +42,14 @@ final class ArrayContainer extends AbstractContainer implements \ArrayAccess
     }
 
     /**
+     * Register a service as property.
+     *
+     * ```php
+     * if (isset($container['foo'])) {
+     *     // ...
+     * }
+     * ```
+     *
      * @param string $name
      * @return bool
      */
@@ -37,6 +59,12 @@ final class ArrayContainer extends AbstractContainer implements \ArrayAccess
     }
 
     /**
+     * Unregister a service.
+     *
+     * ```php
+     * unset($container['foo']);
+     * ```
+     *
      * @param string $name
      * @return void
      */

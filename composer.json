@@ -27,6 +27,11 @@
             "Projek\\": "src"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Stubs\\": "test/stub"
+        }
+    },
     "require": {
         "php": "^7.1",
         "psr/container": "^1.0"

@@ -10,24 +10,23 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 class Container implements ContainerInterface
 {
     /**
-     * @var array List of instances that been initiated.
+     * List of instances that been initiated.
+     *
+     * @var array<string, mixed>
      */
     private $instances = [];
 
     /**
-     * @var array List of resolved instances.
-     */
-    private $resolved;
-
-    /**
-     * @var Resolver Service container resolver.
+     * Service container resolver.
+     *
+     * @var Resolver
      */
     private $resolver;
 
     /**
      * Create new instance.
      *
-     * @param array $instances
+     * @param array<string, mixed> $instances
      */
     public function __construct(array $instances = [])
     {
@@ -36,29 +35,24 @@ class Container implements ContainerInterface
         $this->set(ContainerInterface::class, $this);
         $this->set(PsrContainerInterface::class, $this);
 
-        foreach ($instances as $abstract => $concrete) {
-            $this->set($abstract, $concrete);
+        foreach ($instances as $id => $instance) {
+            $this->set($id, $instance);
         }
     }
 
     /**
      * {@inheritDoc}
      */
-    public function get($abstract)
+    public function get($id)
     {
-        if (! $this->has($abstract)) {
-            throw new NotFoundException($abstract);
+        if (! $this->has($id)) {
+            throw new NotFoundException($id);
         }
 
-        if (isset($this->resolved[$abstract])) {
-            return $this->resolved[$abstract];
-        }
-
-        $instance = $this->instances[$abstract];
+        $instance = $this->instances[$id];
 
         if (is_callable($instance)) {
-            $this->resolved[$abstract] = $this->resolver->handle($instance);
-            return $this->resolved[$abstract];
+            return $this->resolver->handle($instance);
         }
 
         return $instance;
@@ -67,28 +61,28 @@ class Container implements ContainerInterface
     /**
      * {@inheritDoc}
      */
-    public function has($abstract) : bool
+    public function has($id)
     {
-        return array_key_exists($abstract, $this->instances);
+        return array_key_exists($id, $this->instances);
     }
 
     /**
      * {@inheritDoc}
      */
-    public function set(string $abstract, $concrete) : void
+    public function set(string $id, $instance) : void
     {
-        if ($this->has($abstract)) {
+        if ($this->has($id)) {
             return;
         }
 
-        $this->instances[$abstract] = $this->resolver->resolve($concrete);
+        $this->instances[$id] = $this->resolver->resolve($instance);
     }
 
     /**
      * {@inheritDoc}
      */
-    public function unset(string $abstract) : void
+    public function unset(string $id) : void
     {
-        unset($this->instances[$abstract]);
+        unset($this->instances[$id]);
     }
 }

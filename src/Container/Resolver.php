@@ -7,6 +7,8 @@ use Psr\Container\ContainerInterface;
 class Resolver
 {
     /**
+     * PSR 11 Container Instance.
+     *
      * @var ContainerInterface
      */
     private $container;
@@ -24,27 +26,28 @@ class Resolver
     /**
      * Handle callable.
      *
-     * @param callable $callable
+     * @param callable $instance
+     * @param array $args
      * @return mixed
      */
-    public function handle(callable $instance)
+    public function handle(callable $instance, array $args = [])
     {
         if (is_string($instance) && false !== strpos($instance, '::')) {
             $instance = explode('::', $instance);
         }
 
-        $args = [];
+        $params = [];
         $reflector = ($isMethod = is_array($instance))
             ? new \ReflectionMethod($instance[0], $instance[1])
             : new \ReflectionFunction($instance);
 
         if ($isMethod) {
-            $args[] = is_object($instance[0]) ? $instance[0] : null;
+            $params[] = is_object($instance[0]) ? $instance[0] : null;
         }
 
-        $args[] = $this->resolveArgs($reflector);
+        $params[] = $this->resolveArgs($reflector, $args);
 
-        return $reflector->invokeArgs(...$args);
+        return $reflector->invokeArgs(...$params);
     }
 
     /**
@@ -52,21 +55,13 @@ class Resolver
      *
      * @param string|object|callable|\Closure $concrete
      * @return mixed
+     * @throws Exception When $concrete is neither string of class name, instance
+     *                   of \Closure, object of class nor a callable.
      */
     public function resolve($concrete)
     {
         if (is_string($concrete) && class_exists($concrete)) {
-            $ref = new \ReflectionClass($concrete);
-
-            if (! $ref->isInstantiable()) {
-                throw Exception::notInstantiable($concrete);
-            }
-
-            if ($constructor = $ref->getConstructor()) {
-                return $ref->newInstanceArgs($this->resolveArgs($constructor));
-            }
-
-            return $ref->newInstance();
+            return $this->createInstance($concrete);
         }
 
         if ($concrete instanceof \Closure) {
@@ -81,19 +76,44 @@ class Resolver
     }
 
     /**
-     * Callable argumetns resolver
+     * Create an instance of $className.
+     *
+     * @param string $className
+     * @return array
+     * @throws Exception When $className is not instantiable.
+     */
+    protected function createInstance(string $className)
+    {
+        $reflector = new \ReflectionClass($className);
+
+        if (! $reflector->isInstantiable()) {
+            throw Exception::notInstantiable($className);
+        }
+
+        if ($constructor = $reflector->getConstructor()) {
+            return $reflector->newInstanceArgs($this->resolveArgs($constructor));
+        }
+
+        return $reflector->newInstance();
+    }
+
+    /**
+     * Callable argumetns resolver.
      *
      * @param \ReflectionFunctionAbstract $callable
-     * @param array $params
+     * @param array $args
      * @return array
      */
-    protected function resolveArgs(\ReflectionFunctionAbstract $callable) : array
+    protected function resolveArgs(\ReflectionFunctionAbstract $callable, array $args = []) : array
     {
-        $args = [];
-
         foreach ($callable->getParameters() as $param) {
+            // Just skip if parameter already provided.
+            if (array_key_exists($param->getPosition(), $args)) {
+                continue;
+            }
+
             try {
-                $value = $this->container->get(
+                $args[$param->getPosition()] = $this->container->get(
                     ($class = $param->getClass()) ? $class->getName() : $param->getName()
                 );
             } catch (NotFoundException $e) {
@@ -101,10 +121,8 @@ class Resolver
                     throw $e;
                 }
 
-                $value = $param->getDefaultValue();
+                $args[$param->getPosition()] = $param->getDefaultValue();
             }
-
-            $args[$param->getPosition()] = $value;
         }
 
         return $args;

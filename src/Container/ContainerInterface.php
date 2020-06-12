@@ -9,17 +9,17 @@ interface ContainerInterface extends PsrContainerInterface
     /**
      * Add new instance.
      *
-     * @param string $abstract
-     * @param mixed $concrete
+     * @param string $id
+     * @param mixed $instance
      * @return void
      */
-    public function set(string $abstract, $concrete) : void;
+    public function set(string $id, $instance) : void;
 
     /**
      * Unset instance.
      *
-     * @param string $abstract
+     * @param string $id
      * @return void
      */
-    public function unset(string $abstract) : void;
+    public function unset(string $id) : void;
 }

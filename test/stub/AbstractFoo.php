@@ -1,6 +1,6 @@
 <?php
 
-namespace Projek\ContainerStub;
+namespace Stubs;
 
 abstract class AbstractFoo
 {

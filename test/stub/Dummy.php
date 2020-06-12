@@ -1,6 +1,6 @@
 <?php
 
-namespace Projek\ContainerStub;
+namespace Stubs;
 
 class Dummy
 {
@@ -8,4 +8,8 @@ class Dummy
     {
         return $foo->lorem();
     }
+}
+
+function dummyLorem(AbstractFoo $foo) {
+    return $foo->lorem();
 }

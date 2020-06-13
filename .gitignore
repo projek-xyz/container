@@ -27,7 +27,6 @@ vendor
 .php-version
 clover.xml
 lcov.info
-package.json
 yarn.lock
 _ide_helper.php
 _book

@@ -35,7 +35,9 @@ class Resolver
         if (is_string($instance) && false !== strpos($instance, '::')) {
             $instance = explode('::', $instance);
         } elseif (is_object($instance)) {
-            $instance = (new \ReflectionMethod($instance, '__invoke'))->getClosure($instance);
+            $instance = (new \ReflectionMethod($instance, '__invoke'))
+                ->getClosure($instance)
+                ->bindTo($instance);
         }
 
         $params = [];

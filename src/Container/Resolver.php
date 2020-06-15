@@ -76,6 +76,10 @@ class Resolver
             return $this->createInstance($concrete);
         }
 
+        if (is_string($concrete) && $this->container->has($concrete)) {
+            return $concrete;
+        }
+
         if ($concrete instanceof \Closure || is_object($concrete) || is_callable($concrete)) {
             return $concrete;
         }
@@ -92,6 +96,10 @@ class Resolver
      */
     protected function createInstance(string $className)
     {
+        if ($this->container->has($className)) {
+            return $this->container->get($className);
+        }
+
         $reflector = new \ReflectionClass($className);
 
         if (! $reflector->isInstantiable()) {

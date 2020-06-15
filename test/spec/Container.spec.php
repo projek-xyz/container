@@ -80,6 +80,23 @@ describe(Container::class, function () {
         expect($this->c->get('foo'))->toEqual('foo');
     });
 
+    it('Should set an alias', function () {
+        $this->c->set('dummy', Dummy::class);
+        $this->c->set(AbstractFoo::class, ConcreteBar::class);
+        $this->c->set('abstract', AbstractFoo::class);
+        $this->c->set('foo', 'abstract');
+        $this->c->set('bar', 'foo');
+        $this->c->set('foobar', function ($foo, $bar, $dummy) {
+            expect($foo)->toEqual($bar);
+
+            return $dummy->lorem($foo);
+        });
+
+        expect($this->c->get('abstract'))->toBeAnInstanceOf(AbstractFoo::class);
+        expect($this->c->get('foo'))->toBeAnInstanceOf(AbstractFoo::class);
+        expect($this->c->get('bar'))->toBeAnInstanceOf(AbstractFoo::class);
+    });
+
     it('Should throw exception when setting incorrect param', function () {
         expect(function () {
             $this->c->set('foo', AbstractFoo::class);

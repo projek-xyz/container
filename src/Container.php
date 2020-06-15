@@ -55,6 +55,10 @@ class Container implements ContainerInterface
             return $this->resolver->handle($instance);
         }
 
+        if (is_string($instance) && $this->has($instance)) {
+            return $this->get($instance);
+        }
+
         return $instance;
     }
 

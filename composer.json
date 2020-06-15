@@ -19,7 +19,7 @@
             "@lint",
             "@test"
         ],
-        "test": "kahlan --config=test/config.php --lcov=test/lcov.info",
+        "test": "kahlan --config=test/config.php",
         "lint": "phpcs --standard=PSR2 -n -p src"
     },
     "autoload": {

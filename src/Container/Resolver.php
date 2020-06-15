@@ -3,6 +3,7 @@
 namespace Projek\Container;
 
 use Psr\Container\ContainerInterface;
+use ReflectionFunction;
 
 class Resolver
 {
@@ -32,12 +33,12 @@ class Resolver
      */
     public function handle(callable $instance, array $args = [])
     {
+        $isInternalMethod = false;
+
         if (is_string($instance) && false !== strpos($instance, '::')) {
             $instance = explode('::', $instance);
         } elseif (is_object($instance) && method_exists($instance, '__invoke')) {
-            // $instance = (new \ReflectionMethod($instance, '__invoke'))
-            //     ->getClosure($instance)
-            //     ->bindTo($instance);
+            $isInternalMethod = true;
             $instance = [$instance, '__invoke'];
         }
 
@@ -50,7 +51,13 @@ class Resolver
             $params[] = is_object($instance[0]) ? $instance[0] : null;
         }
 
-        $params[] = $this->resolveArgs($reflector, $args);
+        // If it was internal method resolve its params as a closure.
+        // @link https://bugs.php.net/bug.php?id=50798
+        $toResolve = $isInternalMethod
+            ? new ReflectionFunction($reflector->getClosure($instance[0]))
+            : $reflector;
+
+        $params[] = $this->resolveArgs($toResolve, $args);
 
         return $reflector->invokeArgs(...$params);
     }

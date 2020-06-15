@@ -33,7 +33,7 @@ class Container implements ContainerInterface
         $this->resolver = new Resolver($this);
 
         $this->set(ContainerInterface::class, $this);
-        $this->set(PsrContainerInterface::class, $this);
+        $this->set(PsrContainerInterface::class, ContainerInterface::class);
 
         foreach ($instances as $id => $instance) {
             $this->set($id, $instance);

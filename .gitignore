@@ -11,24 +11,27 @@ Desktop.ini
 ._
 *~
 
+# Development files
+# --------------------------
+.php-version
+tests/clover.xml
+coveralls-upload.json
+
+# Dependency folders
+# --------------------------
+composer.lock
+node_modules
+package-lock.json
+vendor
+yarn.lock
+
 # IDE Project Configurations
 # --------------------------
-nbproject
 .idea
 .settings
 .vscode
 .project
 *.sublime-*
-
-# Developments
-# --------------------------
-node_modules
-vendor
-.php-version
-clover.xml
-yarn.lock
-_ide_helper.php
-_book
 
 # But Keep these
 # --------------------------

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Projek\Container;
 
 use Psr\Container\ContainerInterface as PsrContainerInterface;
@@ -13,7 +15,7 @@ interface ContainerInterface extends PsrContainerInterface
      * @param mixed $instance
      * @return void
      */
-    public function set(string $id, $instance) : void;
+    public function set(string $id, $instance): void;
 
     /**
      * Unset instance.
@@ -21,5 +23,5 @@ interface ContainerInterface extends PsrContainerInterface
      * @param string $id
      * @return void
      */
-    public function unset(string $id) : void;
+    public function unset(string $id): void;
 }

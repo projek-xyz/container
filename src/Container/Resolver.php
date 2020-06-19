@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Projek\Container;
 
 use Psr\Container\ContainerInterface;
@@ -117,10 +119,10 @@ class Resolver
      * Callable argumetns resolver.
      *
      * @param \ReflectionFunctionAbstract $callable
-     * @param array $args
+     * @param array<mixed> $args
      * @return array
      */
-    protected function resolveArgs(\ReflectionFunctionAbstract $callable, array $args = []) : array
+    protected function resolveArgs(\ReflectionFunctionAbstract $callable, array $args = []): array
     {
         foreach ($callable->getParameters() as $param) {
             // Just skip if parameter already provided.

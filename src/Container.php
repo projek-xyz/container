@@ -92,4 +92,18 @@ class Container implements ContainerInterface
     {
         unset($this->instances[$id]);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function make(string $concrete)
+    {
+        $instance = $this->resolver->resolve($concrete);
+
+        if (is_callable($instance)) {
+            return $this->resolver->handle($instance);
+        }
+
+        return $instance;
+    }
 }

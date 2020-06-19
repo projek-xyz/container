@@ -24,4 +24,12 @@ interface ContainerInterface extends PsrContainerInterface
      * @return void
      */
     public function unset(string $id): void;
+
+    /**
+     * Resolve an instance without adding it to the stack.
+     *
+     * @param string $concrete
+     * @return mixed
+     */
+    public function make(string $concrete);
 }

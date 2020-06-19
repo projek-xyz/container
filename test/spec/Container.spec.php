@@ -19,13 +19,17 @@ describe(Container::class, function () {
             }
         ]);
 
-        expect($m)->toBeAnInstanceOf(ContainerInterface::class);
-        expect($m)->toBeAnInstanceOf(PsrContainer::class);
         expect($m->get(stdClass::class))->toBeAnInstanceOf(stdClass::class);
     });
 
     it('Should register it-self', function () {
-        expect($this->c->get(PsrContainer::class))->toBeAnInstanceOf(PsrContainer::class);
+        $self = [Container::class, PsrContainer::class, ContainerInterface::class];
+
+        foreach ($self as $a) {
+            foreach ($self as $b) {
+                expect($this->c->get($a))->toBeAnInstanceOf($b);
+            }
+        }
     });
 
     it('Should resolve serive provider', function () {

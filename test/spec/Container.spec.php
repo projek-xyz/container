@@ -1,7 +1,7 @@
 <?php
 
 use Projek\Container;
-use Projek\Container\{ArrayContainer, ContainerInterface, Exception, NotFoundException, Resolver };
+use Projek\Container\{ContainerInterface, Exception, NotFoundException };
 use Psr\Container\ContainerInterface as PsrContainer;
 use Stubs\ { Dummy, AbstractFoo, ConcreteBar, ServiceProvider};
 use function Kahlan\describe;
@@ -19,13 +19,17 @@ describe(Container::class, function () {
             }
         ]);
 
-        expect($m)->toBeAnInstanceOf(ContainerInterface::class);
-        expect($m)->toBeAnInstanceOf(PsrContainer::class);
         expect($m->get(stdClass::class))->toBeAnInstanceOf(stdClass::class);
     });
 
     it('Should register it-self', function () {
-        expect($this->c->get(PsrContainer::class))->toBeAnInstanceOf(PsrContainer::class);
+        $self = [Container::class, PsrContainer::class, ContainerInterface::class];
+
+        foreach ($self as $a) {
+            foreach ($self as $b) {
+                expect($this->c->get($a))->toBeAnInstanceOf($b);
+            }
+        }
     });
 
     it('Should resolve serive provider', function () {

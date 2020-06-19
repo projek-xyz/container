@@ -1,7 +1,7 @@
 <?php
 
 use Projek\Container;
-use Projek\Container\{ArrayContainer, ContainerInterface, Exception, NotFoundException, Resolver };
+use Projek\Container\{ContainerInterface, Exception, NotFoundException };
 use Psr\Container\ContainerInterface as PsrContainer;
 use Stubs\ { Dummy, AbstractFoo, ConcreteBar, ServiceProvider};
 use function Kahlan\describe;

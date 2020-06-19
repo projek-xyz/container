@@ -116,7 +116,7 @@ $container->set('myService', new MyService);
 $container->set('myService', MyServiceProvider::class);
 ```
 
-By registering a service as class name you have the option to resolve and inject the dependencies either for its `__construct()` and `__invoke()` method, if any. See #2
+By registering a service as class name you have the option to resolve and inject the dependencies either for its `__construct()` and `__invoke()` method, if any. See [#2](https://github.com/projek-xyz/container/pull/2)
 
 ```php
 class FooBarProvider {

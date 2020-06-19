@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Projek;
 
 use Projek\Container\ContainerInterface;
@@ -74,7 +76,7 @@ class Container implements ContainerInterface
     /**
      * {@inheritDoc}
      */
-    public function set(string $id, $instance) : void
+    public function set(string $id, $instance): void
     {
         if ($this->has($id)) {
             return;
@@ -86,7 +88,7 @@ class Container implements ContainerInterface
     /**
      * {@inheritDoc}
      */
-    public function unset(string $id) : void
+    public function unset(string $id): void
     {
         unset($this->instances[$id]);
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Projek\Container;
 
 final class PropertyContainer
@@ -24,7 +26,7 @@ final class PropertyContainer
      * @param mixed $instance
      * @return void
      */
-    public function __set(string $name, $instance) : void
+    public function __set(string $name, $instance): void
     {
         $this->container->set($name, $instance);
     }
@@ -46,7 +48,7 @@ final class PropertyContainer
      * @param string $name
      * @return bool
      */
-    public function __isset(string $name) : bool
+    public function __isset(string $name): bool
     {
         return $this->container->has($name);
     }
@@ -55,7 +57,7 @@ final class PropertyContainer
      * @param string $name
      * @return void
      */
-    public function __unset(string $name) : void
+    public function __unset(string $name): void
     {
         $this->container->unset($name);
     }

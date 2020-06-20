@@ -1,8 +1,8 @@
-# Content
+## Content
 
 - [Home](Home)
 
-# API
+## API
 
 - [Registering an instance](Registering-an-instance)
 - [Remove an instance](Remove-an-instance)

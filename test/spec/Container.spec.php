@@ -184,19 +184,27 @@ describe(Container::class, function () {
 
         expect(function () {
             $this->c->make(Stubs\SomeClass::class, 'string');
-        })->toThrow(new InvalidArgumentException);
+        })->toThrow(new InvalidArgumentException(
+            'Expect parameter 2 to be an array or Closure, string given'
+        ));
 
         expect(function () {
             $this->c->make(Stubs\SomeClass::class, 'string', null);
-        })->toThrow(new InvalidArgumentException);
+        })->toThrow(new InvalidArgumentException(
+            'Expect parameter 2 to be an array, string given'
+        ));
 
         expect(function () {
             $this->c->make(Stubs\SomeClass::class, ['string'], 'condition');
-        })->toThrow(new InvalidArgumentException);
+        })->toThrow(new InvalidArgumentException(
+            'Expect parameter 3 to be a Closure, string given'
+        ));
 
         expect(function () {
             $this->c->make(Stubs\SomeClass::class, ['string'], 'condition', 'more');
-        })->toThrow(new InvalidArgumentException);
+        })->toThrow(new InvalidArgumentException(
+            'Could not accept more than 3 arguments, 4 given'
+        ));
 
         expect(
             $this->c->make(Stubs\SomeClass::class, ['new value'], null)

@@ -117,44 +117,38 @@ class Container implements ContainerInterface
      */
     private function assertParams(array $params = []): array
     {
-        $arguments = [];
-        $condition = null;
+        $error = null;
 
         switch (count($params)) {
             case 0:
                 // do nothing
-                break;
+                return [[], null];
             case 1:
-                $arguments = is_array($params[0]) ? $params[0] : [];
-                $condition = $params[0] instanceof \Closure ? $params[0] : null;
-
                 if (! is_array($params[0]) && ! ($params[0] instanceof \Closure)) {
-                    throw new \InvalidArgumentException(
-                        sprintf('Expect parameter 2 to be an array or Closure, %s given', gettype($params[0]))
-                    );
+                    $error = sprintf('Expect parameter 2 to be an array or Closure, %s given', gettype($params[0]));
+                } else {
+                    $arguments = is_array($params[0]) ? $params[0] : [];
+                    $condition = $params[0] instanceof \Closure ? $params[0] : null;
+
+                    return [$arguments, $condition];
                 }
                 break;
             case 2:
                 if (! is_array($params[0])) {
-                    throw new \InvalidArgumentException(
-                        sprintf('Expect parameter 2 to be an array or Closure, %s given', gettype($params[0]))
-                    );
+                    $error = sprintf('Expect parameter 2 to be an array, %s given', gettype($params[0]));
+                } elseif (! ($params[1] instanceof \Closure) && null !== $params[1]) {
+                    $error = sprintf('Expect parameter 3 to be a Closure, %s given', gettype($params[1]));
+                } else {
+                    return [$params[0], $params[1]];
                 }
-                if (! ($params[1] instanceof \Closure) && null !== $params[1]) {
-                    throw new \InvalidArgumentException(
-                        sprintf('Expect parameter 3 to be a Closure, %s given', gettype($params[0]))
-                    );
-                }
-
-                $arguments = $params[0];
-                $condition = $params[1];
                 break;
             default:
-                throw new \InvalidArgumentException(
-                    sprintf('Could not accept more than 3 arguments, %d given', count($params))
-                );
+                $error = sprintf('Could not accept more than 3 arguments, %d given', count($params) + 1);
+                break;
         }
 
-        return [$arguments, $condition];
+        if ($error) {
+            throw new \InvalidArgumentException($error);
+        }
     }
 }

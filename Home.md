@@ -19,6 +19,12 @@ Use [Composer](https://getcomposer.org/)
 $ composer require projek-xyz/container --prefer-dist
 ```
 
+## API
+
+- [`Container::set()`](Registering-an-instance) to Registering an instance
+- [`Container::unset()`](Remove-an-instance) to Remove an instance
+- [`Container::make()`](Create-an-instance) to Create an instance
+
 ## Basic Usage
 
 Define your `services.php` file
@@ -81,3 +87,35 @@ $container->get('db'); // etc
 ### PSR-11 Compliant
 
 Means it has `get($serviceId)` and `has($serviceId)` method as required by [PSR-11 Standard](https://www.php-fig.org/psr/psr-11/)
+
+## Extra Flexibilities
+
+In-case you like the way to accessing a service instance using array, yes you can by registering `ArrayContainer` as a service
+
+```php
+use Projek\Container\ArrayContainer;
+
+$container->set(ArrayContainer::class, ArrayContainer::class);
+
+$container->set('myService', function (ArrayContainer $container) {
+    return new MyService(
+        $container['db'],
+        $container[Psr\Log\LoggerInterface::class]
+    );
+});
+```
+
+Same thing when you want access it as a property:
+
+```php
+use Projek\Container\PropertyContainer;
+
+$container->set(PropertyContainer::class, PropertyContainer::class);
+
+$container->set('myService', function (PropertyContainer $container) {
+    return new MyService(
+        $container->db,
+        $container->{Psr\Log\LoggerInterface::class} // Not convenient indeed, but yes you could 😅
+    );
+});
+```

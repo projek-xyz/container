@@ -96,16 +96,16 @@ class Container implements ContainerInterface
     /**
      * {@inheritDoc}
      */
-    public function make(string $concrete, ...$params)
+    public function make($concrete, ...$params)
     {
         $instance = $this->resolver->resolve($concrete);
 
-        list($args, $condition) = count($params)
+        list($args, $condition) = count($params = array_filter($params))
             ? $this->assertParams($params)
             : [[], null];
 
         if (null !== $condition) {
-            $instance = $condition($instance) ?? $instance;
+            $instance = $condition($instance) ?: $instance;
         }
 
         return $this->resolver->handle($instance, $args);

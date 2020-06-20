@@ -171,11 +171,7 @@ describe(Container::class, function () {
         })->toThrow(new BadMethodCallException);
     });
 
-    it('Shuold accept 2nd and 3rd params', function () {
-        // Dependencies.
-        $this->c->set('dummy', Dummy::class);
-        $this->c->set(AbstractFoo::class, ConcreteBar::class);
-
+    it('Should accept addtional params', function () {
         expect(
             $this->c->make(Stubs\SomeClass::class, function ($instance) {
                 return [$instance, 'shouldCalled'];
@@ -189,9 +185,10 @@ describe(Container::class, function () {
         ));
 
         expect(function () {
+            // only asserting 2nd param if 3rd one is falsy
             $this->c->make(Stubs\SomeClass::class, 'string', null);
         })->toThrow(new InvalidArgumentException(
-            'Expect parameter 2 to be an array, string given'
+            'Expect parameter 2 to be an array or Closure, string given'
         ));
 
         expect(function () {
@@ -206,14 +203,87 @@ describe(Container::class, function () {
             'Could not accept more than 3 arguments, 4 given'
         ));
 
-        expect(
-            $this->c->make(Stubs\SomeClass::class, ['new value'], null)
-        )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+        expect(function () {
+            // Correct condition with incorrect argument
+            $this->c->make(Stubs\SomeClass::class, 'string', function ($instance) {
+                return [$instance, 'shouldCalled'];
+            });
+        })->toThrow(new InvalidArgumentException(
+            'Expect parameter 2 to be an array, string given'
+        ));
 
         expect(
+            // Correct condition and argument
             $this->c->make(Stubs\SomeClass::class, ['new value'], function ($instance) {
                 return [$instance, 'shouldCalled'];
             })
+        )->toEqual('new value');
+    });
+
+    it('Should ignore the value of 2nd argument if 1st argument is not callable ', function () {
+        expect(
+            // Returns the class instance
+            $this->c->make(Stubs\SomeClass::class, ['new value'])
+        )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+
+        expect(
+            // Iggnore falsy param
+            $this->c->make(Stubs\SomeClass::class, ['new value'], null)
+            )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+
+            expect(
+                // Iggnore falsy params
+            $this->c->make(Stubs\SomeClass::class, null, null)
+        )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+    });
+
+    it('Should returns default if condition is falsy', function () {
+        expect(
+            // Returns class instance because it's not a callable
+            $this->c->make(Stubs\SomeClass::class, function () {
+                return false;
+            })
+        )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+
+        expect(
+            // Return value of the callable method if condition returns falsy
+            $this->c->make('Stubs\SomeClass::shouldCalled', function () {
+                return null; // Should accepts null, 0, '', false
+            })
+        )->toEqual('a value');
+
+        expect(
+            // Return value of the callable method if condition returns the instance it-self
+            $this->c->make(['Stubs\SomeClass', 'shouldCalled'], function ($instance) {
+                return $instance;
+            })
+        )->toEqual('a value');
+    });
+
+    it('Should be able to invoke a method directly without condition', function () {
+        expect(
+            // Resolve and handle non-static method like a static method
+            $this->c->make('Stubs\SomeClass::shouldCalled', ['new value'])
+        )->toEqual('new value');
+
+        expect(
+            // Resolve and handle non-static method like a static method
+            $this->c->make(['Stubs\SomeClass', 'shouldCalled'], ['new value'])
+        )->toEqual('new value');
+
+        expect(
+            // Resolve and handle actual static mathod
+            $this->c->make('Stubs\ConcreteBar::std', ['new value'])
+        )->toEqual('new value');
+
+        expect(
+            // Resolve and handle actual static mathod
+            $this->c->make(['Stubs\ConcreteBar', 'std'], ['new value'])
+        )->toEqual('new value');
+
+        expect(
+            // Resolve and handle non-static method like a static method
+            $this->c->make([new Stubs\SomeClass(), 'shouldCalled'], ['new value'])
         )->toEqual('new value');
     });
 });

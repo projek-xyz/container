@@ -34,21 +34,27 @@ interface ContainerInterface extends PsrContainerInterface
      *
      * ```php
      * // Treat 2nd parameter as arguments
-     * $container->make(SomeClass::class, ['foo', 'bar'])
+     * $container->make(SomeClass::class, ['a value'])
      *
+     * // Treat 2nd parameter as condition
      * $container->make(SomeClass::class, function ($instance) {
-     *     // a condition
+     *     if ($instance instanceof CertainInterface) {
+     *         return [$instance, 'theMethod'];
+     *     }
+     *
+     *     return null; // Accepts falsy or $instance of the class
      * })
      *
      * // Treat 2nd parameter as arguments and 3rd as condition
-     * $container->make(SomeClass::class, ['foo', 'bar'], function ($instance) {
+     * $container->make(SomeClass::class, ['a value'], function ($instance) {
      *     // a condition
      * })
      * ```
      *
-     * @param string $concrete
+     * @link https://github.com/projek-xyz/container/pull/12
+     * @param string|callable $concrete
      * @param null|array|\Closure ...$args
      * @return mixed
      */
-    public function make(string $concrete, ...$args);
+    public function make($concrete, ...$args);
 }

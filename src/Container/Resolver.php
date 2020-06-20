@@ -47,7 +47,7 @@ class Resolver
             : new \ReflectionFunction($instance);
 
         if ($isMethod) {
-            $params[] = $instance[0];
+            $params[] = is_object($instance[0]) ? $instance[0] : null;
         }
 
         // If it was internal method resolve its params as a closure.

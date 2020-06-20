@@ -47,7 +47,13 @@ class Resolver
             : new \ReflectionFunction($instance);
 
         if ($isMethod) {
-            $params[] = is_object($instance[0]) ? $instance[0] : null;
+            $obj = is_object($instance[0]) ? $instance[0] : null;
+
+            if (! $reflector->isStatic() && is_string($instance[0])) {
+                $obj = $this->createInstance($instance[0]);
+            }
+
+            $params[] = $obj;
         }
 
         // If it was internal method resolve its params as a closure.

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.0](https://github.com/projek-xyz/container/compare/v0.2.0...v0.3.0) (2020-06-20)
+
+
+### Features
+
+* add make() method ([c0bc43a](https://github.com/projek-xyz/container/commit/c0bc43a0ad9d6520f0eeca2da0d8ea790aad9fad))
+* add optional params ([64024a3](https://github.com/projek-xyz/container/commit/64024a33fa65ac818a6fc9a3e5f4727c5a1a758b))
+* conditional make ([3e479a1](https://github.com/projek-xyz/container/commit/3e479a12b5f8637e8d0c382319eaa5f034047b86))
+
+
+### Bug Fixes
+
+* invoke issue ([6fb5e05](https://github.com/projek-xyz/container/commit/6fb5e05c6d07682d192cc1474f6f942a0f394c0e)), closes [#discussion_r443084800](https://github.com/projek-xyz/container/issues/discussion_r443084800)
+
 ## [0.2.0](https://github.com/projek-xyz/container/compare/v0.1.1...v0.2.0) (2020-06-19)
 
 

@@ -52,7 +52,7 @@ interface ContainerInterface extends PsrContainerInterface
      * ```
      *
      * @link https://github.com/projek-xyz/container/pull/12
-     * @param string|callable $concrete
+     * @param string|callable $concrete String of class name or callable
      * @param null|array|\Closure ...$args
      * @return mixed
      */

@@ -229,12 +229,28 @@ describe(Container::class, function () {
         expect(
             // Iggnore falsy param
             $this->c->make(Stubs\SomeClass::class, ['new value'], null)
-            )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+        )->toBeAnInstanceOf(Stubs\CertainInterface::class);
 
-            expect(
-                // Iggnore falsy params
+        expect(
+            // Iggnore falsy params
             $this->c->make(Stubs\SomeClass::class, null, null)
         )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+    });
+
+    it('Should accept closure', function () {
+        expect($this->c->make(function ($param) {
+            return $param;
+        }, ['value']))->toEqual('value');
+
+        expect($this->c->make(function () {
+            return new Stubs\SomeClass;
+        }, ['value'], function ($closure) {
+            $instance = $closure();
+
+            return $instance instanceof Stubs\CertainInterface
+                ? [$instance, 'shouldCalled'] // `shouldCalled` method will get the 'value'
+                : $closure;
+        }))->toEqual('value');
     });
 
     it('Should returns default if condition is falsy', function () {

@@ -1,4 +1,8 @@
-## `Container::make($callable[, $arguments|$condition[, $condition]])`
+# Create an instance of class without register it to the container stack.
+
+```php
+$container->make($callable[, $arguments|$condition[, $condition]])
+```
 
 | Parameters | Type | Description |
 | --- | --- | --- |

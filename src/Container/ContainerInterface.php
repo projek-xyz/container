@@ -29,7 +29,8 @@ interface ContainerInterface extends PsrContainerInterface
      * Resolve an instance without adding it to the stack.
      *
      * @param string $concrete
+     * @param null|\Closure $condition
      * @return mixed
      */
-    public function make(string $concrete);
+    public function make(string $concrete, ?\Closure $condition = null);
 }

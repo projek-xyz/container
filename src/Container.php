@@ -96,14 +96,14 @@ class Container implements ContainerInterface
     /**
      * {@inheritDoc}
      */
-    public function make(string $concrete)
+    public function make(string $concrete, ?\Closure $condition = null)
     {
         $instance = $this->resolver->resolve($concrete);
 
-        if (is_callable($instance)) {
-            return $this->resolver->handle($instance);
+        if (null !== $condition) {
+            $instance = $condition($instance) ?? $instance;
         }
 
-        return $instance;
+        return $this->resolver->handle($instance);
     }
 }

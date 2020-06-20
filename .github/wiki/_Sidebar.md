@@ -1,6 +1,7 @@
-## Content
+## Contents
 
 - [Home](Home)
+- [Changelog](https://github.com/projek-xyz/container/blob/master/CHANGELOG.md)
 
 ## API
 

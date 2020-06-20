@@ -33,19 +33,16 @@ class Resolver
      * @param array $args
      * @return mixed
      */
-    public function handle(callable $instance, array $args = [])
+    public function handle($instance, array $args = [])
     {
-        $isInternalMethod = false;
-
-        if (is_string($instance) && false !== strpos($instance, '::')) {
-            $instance = explode('::', $instance);
-        } elseif (is_object($instance) && method_exists($instance, '__invoke')) {
-            $isInternalMethod = true;
-            $instance = [$instance, '__invoke'];
+        if (! $this->assertCallable($instance)) {
+            return $instance;
         }
 
         $params = [];
-        $reflector = ($isMethod = is_array($instance))
+        $isMethod = is_array($instance);
+        $isInternalMethod = $isMethod && $instance[1] === '__invoke';
+        $reflector = $isMethod
             ? new \ReflectionMethod($instance[0], $instance[1])
             : new \ReflectionFunction($instance);
 
@@ -144,5 +141,30 @@ class Resolver
         }
 
         return $args;
+    }
+
+    /**
+     * Assert $instance is callable.
+     *
+     * @param callable $instance
+     * @return bool
+     * @throws \BadMethodCallException When $instance is an array but the callable
+     *                                 method not exists.
+     */
+    private function assertCallable(&$instance): bool
+    {
+        if (is_string($instance) && false !== strpos($instance, '::')) {
+            $instance = explode('::', $instance);
+        } elseif (is_object($instance) && method_exists($instance, '__invoke')) {
+            $instance = [$instance, '__invoke'];
+        }
+
+        if (is_array($instance) && ! method_exists($instance[0], $instance[1])) {
+            throw new \BadMethodCallException(
+                sprintf('Call to undefined method %s::%s()', get_class($instance[0]), $instance[1])
+            );
+        }
+
+        return is_callable($instance);
     }
 }

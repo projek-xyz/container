@@ -3,7 +3,7 @@
 use Projek\Container;
 use Projek\Container\{ContainerInterface, Exception, NotFoundException };
 use Psr\Container\ContainerInterface as PsrContainer;
-use Stubs\ { Dummy, AbstractFoo, ConcreteBar, ServiceProvider};
+use Stubs\{Dummy, AbstractFoo, ConcreteBar, ServiceProvider};
 use function Kahlan\describe;
 use function Kahlan\expect;
 
@@ -103,6 +103,10 @@ describe(Container::class, function () {
 
     it('Should throw exception when setting incorrect param', function () {
         expect(function () {
+            $this->c->make(AbstractFoo::class);
+        })->toThrow(Exception::notInstantiable(AbstractFoo::class));
+
+        expect(function () {
             $this->c->set('foo', AbstractFoo::class);
         })->toThrow(Exception::notInstantiable(AbstractFoo::class));
 
@@ -117,5 +121,53 @@ describe(Container::class, function () {
         expect(function () {
             $this->c->set('foo', null);
         })->toThrow(Exception::unresolvable('NULL'));
+    });
+
+    it('Should make an instance without adding to the stack', function () {
+        // Dependencies.
+        $this->c->set('dummy', Dummy::class);
+        $this->c->set(AbstractFoo::class, ConcreteBar::class);
+
+        $instances = [
+            Stubs\CallableClass::class => AbstractFoo::class,
+            Stubs\InstantiableClass::class => Stubs\InstantiableClass::class,
+            Stubs\SomeClass::class => Stubs\SomeClass::class,
+        ];
+
+        foreach ($instances as $concrete => $instance) {
+            expect($this->c->has($concrete))->toBeFalsy();
+            expect($this->c->make($concrete))->toBeAnInstanceOf($instance);
+            expect($this->c->has($concrete))->toBeFalsy();
+        }
+    });
+
+    it('Should make an instance without adding to the stack', function () {
+        // Dependencies.
+        $this->c->set('dummy', Dummy::class);
+        $this->c->set(AbstractFoo::class, ConcreteBar::class);
+
+        expect(
+            $this->c->make(Stubs\SomeClass::class)
+        )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+
+        expect(
+            $this->c->make(Stubs\SomeClass::class, function ($instance) {
+                if ($instance instanceof Stubs\CertainInterface) {
+                    return [$instance, 'handle'];
+                }
+
+                return null;
+            })
+        )->toEqual('lorem');
+
+        expect(function () {
+            $this->c->make(Stubs\SomeClass::class, function ($instance) {
+                if ($instance instanceof Stubs\CertainInterface) {
+                    return [$instance, 'notExists'];
+                }
+
+                return null;
+            });
+        })->toThrow(new BadMethodCallException);
     });
 });

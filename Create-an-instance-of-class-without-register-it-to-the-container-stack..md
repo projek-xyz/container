@@ -1,4 +1,4 @@
-# `Container::make($callable[, $arguments|$condition[, $condition]])`
+## `Container::make($callable[, $arguments|$condition[, $condition]])`
 
 | Parameters | Type | Description |
 | --- | --- | --- |

@@ -1,4 +1,8 @@
-# `Container::unset($abstract)`
+# Remove an instance
+
+```php
+Container::unset($abstract)
+```
 
 | Parameters | Type | Description |
 | --- | --- | --- |

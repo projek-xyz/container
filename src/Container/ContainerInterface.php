@@ -28,9 +28,27 @@ interface ContainerInterface extends PsrContainerInterface
     /**
      * Resolve an instance without adding it to the stack.
      *
+     * It's possible to add 2nd parameter as an array and it will pass it to
+     * `Resolver::handle($instance, $args)`. While if it was a Closure, it will
+     * treaten as condition.
+     *
+     * ```php
+     * // Treat 2nd parameter as arguments
+     * $container->make(SomeClass::class, ['foo', 'bar'])
+     *
+     * $container->make(SomeClass::class, function ($instance) {
+     *     // a condition
+     * })
+     *
+     * // Treat 2nd parameter as arguments and 3rd as condition
+     * $container->make(SomeClass::class, ['foo', 'bar'], function ($instance) {
+     *     // a condition
+     * })
+     * ```
+     *
      * @param string $concrete
-     * @param null|\Closure $condition
+     * @param null|array|\Closure ...$args
      * @return mixed
      */
-    public function make(string $concrete, ?\Closure $condition = null);
+    public function make(string $concrete, ...$args);
 }

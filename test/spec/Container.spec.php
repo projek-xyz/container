@@ -170,4 +170,42 @@ describe(Container::class, function () {
             });
         })->toThrow(new BadMethodCallException);
     });
+
+    it('Shuold accept 2nd and 3rd params', function () {
+        // Dependencies.
+        $this->c->set('dummy', Dummy::class);
+        $this->c->set(AbstractFoo::class, ConcreteBar::class);
+
+        expect(
+            $this->c->make(Stubs\SomeClass::class, function ($instance) {
+                return [$instance, 'shouldCalled'];
+            })
+        )->toEqual('a value');
+
+        expect(function () {
+            $this->c->make(Stubs\SomeClass::class, 'string');
+        })->toThrow(new InvalidArgumentException);
+
+        expect(function () {
+            $this->c->make(Stubs\SomeClass::class, 'string', null);
+        })->toThrow(new InvalidArgumentException);
+
+        expect(function () {
+            $this->c->make(Stubs\SomeClass::class, ['string'], 'condition');
+        })->toThrow(new InvalidArgumentException);
+
+        expect(function () {
+            $this->c->make(Stubs\SomeClass::class, ['string'], 'condition', 'more');
+        })->toThrow(new InvalidArgumentException);
+
+        expect(
+            $this->c->make(Stubs\SomeClass::class, ['new value'], null)
+        )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+
+        expect(
+            $this->c->make(Stubs\SomeClass::class, ['new value'], function ($instance) {
+                return [$instance, 'shouldCalled'];
+            })
+        )->toEqual('new value');
+    });
 });

@@ -8,4 +8,9 @@ class SomeClass implements CertainInterface
     {
         return $dummy->lorem();
     }
+
+    public function shouldCalled($param = 'a value')
+    {
+        return $param;
+    }
 }

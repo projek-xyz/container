@@ -1,7 +1,7 @@
 # Remove an instance
 
 ```php
-Container::unset($abstract)
+$container->unset($abstract)
 ```
 
 | Parameters | Type | Description |

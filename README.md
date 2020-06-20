@@ -81,7 +81,7 @@ Means it has `get($serviceId)` and `has($serviceId)` method as required by [PSR-
 
 ## API
 
-### `set($abstract, $concrete)`
+### <a name="set-method"></a>`set($abstract, $concrete)`
 
 Register a service(s)
 
@@ -171,7 +171,7 @@ You have few ways registering your services to the container. Example above you 
     $container->get('someClass');
     ```
 
-### `unset($abstract)`
+### <a name="unset-method"></a>`unset($abstract)`
 
 Unregister a service
 
@@ -190,7 +190,7 @@ $container->unset('myService');
 $container->has('myService'); // returns false
 ```
 
-### `make($callable[, $arguments|$condition[, $condition]])`
+### <a name="make-method"></a>`make($callable[, $arguments|$condition[, $condition]])`
 
 Create an instance of class without register it to the container stack.
 

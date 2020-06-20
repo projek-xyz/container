@@ -158,6 +158,18 @@ You have few ways registering your services to the container. Example above you 
      */
     $fooBar = $container->get(FooBarInterface::class);
     ```
+4. `set()` an alias of existing service, you can use name of the registered service as the `$concrete` parameter.
+    ```php
+    // Based on example above
+    $container->set(CertainInterface::class, SomeClass::class);
+    $container->set(AnotherInterface::class, CertainInterface::class);
+    $container->set('someClass', CertainInterface::class);
+
+    // So you could access instance of SomeClass with the following
+    $container->get(CertainInterface::class); // OR
+    $container->get(AnotherInterface::class); // OR
+    $container->get('someClass');
+    ```
 
 ### `unset($abstract)`
 

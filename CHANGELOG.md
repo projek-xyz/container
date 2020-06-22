@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.2](https://github.com/projek-xyz/container/compare/v0.3.1...v0.3.2) (2020-06-22)
+
+
+### Features
+
+* clonable container with new resolver instance ([0db945e](https://github.com/projek-xyz/container/commit/0db945eac0ae2fda5c84a6a288a6ad3c51a8f437))
+
 ### [0.3.1](https://github.com/projek-xyz/container/compare/v0.3.0...v0.3.1) (2020-06-22)
 
 

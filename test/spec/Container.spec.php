@@ -302,4 +302,32 @@ describe(Container::class, function () {
             $this->c->make([new Stubs\SomeClass(), 'shouldCalled'], ['new value'])
         )->toEqual('new value');
     });
+
+    it('Should have same instance everywhere', function () {
+        $this->c->set('foobar', function () {
+            return new class {
+                protected $items = [];
+                public function set($item, $value) {
+                    $this->items[$item] = $value;
+                }
+                public function get($item) {
+                    return $this->items[$item] ?? null;
+                }
+            };
+        });
+
+        $here = $this->c->get('foobar');
+        $here->set('key', 'value');
+
+        $there = $this->c->get('foobar');
+        $there->set('name', 'john');
+
+        $somewhere = $this->c->get('foobar');
+
+        foreach (['key', 'name'] as $key) {
+            expect($here->get($key))->toBe($there->get($key));
+            expect($there->get($key))->toBe($here->get($key));
+            expect($somewhere->get($key))->toBe($here->get($key));
+        }
+    });
 });

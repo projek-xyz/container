@@ -19,6 +19,13 @@ class Container implements ContainerInterface
     private $instances = [];
 
     /**
+     * List of instances that been resolved.
+     *
+     * @var array<string, mixed>
+     */
+    private $resolved = [];
+
+    /**
      * Service container resolver.
      *
      * @var Resolver
@@ -52,10 +59,14 @@ class Container implements ContainerInterface
             throw new NotFoundException($id);
         }
 
+        if (isset($this->resolved[$id])) {
+            return $this->resolved[$id];
+        }
+
         $instance = $this->instances[$id];
 
         if (is_callable($instance)) {
-            return $this->resolver->handle($instance);
+            return $this->resolved[$id] = $this->resolver->handle($instance);
         }
 
         if (is_string($instance) && $this->has($instance)) {

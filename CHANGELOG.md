@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.1](https://github.com/projek-xyz/container/compare/v0.3.0...v0.3.1) (2020-06-22)
+
+
+### Bug Fixes
+
+* make sure everything had same instance ([3955864](https://github.com/projek-xyz/container/commit/395586410b75f364cf571981dc06a40f05e9d8c0))
+
 ## [0.3.0](https://github.com/projek-xyz/container/compare/v0.2.0...v0.3.0) (2020-06-20)
 
 

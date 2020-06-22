@@ -330,4 +330,15 @@ describe(Container::class, function () {
             expect($somewhere->get($key))->toBe($here->get($key));
         }
     });
+
+    it('Should be cloned with new resolver instance', function () {
+        // Dependencies.
+        $this->c->set('dummy', Dummy::class);
+
+        $c = clone $this->c;
+        $c->set(AbstractFoo::class, ConcreteBar::class);
+
+        expect($this->c->has(AbstractFoo::class))->toBeFalsy();
+        expect($c->has('dummy'))->toBeTruthy();
+    });
 });

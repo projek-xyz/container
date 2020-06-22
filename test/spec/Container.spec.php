@@ -304,7 +304,7 @@ describe(Container::class, function () {
     });
 
     it('Should have same instance everywhere', function () {
-        $this->c->set('foobar', function () {
+        $this->c->set('foo', function () {
             return new class {
                 protected $items = [];
                 public function set($item, $value) {
@@ -315,14 +315,15 @@ describe(Container::class, function () {
                 }
             };
         });
+        $this->c->set('bar', 'foo');
 
-        $here = $this->c->get('foobar');
+        $here = $this->c->get('foo');
         $here->set('key', 'value');
 
-        $there = $this->c->get('foobar');
+        $there = $this->c->get('foo');
         $there->set('name', 'john');
 
-        $somewhere = $this->c->get('foobar');
+        $somewhere = $this->c->get('bar');
 
         foreach (['key', 'name'] as $key) {
             expect($here->get($key))->toBe($there->get($key));

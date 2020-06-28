@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.3](https://github.com/projek-xyz/container/compare/v0.3.2...v0.3.3) (2020-06-28)
+
+
+### Features
+
+* add helper class to integrate with the container ([249b35a](https://github.com/projek-xyz/container/commit/249b35aee4ae8b9e0f23a2ffde089f55b95e44ab))
+
 ### [0.3.2](https://github.com/projek-xyz/container/compare/v0.3.1...v0.3.2) (2020-06-22)
 
 

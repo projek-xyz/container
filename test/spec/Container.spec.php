@@ -102,25 +102,27 @@ describe(Container::class, function () {
     });
 
     it('Should throw exception when setting incorrect param', function () {
+        $notoInstantible = new Exception(sprintf('Target "%s" is not instantiable.', AbstractFoo::class));
+
         expect(function () {
             $this->c->make(AbstractFoo::class);
-        })->toThrow(Exception::notInstantiable(AbstractFoo::class));
+        })->toThrow($notoInstantible);
 
         expect(function () {
             $this->c->set('foo', AbstractFoo::class);
-        })->toThrow(Exception::notInstantiable(AbstractFoo::class));
+        })->toThrow($notoInstantible);
 
         expect(function () {
             $this->c->set('foo', 'NotExistsClass');
-        })->toThrow(Exception::unresolvable('NotExistsClass'));
+        })->toThrow(new Exception('Couldn\'t resolve "NotExistsClass" as an instance.'));
 
         expect(function () {
             $this->c->set('foo', ['foo', 'bar']);
-        })->toThrow(Exception::unresolvable('array'));
+        })->toThrow(new Exception('Couldn\'t resolve "array" as an instance.'));
 
         expect(function () {
             $this->c->set('foo', null);
-        })->toThrow(Exception::unresolvable('NULL'));
+        })->toThrow(new Exception('Couldn\'t resolve "NULL" as an instance.'));
     });
 
     it('Should make an instance without adding to the stack', function () {

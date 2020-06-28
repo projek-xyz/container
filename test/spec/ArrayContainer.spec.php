@@ -25,14 +25,14 @@ describe(ArrayContainer::class, function () {
     it('Should throw exception when setting incorrect param', function () {
         expect(function () {
             $this->c['foo'] = AbstractFoo::class;
-        })->toThrow(Exception::notInstantiable(AbstractFoo::class));
+        })->toThrow(new Exception(sprintf('Target "%s" is not instantiable.', AbstractFoo::class)));
 
         expect(function () {
             $this->c['foo'] = ['foo', 'bar'];
-        })->toThrow(Exception::unresolvable('array'));
+        })->toThrow(new Exception('Couldn\'t resolve "array" as an instance.'));
 
         expect(function () {
             $this->c['foo'] = null;
-        })->toThrow(Exception::unresolvable('NULL'));
+        })->toThrow(new Exception('Couldn\'t resolve "NULL" as an instance.'));
     });
 });

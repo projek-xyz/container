@@ -43,6 +43,12 @@
     "provide": {
         "psr/container-implementation": "^1.0"
     },
+    "extra": {
+        "hooks": {
+            "pre-commit": "composer spec",
+            "commit-msg": "commitlint -e -V"
+        }
+    },
     "config": {
       "preferred-install": "dist",
       "sort-packages": true,

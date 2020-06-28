@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
-final class ArrayContainer implements \ArrayAccess
+final class ArrayContainer implements \ArrayAccess, ContainerAwareInterface
 {
-    /**
-     * @var ContainerInterface
-     */
-    private $container;
+    use ContainerAware;
 
     /**
      * Create new instance.
@@ -18,7 +15,7 @@ final class ArrayContainer implements \ArrayAccess
      */
     public function __construct(ContainerInterface $container)
     {
-        $this->container = $container;
+        $this->setContainer($container);
     }
 
     /**
@@ -28,7 +25,7 @@ final class ArrayContainer implements \ArrayAccess
      */
     public function offsetSet($name, $instance)
     {
-        $this->container->set($name, $instance);
+        $this->getContainer()->set($name, $instance);
     }
 
     /**
@@ -38,7 +35,7 @@ final class ArrayContainer implements \ArrayAccess
     public function offsetGet($name)
     {
         try {
-            return $this->container->get($name);
+            return $this->getContainer($name);
         } catch (NotFoundException $e) {
             return null;
         }
@@ -50,7 +47,7 @@ final class ArrayContainer implements \ArrayAccess
      */
     public function offsetExists($name)
     {
-        return $this->container->has($name);
+        return $this->getContainer()->has($name);
     }
 
     /**
@@ -59,6 +56,6 @@ final class ArrayContainer implements \ArrayAccess
      */
     public function offsetUnset($name)
     {
-        $this->container->unset($name);
+        $this->getContainer()->unset($name);
     }
 }

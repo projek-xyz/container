@@ -7,14 +7,9 @@ namespace Projek\Container;
 use Psr\Container\ContainerInterface;
 use ReflectionFunction;
 
-class Resolver
+class Resolver implements ContainerAwareInterface
 {
-    /**
-     * PSR 11 Container Instance.
-     *
-     * @var ContainerInterface
-     */
-    private $container;
+    use ContainerAware;
 
     /**
      * Create new instance.
@@ -23,7 +18,7 @@ class Resolver
      */
     public function __construct(ContainerInterface $container)
     {
-        $this->container = $container;
+        $this->setContainer($container);
     }
 
     /**
@@ -81,7 +76,7 @@ class Resolver
             return $this->createInstance($concrete);
         }
 
-        if (is_string($concrete) && $this->container->has($concrete)) {
+        if (is_string($concrete) && $this->getContainer()->has($concrete)) {
             return $concrete;
         }
 
@@ -89,7 +84,10 @@ class Resolver
             return $concrete;
         }
 
-        throw Exception::unresolvable($concrete);
+        throw new Exception(sprintf(
+            'Couldn\'t resolve "%s" as an instance.',
+            ! is_string($concrete) ? gettype($concrete) : $concrete
+        ));
     }
 
     /**
@@ -101,14 +99,14 @@ class Resolver
      */
     protected function createInstance(string $className)
     {
-        if ($this->container->has($className)) {
-            return $this->container->get($className);
+        if ($this->getContainer()->has($className)) {
+            return $this->getContainer($className);
         }
 
         $reflector = new \ReflectionClass($className);
 
         if (! $reflector->isInstantiable()) {
-            throw Exception::notInstantiable($className);
+            throw new Exception(sprintf('Target "%s" is not instantiable.', $className));
         }
 
         if ($constructor = $reflector->getConstructor()) {
@@ -134,7 +132,7 @@ class Resolver
             }
 
             try {
-                $args[$param->getPosition()] = $this->container->get(
+                $args[$param->getPosition()] = $this->getContainer(
                     ($class = $param->getClass()) ? $class->getName() : $param->getName()
                 );
             } catch (NotFoundException $e) {

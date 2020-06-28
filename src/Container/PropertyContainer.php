@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
-final class PropertyContainer
+final class PropertyContainer implements ContainerAwareInterface
 {
-    /**
-     * @var ContainerInterface
-     */
-    private $container;
+    use ContainerAware;
 
     /**
      * Create new instance.
@@ -18,7 +15,7 @@ final class PropertyContainer
      */
     public function __construct(ContainerInterface $container)
     {
-        $this->container = $container;
+        $this->setContainer($container);
     }
 
     /**
@@ -28,7 +25,7 @@ final class PropertyContainer
      */
     public function __set(string $name, $instance): void
     {
-        $this->container->set($name, $instance);
+        $this->getContainer()->set($name, $instance);
     }
 
     /**
@@ -38,7 +35,7 @@ final class PropertyContainer
     public function __get(string $name)
     {
         try {
-            return $this->container->get($name);
+            return $this->getContainer($name);
         } catch (NotFoundException $e) {
             return null;
         }
@@ -50,7 +47,7 @@ final class PropertyContainer
      */
     public function __isset(string $name): bool
     {
-        return $this->container->has($name);
+        return $this->getContainer()->has($name);
     }
 
     /**
@@ -59,6 +56,6 @@ final class PropertyContainer
      */
     public function __unset(string $name): void
     {
-        $this->container->unset($name);
+        $this->getContainer()->unset($name);
     }
 }

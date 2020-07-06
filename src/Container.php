@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Projek;
 
-use Projek\Container\{ContainerInterface, NotFoundException, Resolver};
+use Projek\Container\{ContainerInterface, InvalidArgumentException, NotFoundException, RangeException, Resolver};
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 class Container implements ContainerInterface
@@ -138,22 +138,18 @@ class Container implements ContainerInterface
     private function assertParams(int $count, array $params = []): array
     {
         if (2 === $count) {
-            $error = null;
             if (! is_array($params[0])) {
-                $error = sprintf('Expect parameter 2 to be an array, %s given', gettype($params[0]));
+                throw new InvalidArgumentException(2, ['array'], gettype($params[0]));
             } elseif (! ($params[1] instanceof \Closure) && null !== $params[1]) {
-                $error = sprintf('Expect parameter 3 to be a Closure, %s given', gettype($params[1]));
-            } else {
-                return [$params[0], $params[1]];
+                throw new InvalidArgumentException(3, ['Closure'], gettype($params[1]));
             }
-            throw new \InvalidArgumentException($error);
+
+            return [$params[0], $params[1]];
         }
 
         if (1 === $count) {
             if (! is_array($params[0]) && ! ($params[0] instanceof \Closure)) {
-                throw new \InvalidArgumentException(
-                    sprintf('Expect parameter 2 to be an array or Closure, %s given', gettype($params[0]))
-                );
+                throw new InvalidArgumentException(2, ['array', 'Closure'], gettype($params[0]));
             }
 
             $arguments = is_array($params[0]) ? $params[0] : [];
@@ -162,8 +158,6 @@ class Container implements ContainerInterface
             return [$arguments, $condition];
         }
 
-        throw new \InvalidArgumentException(
-            sprintf('Could not accept more than 3 arguments, %d given', $count + 1)
-        );
+        throw new RangeException(3, $count + 1);
     }
 }

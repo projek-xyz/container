@@ -1,7 +1,7 @@
 <?php
 
 use Projek\Container;
-use Projek\Container\{ContainerInterface, Exception, NotFoundException };
+use Projek\Container\{BadMethodCallException, ContainerInterface, Exception, InvalidArgumentException, NotFoundException, RangeException};
 use Psr\Container\ContainerInterface as PsrContainer;
 use Stubs\{Dummy, AbstractFoo, ConcreteBar, ServiceProvider};
 use function Kahlan\describe;
@@ -170,7 +170,7 @@ describe(Container::class, function () {
 
                 return null;
             });
-        })->toThrow(new BadMethodCallException);
+        })->toThrow(new BadMethodCallException([Stubs\SomeClass::class, 'notExists']));
     });
 
     it('Should accept addtional params', function () {
@@ -182,37 +182,27 @@ describe(Container::class, function () {
 
         expect(function () {
             $this->c->make(Stubs\SomeClass::class, 'string');
-        })->toThrow(new InvalidArgumentException(
-            'Expect parameter 2 to be an array or Closure, string given'
-        ));
+        })->toThrow(new InvalidArgumentException(2, ['array', 'Closure'], 'string'));
 
         expect(function () {
             // only asserting 2nd param if 3rd one is falsy
             $this->c->make(Stubs\SomeClass::class, 'string', null);
-        })->toThrow(new InvalidArgumentException(
-            'Expect parameter 2 to be an array or Closure, string given'
-        ));
+        })->toThrow(new InvalidArgumentException(2, ['array', 'Closure'], 'string'));
 
         expect(function () {
             $this->c->make(Stubs\SomeClass::class, ['string'], 'condition');
-        })->toThrow(new InvalidArgumentException(
-            'Expect parameter 3 to be a Closure, string given'
-        ));
+        })->toThrow(new InvalidArgumentException(3, ['Closure'], 'string'));
 
         expect(function () {
             $this->c->make(Stubs\SomeClass::class, ['string'], 'condition', 'more');
-        })->toThrow(new InvalidArgumentException(
-            'Could not accept more than 3 arguments, 4 given'
-        ));
+        })->toThrow(new RangeException(3, 4));
 
         expect(function () {
             // Correct condition with incorrect argument
             $this->c->make(Stubs\SomeClass::class, 'string', function ($instance) {
                 return [$instance, 'shouldCalled'];
             });
-        })->toThrow(new InvalidArgumentException(
-            'Expect parameter 2 to be an array, string given'
-        ));
+        })->toThrow(new InvalidArgumentException(2, ['array'], 'string'));
 
         expect(
             // Correct condition and argument

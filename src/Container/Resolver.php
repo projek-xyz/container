@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Projek\Container;
 
 use Psr\Container\ContainerInterface;
-use ReflectionFunction;
 
 class Resolver implements ContainerAwareInterface
 {
@@ -54,7 +53,7 @@ class Resolver implements ContainerAwareInterface
         // If it was internal method resolve its params as a closure.
         // @link https://bugs.php.net/bug.php?id=50798
         $toResolve = $isInternalMethod
-            ? new ReflectionFunction($reflector->getClosure($instance[0]))
+            ? new \ReflectionFunction($reflector->getClosure($instance[0]))
             : $reflector;
 
         $params[] = $this->resolveArgs($toResolve, $args);
@@ -152,7 +151,7 @@ class Resolver implements ContainerAwareInterface
      *
      * @param callable $instance
      * @return bool
-     * @throws \BadMethodCallException When $instance is an array but the callable
+     * @throws BadMethodCallException When $instance is an array but the callable
      *                                 method not exists.
      */
     private function assertCallable(&$instance): bool
@@ -164,9 +163,7 @@ class Resolver implements ContainerAwareInterface
         }
 
         if (is_array($instance) && ! method_exists($instance[0], $instance[1])) {
-            throw new \BadMethodCallException(
-                sprintf('Call to undefined method %s::%s()', get_class($instance[0]), $instance[1])
-            );
+            throw new BadMethodCallException($instance);
         }
 
         return is_callable($instance);

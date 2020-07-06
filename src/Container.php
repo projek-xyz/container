@@ -117,8 +117,8 @@ class Container implements ContainerInterface
     {
         $instance = $this->resolver->resolve($concrete);
 
-        list($args, $condition) = count($args = array_filter($args))
-            ? $this->assertParams($args)
+        list($args, $condition) = ($count = count($args = array_filter($args)))
+            ? $this->assertParams($count, $args)
             : [[], null];
 
         if (null !== $condition) {
@@ -131,13 +131,12 @@ class Container implements ContainerInterface
     /**
      * Assert $argumens and $condition by $params
      *
+     * @param int $count
      * @param array $params
      * @return array List of [$argumens, $condition]
      */
-    private function assertParams(array $params = []): array
+    private function assertParams(int $count, array $params = []): array
     {
-        $count = count($params);
-
         if (2 === $count) {
             $error = null;
             if (! is_array($params[0])) {

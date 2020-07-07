@@ -36,7 +36,7 @@ jobs:
       uses: shivammathur/setup-php@master
       with:
         php-version: ${{ matrix.php-versions }}
-        coverage: xdebug
+        coverage: none
 
     - name: Get Composer cache directory
       id: composer-cache
@@ -61,7 +61,7 @@ jobs:
       run: echo "::set-env name=GIT_BRANCH::$GITHUB_HEAD_REF"
 
     - name: Spec
-      run: composer spec
+      run: composer lint && phpdbg -qrr ./vendor/bin/kahlan --config=test/config.php
 
     - name: CodeClimate
       env:

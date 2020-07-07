@@ -9,16 +9,6 @@ final class PropertyContainer implements ContainerAwareInterface
     use ContainerAware;
 
     /**
-     * Create new instance.
-     *
-     * @param ContainerInterface $container
-     */
-    public function __construct(ContainerInterface $container)
-    {
-        $this->setContainer($container);
-    }
-
-    /**
      * @param string $name
      * @param mixed $instance
      * @return void

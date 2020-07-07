@@ -1,12 +1,14 @@
 <?php
 
 use Projek\Container;
+use Projek\Container\ContainerAware;
+use Projek\Container\ContainerAwareInterface;
+use Projek\Container\ContainerInterface;
 use Projek\Container\Resolver;
-use Stubs\ { Dummy, AbstractFoo, ConcreteBar };
+use Stubs\ { Dummy, AbstractFoo, CloneContainer, ConcreteBar };
 use function Kahlan\describe;
 use function Kahlan\expect;
 use function Kahlan\given;
-use function Stubs\dummyLorem;
 
 describe(Resolver::class, function () {
     given('dummy', function () {
@@ -99,5 +101,29 @@ describe(Resolver::class, function () {
         expect(
             $this->r->resolve($this->dummy)
         )->toBeAnInstanceOf(Dummy::class);
+    });
+
+    it('should autowire '.ContainerAwareInterface::class.' instance', function () {
+        $class = new class implements ContainerAwareInterface {
+            use ContainerAware;
+        };
+
+        // Assign the original container.
+
+        /** @var ContainerInterface $container */
+        $container = $this->r->resolve($class)->getContainer();
+        expect($container)->toBeAnInstanceOf(ContainerInterface::class);
+        expect($container->has('foobar'))->toBeFalsy();
+
+        $container = $this->r->resolve(get_class($class))->getContainer();
+        expect($container)->toBeAnInstanceOf(ContainerInterface::class);
+        expect($container->has('foobar'))->toBeFalsy();
+
+        // Modify container stack interally
+
+        $clone = $this->r->resolve(CloneContainer::class)->getContainer();
+        expect($clone)->toBeAnInstanceOf(ContainerInterface::class);
+        expect($clone->has('foobar'))->toBeTruthy();
+        expect($container->has('foobar'))->toBeFalsy();
     });
 });

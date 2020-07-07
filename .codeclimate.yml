@@ -11,9 +11,7 @@ engines:
   fixme:
     enabled: true
   phpcodesniffer:
-    enabled: true
-    config:
-        standard: "PSR12"
+    enabled: false
   phpmd:
     enabled: true
 

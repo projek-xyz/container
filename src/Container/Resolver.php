@@ -11,11 +11,6 @@ class Resolver implements ContainerAwareInterface
     use ContainerAware;
 
     /**
-     * @var array<string, string[]>
-     */
-    private $traitsMap;
-
-    /**
      * Create new instance.
      *
      * @param ContainerInterface $container
@@ -69,36 +64,31 @@ class Resolver implements ContainerAwareInterface
     /**
      * Instance resolver.
      *
-     * @param string|object|callable|\Closure $concrete
-     * @return mixed
-     * @throws Exception When $concrete is neither string of class name, instance
+     * @param string|object|callable|\Closure $toResolve
+     * @return object
+     * @throws Exception When $toResolve is neither string of class name, instance
      *                   of \Closure, object of class nor a callable.
      */
-    public function resolve($concrete)
+    public function resolve($toResolve)
     {
-        if (is_string($concrete) && class_exists($concrete)) {
-            return $this->createInstance($concrete);
+        if (is_string($toResolve) && class_exists($toResolve)) {
+            return $this->createInstance($toResolve);
         }
 
-        if (is_string($concrete) && $this->getContainer()->has($concrete)) {
-            return $concrete;
+        if (
+            (is_string($toResolve) && $this->getContainer()->has($toResolve)) ||
+            ($toResolve instanceof \Closure || is_callable($toResolve))
+        ) {
+            return $toResolve;
         }
 
-        if ($concrete instanceof \Closure || is_callable($concrete)) {
-            return $concrete;
-        }
-
-        if (is_object($concrete)) {
-            if ($concrete instanceof ContainerAwareInterface && null === $concrete->getContainer()) {
-                $concrete->setContainer($this->getContainer());
-            }
-
-            return $concrete;
+        if (is_object($toResolve)) {
+            return $this->injectContainer($toResolve);
         }
 
         throw new Exception(sprintf(
             'Couldn\'t resolve "%s" as an instance.',
-            ! is_string($concrete) ? gettype($concrete) : $concrete
+            ! is_string($toResolve) ? gettype($toResolve) : $toResolve
         ));
     }
 
@@ -122,16 +112,8 @@ class Resolver implements ContainerAwareInterface
         }
 
         $args = ($constructor = $reflector->getConstructor()) ? $this->resolveArgs($constructor) : [];
-        $instance = $reflector->newInstanceArgs($args);
 
-        if (
-            $reflector->implementsInterface(ContainerAwareInterface::class)
-            && null === $reflector->getMethod('getContainer')->invoke($instance)
-        ) {
-            $reflector->getMethod('setContainer')->invoke($instance, $this->getContainer());
-        }
-
-        return $instance;
+        return $this->injectContainer($reflector->newInstanceArgs($args));
     }
 
     /**
@@ -186,5 +168,20 @@ class Resolver implements ContainerAwareInterface
         }
 
         return is_callable($instance);
+    }
+
+    /**
+     * Injecting Container instance if $instance implements ContainerAwareInterface.
+     *
+     * @param object $instance
+     * @return object
+     */
+    private function injectContainer($instance)
+    {
+        if ($instance instanceof ContainerAwareInterface && null === $instance->getContainer()) {
+            $instance->setContainer($this->getContainer());
+        }
+
+        return $instance;
     }
 }

@@ -11,6 +11,11 @@ class Resolver implements ContainerAwareInterface
     use ContainerAware;
 
     /**
+     * @var array<string, string[]>
+     */
+    private $traitsMap;
+
+    /**
      * Create new instance.
      *
      * @param ContainerInterface $container
@@ -79,7 +84,15 @@ class Resolver implements ContainerAwareInterface
             return $concrete;
         }
 
-        if ($concrete instanceof \Closure || is_object($concrete) || is_callable($concrete)) {
+        if ($concrete instanceof \Closure || is_callable($concrete)) {
+            return $concrete;
+        }
+
+        if (is_object($concrete)) {
+            if ($concrete instanceof ContainerAwareInterface && null === $concrete->getContainer()) {
+                $concrete->setContainer($this->getContainer());
+            }
+
             return $concrete;
         }
 
@@ -108,11 +121,17 @@ class Resolver implements ContainerAwareInterface
             throw new Exception(sprintf('Target "%s" is not instantiable.', $className));
         }
 
-        if ($constructor = $reflector->getConstructor()) {
-            return $reflector->newInstanceArgs($this->resolveArgs($constructor));
+        $args = ($constructor = $reflector->getConstructor()) ? $this->resolveArgs($constructor) : [];
+        $instance = $reflector->newInstanceArgs($args);
+
+        if (
+            $reflector->implementsInterface(ContainerAwareInterface::class)
+            && null === $reflector->getMethod('getContainer')->invoke($instance)
+        ) {
+            $reflector->getMethod('setContainer')->invoke($instance, $this->getContainer());
         }
 
-        return $reflector->newInstance();
+        return $instance;
     }
 
     /**

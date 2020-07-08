@@ -5,7 +5,9 @@ use Projek\Container\ContainerAware;
 use Projek\Container\ContainerAwareInterface;
 use Projek\Container\ContainerInterface;
 use Projek\Container\Resolver;
-use Stubs\ { Dummy, AbstractFoo, CloneContainer, ConcreteBar };
+use Stubs\ { Dummy, AbstractFoo, CloneContainer, ConcreteBar, SomeClass};
+
+use function Kahlan\context;
 use function Kahlan\describe;
 use function Kahlan\expect;
 use function Kahlan\given;
@@ -25,105 +27,123 @@ describe(Resolver::class, function () {
         $this->r = new Resolver($c);
     });
 
-    it('could handle array callable', function () {
-        expect(
-            $this->r->handle([$this->dummy, 'lorem'])
-        )->toEqual('dummy lorem');
+    context(Resolver::class.'::handle', function () {
+        it('should handle array callable', function () {
+            expect(
+                $this->r->handle([$this->dummy, 'lorem'])
+            )->toEqual('dummy lorem');
 
-        expect(
-            $this->r->handle([ConcreteBar::class, 'std'])
-        )->toBeAnInstanceOf(stdClass::class);
-    });
-
-    it('could handle string callable', function () {
-        expect(
-            $this->r->handle(join('::', [ConcreteBar::class, 'std']))
-        )->toBeAnInstanceOf(stdClass::class);
-
-        expect(
-            $this->r->handle('Stubs\dummyLorem')
-        )->toEqual('lorem');
-    });
-
-    it('could handle closure callable', function () {
-        $i = $this->r->handle(function (AbstractFoo $foo, $dummy, $std) {
-            expect($foo)->toBeAnInstanceOf(ConcreteBar::class);
-            expect($dummy)->toBeAnInstanceOf(Dummy::class);
-
-            return $std;
+            expect(
+                $this->r->handle([ConcreteBar::class, 'std'])
+            )->toBeAnInstanceOf(stdClass::class);
         });
 
-        expect($i)->toBeAnInstanceOf(stdClass::class);
-    });
+        it('should handle string callable', function () {
+            expect(
+                $this->r->handle(join('::', [ConcreteBar::class, 'std']))
+            )->toBeAnInstanceOf(stdClass::class);
 
-    it('could handle unresolved parameter', function () {
-        expect($this->r->handle(function ($foobar, $dummy) {
-            return $foobar ?? $dummy;
-        }, ['foobar']))->toEqual('foobar');
-
-        expect($this->r->handle(function ($dummy, $foobar = null) {
-            return $foobar ?? $dummy;
-        }))->toBeAnInstanceOf(Dummy::class);
-    });
-
-    it('could resolve array callable', function () {
-        expect(
-            $this->r->resolve([$this->dummy, 'lorem'])
-        )->toEqual([$this->dummy, 'lorem']);
-
-        expect(
-            $this->r->resolve([ConcreteBar::class, 'std'])
-        )->toEqual([ConcreteBar::class, 'std']);
-    });
-
-    it('could resolve string callable', function () {
-        expect(
-            $this->r->resolve($class = join('::', [ConcreteBar::class, 'std']))
-        )->toEqual($class);
-
-        expect(
-            $this->r->resolve('Stubs\dummyLorem')
-        )->toEqual('Stubs\dummyLorem');
-    });
-
-    it('could resolve closure callable', function () {
-        $i = $this->r->resolve(function (AbstractFoo $foo, $dummy, $std) {
-            expect($foo)->toBeAnInstanceOf(ConcreteBar::class);
-            expect($dummy)->toBeAnInstanceOf(Dummy::class);
-
-            return $std;
+            expect(
+                $this->r->handle('Stubs\dummyLorem')
+            )->toEqual('lorem');
         });
 
-        expect($i)->toBeAnInstanceOf(\Closure::class);
+        it('should handle closure callable', function () {
+            $i = $this->r->handle(function (AbstractFoo $foo, $dummy, $std) {
+                expect($foo)->toBeAnInstanceOf(ConcreteBar::class);
+                expect($dummy)->toBeAnInstanceOf(Dummy::class);
+
+                return $std;
+            });
+
+            expect($i)->toBeAnInstanceOf(stdClass::class);
+        });
+
+        it('should handle unresolved parameter', function () {
+            expect($this->r->handle(function ($foobar, $dummy) {
+                return $foobar ?? $dummy;
+            }, ['foobar']))->toEqual('foobar');
+
+            expect($this->r->handle(function ($dummy, $foobar = null) {
+                return $foobar ?? $dummy;
+            }))->toBeAnInstanceOf(Dummy::class);
+        });
     });
 
-    it('could resolve instance of class', function () {
-        expect(
-            $this->r->resolve($this->dummy)
-        )->toBeAnInstanceOf(Dummy::class);
-    });
+    context(Resolver::class.'::resolve', function () {
+        it('should resolve array callable', function () {
+            expect(
+                $this->r->resolve([$this->dummy, 'lorem'])
+            )->toEqual([$this->dummy, 'lorem']);
 
-    it('should autowire '.ContainerAwareInterface::class.' instance', function () {
-        $class = new class implements ContainerAwareInterface {
-            use ContainerAware;
-        };
+            expect(
+                $this->r->resolve([ConcreteBar::class, 'std'])
+            )->toEqual([new ConcreteBar($this->dummy), 'std']);
 
-        // Assign the original container.
+            expect(
+                $this->r->resolve([SomeClass::class, 'shouldCalled'])
+            )->toEqual([new SomeClass, 'shouldCalled']);
+        });
 
-        /** @var ContainerInterface $container */
-        $container = $this->r->resolve($class)->getContainer();
-        expect($container)->toBeAnInstanceOf(ContainerInterface::class);
-        expect($container->has('foobar'))->toBeFalsy();
+        it('should resolve string callable', function () {
+            expect(
+                $this->r->resolve(join('::', [ConcreteBar::class, 'std']))
+            )->toEqual([new ConcreteBar($this->dummy), 'std']);
 
-        $container = $this->r->resolve(get_class($class))->getContainer();
-        expect($container)->toBeAnInstanceOf(ContainerInterface::class);
-        expect($container->has('foobar'))->toBeFalsy();
+            expect(
+                $this->r->resolve('Stubs\dummyLorem')
+            )->toEqual('Stubs\dummyLorem');
 
-        // Modify container stack interally
+            expect(
+                $this->r->resolve(join('::', [SomeClass::class, 'shouldCalled']))
+            )->toEqual([new SomeClass, 'shouldCalled']);
+        });
 
-        $clone = $this->r->resolve(CloneContainer::class)->getContainer();
-        expect($clone)->toBeAnInstanceOf(ContainerInterface::class);
-        expect($clone->has('foobar'))->toBeTruthy();
-        expect($container->has('foobar'))->toBeFalsy();
+        it('should resolve closure callable', function () {
+            $i = $this->r->resolve(function (AbstractFoo $foo, $dummy, $std) {
+                expect($foo)->toBeAnInstanceOf(ConcreteBar::class);
+                expect($dummy)->toBeAnInstanceOf(Dummy::class);
+
+                return $std;
+            });
+
+            expect($i)->toBeAnInstanceOf(\Closure::class);
+        });
+
+        it('should resolve instance of class', function () {
+            expect(
+                $this->r->resolve($this->dummy)
+            )->toBeAnInstanceOf(Dummy::class);
+        });
+
+        it('should resolve existing container', function () {
+            expect(
+                $this->r->resolve('dummy')
+            )->toBeAnInstanceOf(Dummy::class);
+        });
+
+        it('should autowire '.ContainerAwareInterface::class.' instance', function () {
+            $class = new class implements ContainerAwareInterface {
+                use ContainerAware;
+            };
+
+            // Assign the original container.
+
+            /** @var ContainerInterface $container */
+            $container = $this->r->resolve($class)->getContainer();
+            expect($container)->toBeAnInstanceOf(ContainerInterface::class);
+            expect($container->has('foobar'))->toBeFalsy();
+
+            $container = $this->r->resolve(get_class($class))->getContainer();
+            expect($container)->toBeAnInstanceOf(ContainerInterface::class);
+            expect($container->has('foobar'))->toBeFalsy();
+
+            // Modify container stack interally
+
+            $clone = $this->r->resolve(CloneContainer::class)->getContainer();
+            expect($clone)->toBeAnInstanceOf(ContainerInterface::class);
+            expect($clone->has('foobar'))->toBeTruthy();
+            expect($container->has('foobar'))->toBeFalsy();
+        });
     });
 });

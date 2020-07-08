@@ -4,22 +4,14 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
-use Psr\Container\ContainerInterface;
+use Closure;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionFunction;
+use ReflectionMethod;
 
-class Resolver implements ContainerAwareInterface
+class Resolver extends AbstractContainerAware
 {
-    use ContainerAware;
-
-    /**
-     * Create new instance.
-     *
-     * @param ContainerInterface $container
-     */
-    public function __construct(ContainerInterface $container)
-    {
-        $this->setContainer($container);
-    }
-
     /**
      * Handle callable.
      *
@@ -37,23 +29,17 @@ class Resolver implements ContainerAwareInterface
         $isMethod = is_array($instance);
         $isInternalMethod = $isMethod && $instance[1] === '__invoke';
         $reflector = $isMethod
-            ? new \ReflectionMethod($instance[0], $instance[1])
-            : new \ReflectionFunction($instance);
+            ? new ReflectionMethod($instance[0], $instance[1])
+            : new ReflectionFunction($instance);
 
         if ($isMethod) {
-            $obj = is_object($instance[0]) ? $instance[0] : null;
-
-            if (! $reflector->isStatic() && is_string($instance[0])) {
-                $obj = $this->createInstance($instance[0]);
-            }
-
-            $params[] = $obj;
+            $params[] = is_object($instance[0]) ? $instance[0] : null;
         }
 
         // If it was internal method resolve its params as a closure.
         // @link https://bugs.php.net/bug.php?id=50798
         $toResolve = $isInternalMethod
-            ? new \ReflectionFunction($reflector->getClosure($instance[0]))
+            ? new ReflectionFunction($reflector->getClosure($instance[0]))
             : $reflector;
 
         $params[] = $this->resolveArgs($toResolve, $args);
@@ -64,39 +50,40 @@ class Resolver implements ContainerAwareInterface
     /**
      * Instance resolver.
      *
-     * @param string|object|callable|\Closure $toResolve
-     * @return object
-     * @throws Exception When $toResolve is neither string of class name, instance
-     *                   of \Closure, object of class nor a callable.
+     * @param string|object|callable|Closure $toResolve
+     * @return object|callable
+     * @throws UnresolvableException
      */
     public function resolve($toResolve)
     {
-        if (is_string($toResolve) && class_exists($toResolve)) {
-            return $this->createInstance($toResolve);
-        }
+        if (is_string($toResolve) && ! function_exists($toResolve)) {
+            if (false === strpos($toResolve, '::')) {
+                return $this->createInstance($toResolve);
+            }
 
-        if (
-            (is_string($toResolve) && $this->getContainer()->has($toResolve)) ||
-            ($toResolve instanceof \Closure || is_callable($toResolve))
-        ) {
-            return $toResolve;
+            $toResolve = explode('::', $toResolve);
         }
 
         if (is_object($toResolve)) {
-            return $this->injectContainer($toResolve);
+            return $toResolve instanceof Closure ? $toResolve : $this->injectContainer($toResolve);
         }
 
-        throw new Exception(sprintf(
-            'Couldn\'t resolve "%s" as an instance.',
-            ! is_string($toResolve) ? gettype($toResolve) : $toResolve
-        ));
+        try {
+            if ($this->assertCallable($toResolve)) {
+                return $toResolve;
+            }
+        } catch (UnresolvableException $err) {
+            // do nothing
+        }
+
+        throw new UnresolvableException($toResolve);
     }
 
     /**
      * Create an instance of $className.
      *
      * @param string $className
-     * @return array
+     * @return object
      * @throws Exception When $className is not instantiable.
      */
     protected function createInstance(string $className)
@@ -105,7 +92,11 @@ class Resolver implements ContainerAwareInterface
             return $this->getContainer($className);
         }
 
-        $reflector = new \ReflectionClass($className);
+        try {
+            $reflector = new ReflectionClass($className);
+        } catch (ReflectionException $err) {
+            throw new UnresolvableException($className, $err);
+        }
 
         if (! $reflector->isInstantiable()) {
             throw new Exception(sprintf('Target "%s" is not instantiable.', $className));
@@ -119,28 +110,31 @@ class Resolver implements ContainerAwareInterface
     /**
      * Callable argumetns resolver.
      *
-     * @param \ReflectionFunctionAbstract $callable
+     * @param ReflectionMethod|ReflectionFunction $reflection
      * @param array<mixed> $args
      * @return array
      */
-    protected function resolveArgs(\ReflectionFunctionAbstract $callable, array $args = []): array
+    protected function resolveArgs($reflection, array $args = []): array
     {
-        foreach ($callable->getParameters() as $param) {
+        foreach ($reflection->getParameters() as $param) {
+            $position = $param->getPosition();
+
             // Just skip if parameter already provided.
-            if (array_key_exists($param->getPosition(), $args)) {
+            if (array_key_exists($position, $args)) {
                 continue;
             }
 
             try {
-                $args[$param->getPosition()] = $this->getContainer(
-                    ($class = $param->getClass()) ? $class->getName() : $param->getName()
+                $type = $param->getType();
+                $args[$position] = $this->getContainer(
+                    ($type && ! $type->isBuiltin() ? $type : $param)->getName()
                 );
             } catch (NotFoundException $e) {
                 if (! $param->isOptional()) {
                     throw $e;
                 }
 
-                $args[$param->getPosition()] = $param->getDefaultValue();
+                $args[$position] = $param->getDefaultValue();
             }
         }
 
@@ -152,7 +146,7 @@ class Resolver implements ContainerAwareInterface
      *
      * @param callable $instance
      * @return bool
-     * @throws BadMethodCallException When $instance is an array but the callable
+     * @throws UnresolvableException When $instance is an array but the callable
      *                                 method not exists.
      */
     private function assertCallable(&$instance): bool
@@ -163,8 +157,14 @@ class Resolver implements ContainerAwareInterface
             $instance = [$instance, '__invoke'];
         }
 
-        if (is_array($instance) && ! method_exists($instance[0], $instance[1])) {
-            throw new BadMethodCallException($instance);
+        if (is_array($instance)) {
+            if (is_string($instance[0])) {
+                $instance[0] = $this->createInstance($instance[0]);
+            }
+
+            if (! method_exists(...$instance)) {
+                throw new UnresolvableException([get_class($instance[0]), $instance[1]]);
+            }
         }
 
         return is_callable($instance);

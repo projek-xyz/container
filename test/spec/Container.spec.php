@@ -1,7 +1,7 @@
 <?php
 
 use Projek\Container;
-use Projek\Container\{BadMethodCallException, ContainerInterface, Exception, InvalidArgumentException, NotFoundException, RangeException};
+use Projek\Container\{BadMethodCallException, ContainerInterface, Exception, InvalidArgumentException, NotFoundException, RangeException, UnresolvableException};
 use Psr\Container\ContainerInterface as PsrContainer;
 use Stubs\{Dummy, AbstractFoo, ConcreteBar, ServiceProvider};
 use function Kahlan\describe;
@@ -114,15 +114,15 @@ describe(Container::class, function () {
 
         expect(function () {
             $this->c->set('foo', 'NotExistsClass');
-        })->toThrow(new Exception('Couldn\'t resolve "NotExistsClass" as an instance.'));
+        })->toThrow(new UnresolvableException('NotExistsClass'));
 
         expect(function () {
             $this->c->set('foo', ['foo', 'bar']);
-        })->toThrow(new Exception('Couldn\'t resolve "array" as an instance.'));
+        })->toThrow(new UnresolvableException(['foo', 'bar']));
 
         expect(function () {
             $this->c->set('foo', null);
-        })->toThrow(new Exception('Couldn\'t resolve "NULL" as an instance.'));
+        })->toThrow(new UnresolvableException(null));
     });
 
     it('Should make an instance without adding to the stack', function () {
@@ -170,7 +170,7 @@ describe(Container::class, function () {
 
                 return null;
             });
-        })->toThrow(new BadMethodCallException([Stubs\SomeClass::class, 'notExists']));
+        })->toThrow(new UnresolvableException([Stubs\SomeClass::class, 'notExists']));
     });
 
     it('Should accept addtional params', function () {
@@ -269,6 +269,9 @@ describe(Container::class, function () {
     });
 
     it('Should be able to invoke a method directly without condition', function () {
+        // required by the ConcreteBar
+        $this->c->set('dummy', Dummy::class);
+
         expect(
             // Resolve and handle non-static method like a static method
             $this->c->make('Stubs\SomeClass::shouldCalled', ['new value'])

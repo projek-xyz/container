@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
-final class ArrayContainer implements \ArrayAccess, ContainerAwareInterface
+final class ArrayContainer extends AbstractContainerAware implements \ArrayAccess
 {
-    use ContainerAware;
-
     /**
      * @param string $name
      * @param mixed $instance

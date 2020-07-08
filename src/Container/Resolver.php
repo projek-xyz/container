@@ -74,6 +74,8 @@ class Resolver implements ContainerAwareInterface
         switch (true) {
             case is_object($toResolve):
                 return $this->injectContainer($toResolve);
+            case is_string($toResolve) && strpos($toResolve, '::') !== false:
+                return $this->resolve(explode('::', $toResolve));
             case is_string($toResolve) && class_exists($toResolve):
                 return $this->createInstance($toResolve);
             case is_string($toResolve) && $this->getContainer()->has($toResolve):

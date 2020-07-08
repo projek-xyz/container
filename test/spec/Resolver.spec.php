@@ -78,8 +78,8 @@ describe(Resolver::class, function () {
 
     it('could resolve string callable', function () {
         expect(
-            $this->r->resolve($class = join('::', [ConcreteBar::class, 'std']))
-        )->toEqual($class);
+            $this->r->resolve(join('::', [ConcreteBar::class, 'std']))
+        )->toEqual([ConcreteBar::class, 'std']);
 
         expect(
             $this->r->resolve('Stubs\dummyLorem')

@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
+use Closure;
 use Psr\Container\ContainerInterface;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionFunction;
+use ReflectionMethod;
 
 class Resolver implements ContainerAwareInterface
 {
@@ -37,8 +42,8 @@ class Resolver implements ContainerAwareInterface
         $isMethod = is_array($instance);
         $isInternalMethod = $isMethod && $instance[1] === '__invoke';
         $reflector = $isMethod
-            ? new \ReflectionMethod($instance[0], $instance[1])
-            : new \ReflectionFunction($instance);
+            ? new ReflectionMethod($instance[0], $instance[1])
+            : new ReflectionFunction($instance);
 
         if ($isMethod) {
             $params[] = is_object($instance[0]) ? $instance[0] : null;
@@ -47,7 +52,7 @@ class Resolver implements ContainerAwareInterface
         // If it was internal method resolve its params as a closure.
         // @link https://bugs.php.net/bug.php?id=50798
         $toResolve = $isInternalMethod
-            ? new \ReflectionFunction($reflector->getClosure($instance[0]))
+            ? new ReflectionFunction($reflector->getClosure($instance[0]))
             : $reflector;
 
         $params[] = $this->resolveArgs($toResolve, $args);
@@ -58,7 +63,7 @@ class Resolver implements ContainerAwareInterface
     /**
      * Instance resolver.
      *
-     * @param string|object|callable|\Closure $toResolve
+     * @param string|object|callable|Closure $toResolve
      * @return object
      * @throws UnresolvableException
      */
@@ -73,7 +78,7 @@ class Resolver implements ContainerAwareInterface
         }
 
         if (is_object($toResolve)) {
-            return $toResolve instanceof \Closure ? $toResolve : $this->injectContainer($toResolve);
+            return $toResolve instanceof Closure ? $toResolve : $this->injectContainer($toResolve);
         }
 
         try {
@@ -101,8 +106,8 @@ class Resolver implements ContainerAwareInterface
         }
 
         try {
-            $reflector = new \ReflectionClass($className);
-        } catch (\ReflectionException $err) {
+            $reflector = new ReflectionClass($className);
+        } catch (ReflectionException $err) {
             throw new UnresolvableException($className, $err);
         }
 
@@ -118,13 +123,13 @@ class Resolver implements ContainerAwareInterface
     /**
      * Callable argumetns resolver.
      *
-     * @param \ReflectionFunctionAbstract $callable
+     * @param ReflectionMethod|ReflectionFunction $reflection
      * @param array<mixed> $args
      * @return array
      */
-    protected function resolveArgs(\ReflectionFunctionAbstract $callable, array $args = []): array
+    protected function resolveArgs($reflection, array $args = []): array
     {
-        foreach ($callable->getParameters() as $param) {
+        foreach ($reflection->getParameters() as $param) {
             $position = $param->getPosition();
 
             // Just skip if parameter already provided.
@@ -133,8 +138,9 @@ class Resolver implements ContainerAwareInterface
             }
 
             try {
+                $type = $param->getType();
                 $args[$position] = $this->getContainer(
-                    $this->getArgsType($param)->getName()
+                    ($type && ! $type->isBuiltin() ? $type : $param)->getName()
                 );
             } catch (NotFoundException $e) {
                 if (! $param->isOptional()) {
@@ -146,19 +152,6 @@ class Resolver implements ContainerAwareInterface
         }
 
         return $args;
-    }
-
-    /**
-     * Determine parameter type.
-     *
-     * @param \ReflectionParameter $param
-     * @return \ReflectionParameter
-     */
-    private function getArgsType(\ReflectionParameter $param)
-    {
-        $type = $param->getType();
-
-        return $type && ! $type->isBuiltin() ? $type : $param;
     }
 
     /**

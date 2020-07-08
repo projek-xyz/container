@@ -8,14 +8,17 @@ class UnresolvableException extends Exception
 {
     public function __construct($toResolve, ?\Throwable $prev = null)
     {
+        parent::__construct(sprintf('Couldn\'t resolve %s.', $this->getTypeString($toResolve)), 0, $prev);
+    }
+
+    private function getTypeString($toResolve)
+    {
         if (is_string($toResolve)) {
-            $toResolve = 'string: ' . $toResolve;
+            return 'string: ' . $toResolve;
         } elseif (is_array($toResolve)) {
-            $toResolve = 'array: [' . join(', ', $toResolve) . ']';
-        } else {
-            $toResolve = 'type: ' . gettype($toResolve);
+            return 'array: [' . join(', ', $toResolve) . ']';
         }
 
-        parent::__construct(sprintf('Couldn\'t resolve %s.', $toResolve), 0, $prev);
+        return 'type: ' . gettype($toResolve);
     }
 }

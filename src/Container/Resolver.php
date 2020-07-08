@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Projek\Container;
 
 use Closure;
-use Psr\Container\ContainerInterface;
+// use Psr\Container\ContainerInterface;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
@@ -64,7 +64,7 @@ class Resolver implements ContainerAwareInterface
      * Instance resolver.
      *
      * @param string|object|callable|Closure $toResolve
-     * @return object
+     * @return object|callable
      * @throws UnresolvableException
      */
     public function resolve($toResolve)
@@ -96,7 +96,7 @@ class Resolver implements ContainerAwareInterface
      * Create an instance of $className.
      *
      * @param string $className
-     * @return array
+     * @return object
      * @throws Exception When $className is not instantiable.
      */
     protected function createInstance(string $className)

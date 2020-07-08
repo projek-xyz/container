@@ -1,7 +1,7 @@
 <?php
 
 use Projek\Container;
-use Projek\Container\{BadMethodCallException, ContainerInterface, Exception, InvalidArgumentException, NotFoundException, RangeException};
+use Projek\Container\{BadMethodCallException, ContainerInterface, Exception, InvalidArgumentException, NotFoundException, RangeException, UnresolvableException};
 use Psr\Container\ContainerInterface as PsrContainer;
 use Stubs\{Dummy, AbstractFoo, ConcreteBar, ServiceProvider};
 use function Kahlan\describe;
@@ -114,15 +114,15 @@ describe(Container::class, function () {
 
         expect(function () {
             $this->c->set('foo', 'NotExistsClass');
-        })->toThrow(new Exception('Couldn\'t resolve "NotExistsClass" as an instance.'));
+        })->toThrow(new UnresolvableException('NotExistsClass'));
 
         expect(function () {
             $this->c->set('foo', ['foo', 'bar']);
-        })->toThrow(new Exception('Couldn\'t resolve "array" as an instance.'));
+        })->toThrow(new UnresolvableException(['foo', 'bar']));
 
         expect(function () {
             $this->c->set('foo', null);
-        })->toThrow(new Exception('Couldn\'t resolve "NULL" as an instance.'));
+        })->toThrow(new UnresolvableException(null));
     });
 
     it('Should make an instance without adding to the stack', function () {

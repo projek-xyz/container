@@ -43,7 +43,7 @@ class Resolver implements ContainerAwareInterface
         if ($isMethod) {
             $obj = is_object($instance[0]) ? $instance[0] : null;
 
-            if (! $reflector->isStatic() && is_string($instance[0])) {
+            if (is_string($instance[0])) {
                 $obj = $this->createInstance($instance[0]);
             }
 
@@ -66,30 +66,45 @@ class Resolver implements ContainerAwareInterface
      *
      * @param string|object|callable|\Closure $toResolve
      * @return object
-     * @throws Exception When $toResolve is neither string of class name, instance
-     *                   of \Closure, object of class nor a callable.
+     * @throws UnresolvableException
      */
     public function resolve($toResolve)
     {
-        switch (true) {
-            case is_string($toResolve) && strpos($toResolve, '::') !== false:
-                list($class, $method) = explode('::', $toResolve);
-
-                return $this->resolve([$this->resolve($class), $method]);
-            case is_string($toResolve) && class_exists($toResolve):
+        if (is_string($toResolve) && ! function_exists($toResolve)) {
+            if (false === strpos($toResolve, '::')) {
                 return $this->createInstance($toResolve);
-            case is_callable($toResolve):
-            case is_string($toResolve) && $this->getContainer()->has($toResolve):
-            case $toResolve instanceof \Closure:
-                return $toResolve;
-            case is_object($toResolve):
-                return $this->injectContainer($toResolve);
-            default:
-                throw new Exception(sprintf(
-                    'Couldn\'t resolve "%s" as an instance.',
-                    ! is_string($toResolve) ? gettype($toResolve) : $toResolve
-                ));
+            }
+
+            $toResolve = explode('::', $toResolve);
         }
+
+        if (is_object($toResolve)) {
+            if ($toResolve instanceof \Closure) {
+                return $toResolve;
+            }
+
+            return $this->injectContainer($toResolve);
+        }
+
+        if (is_array($toResolve)) {
+            try {
+                if (is_string($toResolve[0])) {
+                    $toResolve[0] = $this->createInstance($toResolve[0]);
+                }
+            } catch (UnresolvableException $err) {
+                //
+            }
+
+            if (method_exists(...$toResolve)) {
+                return $toResolve;
+            }
+        }
+
+        if (is_callable($toResolve)) {
+            return $toResolve;
+        }
+
+        throw new UnresolvableException($toResolve);
     }
 
     /**
@@ -105,7 +120,11 @@ class Resolver implements ContainerAwareInterface
             return $this->getContainer($className);
         }
 
-        $reflector = new \ReflectionClass($className);
+        try {
+            $reflector = new \ReflectionClass($className);
+        } catch (\ReflectionException $err) {
+            throw new UnresolvableException($className, $err);
+        }
 
         if (! $reflector->isInstantiable()) {
             throw new Exception(sprintf('Target "%s" is not instantiable.', $className));

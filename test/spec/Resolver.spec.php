@@ -5,7 +5,7 @@ use Projek\Container\ContainerAware;
 use Projek\Container\ContainerAwareInterface;
 use Projek\Container\ContainerInterface;
 use Projek\Container\Resolver;
-use Stubs\ { Dummy, AbstractFoo, CloneContainer, ConcreteBar };
+use Stubs\ { Dummy, AbstractFoo, CloneContainer, ConcreteBar, SomeClass};
 
 use function Kahlan\context;
 use function Kahlan\describe;
@@ -78,7 +78,11 @@ describe(Resolver::class, function () {
 
             expect(
                 $this->r->resolve([ConcreteBar::class, 'std'])
-            )->toEqual([ConcreteBar::class, 'std']);
+            )->toEqual([new ConcreteBar($this->dummy), 'std']);
+
+            expect(
+                $this->r->resolve([SomeClass::class, 'shouldCalled'])
+            )->toEqual([new SomeClass, 'shouldCalled']);
         });
 
         it('should resolve string callable', function () {
@@ -89,6 +93,10 @@ describe(Resolver::class, function () {
             expect(
                 $this->r->resolve('Stubs\dummyLorem')
             )->toEqual('Stubs\dummyLorem');
+
+            expect(
+                $this->r->resolve(join('::', [SomeClass::class, 'shouldCalled']))
+            )->toEqual([new SomeClass, 'shouldCalled']);
         });
 
         it('should resolve closure callable', function () {
@@ -111,7 +119,7 @@ describe(Resolver::class, function () {
         it('should resolve existing container', function () {
             expect(
                 $this->r->resolve('dummy')
-            )->toBe('dummy');
+            )->toBeAnInstanceOf(Dummy::class);
         });
 
         it('should autowire '.ContainerAwareInterface::class.' instance', function () {

@@ -1,7 +1,7 @@
 <?php
 
 use Projek\Container;
-use Projek\Container\{ ArrayContainer, Exception };
+use Projek\Container\{ArrayContainer, Exception, UnresolvableException};
 use Stubs\AbstractFoo;
 use function Kahlan\describe;
 use function Kahlan\expect;
@@ -29,10 +29,10 @@ describe(ArrayContainer::class, function () {
 
         expect(function () {
             $this->c['foo'] = ['foo', 'bar'];
-        })->toThrow(new Exception('Couldn\'t resolve "array" as an instance.'));
+        })->toThrow(new UnresolvableException(['foo', 'bar']));
 
         expect(function () {
             $this->c['foo'] = null;
-        })->toThrow(new Exception('Couldn\'t resolve "NULL" as an instance.'));
+        })->toThrow(new UnresolvableException(null));
     });
 });

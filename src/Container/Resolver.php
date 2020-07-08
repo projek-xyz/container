@@ -71,25 +71,20 @@ class Resolver implements ContainerAwareInterface
      */
     public function resolve($toResolve)
     {
-        if (is_string($toResolve) && class_exists($toResolve)) {
-            return $this->createInstance($toResolve);
+        switch (true) {
+            case is_string($toResolve) && class_exists($toResolve):
+                return $this->createInstance($toResolve);
+            case is_string($toResolve) && $this->getContainer()->has($toResolve):
+            case $toResolve instanceof \Closure || is_callable($toResolve):
+                return $toResolve;
+            case is_object($toResolve):
+                return $this->injectContainer($toResolve);
+            default:
+                throw new Exception(sprintf(
+                    'Couldn\'t resolve "%s" as an instance.',
+                    ! is_string($toResolve) ? gettype($toResolve) : $toResolve
+                ));
         }
-
-        if (
-            (is_string($toResolve) && $this->getContainer()->has($toResolve)) ||
-            ($toResolve instanceof \Closure || is_callable($toResolve))
-        ) {
-            return $toResolve;
-        }
-
-        if (is_object($toResolve)) {
-            return $this->injectContainer($toResolve);
-        }
-
-        throw new Exception(sprintf(
-            'Couldn\'t resolve "%s" as an instance.',
-            ! is_string($toResolve) ? gettype($toResolve) : $toResolve
-        ));
     }
 
     /**

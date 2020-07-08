@@ -15,7 +15,7 @@ class Resolver implements ContainerAwareInterface
      *
      * @param ContainerInterface $container
      */
-    public function __construct(ContainerInterface $container)
+    final public function __construct(ContainerInterface $container)
     {
         $this->setContainer($container);
     }

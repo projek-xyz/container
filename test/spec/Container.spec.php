@@ -170,7 +170,7 @@ describe(Container::class, function () {
 
                 return null;
             });
-        })->toThrow(new BadMethodCallException([Stubs\SomeClass::class, 'notExists']));
+        })->toThrow(new UnresolvableException([Stubs\SomeClass::class, 'notExists']));
     });
 
     it('Should accept addtional params', function () {

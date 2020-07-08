@@ -159,7 +159,7 @@ class Resolver implements ContainerAwareInterface
      *
      * @param callable $instance
      * @return bool
-     * @throws BadMethodCallException When $instance is an array but the callable
+     * @throws UnresolvableException When $instance is an array but the callable
      *                                 method not exists.
      */
     private function assertCallable(&$instance): bool
@@ -176,7 +176,7 @@ class Resolver implements ContainerAwareInterface
             }
 
             if (! method_exists(...$instance)) {
-                throw new BadMethodCallException($instance);
+                throw new UnresolvableException([get_class($instance[0]), $instance[1]]);
             }
         }
 

@@ -41,13 +41,7 @@ class Resolver implements ContainerAwareInterface
             : new \ReflectionFunction($instance);
 
         if ($isMethod) {
-            $obj = is_object($instance[0]) ? $instance[0] : null;
-
-            if (is_string($instance[0])) {
-                $obj = $this->createInstance($instance[0]);
-            }
-
-            $params[] = $obj;
+            $params[] = is_object($instance[0]) ? $instance[0] : null;
         }
 
         // If it was internal method resolve its params as a closure.
@@ -79,29 +73,15 @@ class Resolver implements ContainerAwareInterface
         }
 
         if (is_object($toResolve)) {
-            if ($toResolve instanceof \Closure) {
-                return $toResolve;
-            }
-
-            return $this->injectContainer($toResolve);
+            return $toResolve instanceof \Closure ? $toResolve : $this->injectContainer($toResolve);
         }
 
-        if (is_array($toResolve)) {
-            try {
-                if (is_string($toResolve[0])) {
-                    $toResolve[0] = $this->createInstance($toResolve[0]);
-                }
-            } catch (UnresolvableException $err) {
-                //
-            }
-
-            if (method_exists(...$toResolve)) {
+        try {
+            if ($this->assertCallable($toResolve)) {
                 return $toResolve;
             }
-        }
-
-        if (is_callable($toResolve)) {
-            return $toResolve;
+        } catch (UnresolvableException $err) {
+            // do nothing
         }
 
         throw new UnresolvableException($toResolve);
@@ -145,13 +125,15 @@ class Resolver implements ContainerAwareInterface
     protected function resolveArgs(\ReflectionFunctionAbstract $callable, array $args = []): array
     {
         foreach ($callable->getParameters() as $param) {
+            $position = $param->getPosition();
+
             // Just skip if parameter already provided.
-            if (array_key_exists($param->getPosition(), $args)) {
+            if (array_key_exists($position, $args)) {
                 continue;
             }
 
             try {
-                $args[$param->getPosition()] = $this->getContainer(
+                $args[$position] = $this->getContainer(
                     $this->getArgsType($param)->getName()
                 );
             } catch (NotFoundException $e) {
@@ -159,7 +141,7 @@ class Resolver implements ContainerAwareInterface
                     throw $e;
                 }
 
-                $args[$param->getPosition()] = $param->getDefaultValue();
+                $args[$position] = $param->getDefaultValue();
             }
         }
 
@@ -195,8 +177,14 @@ class Resolver implements ContainerAwareInterface
             $instance = [$instance, '__invoke'];
         }
 
-        if (is_array($instance) && ! method_exists($instance[0], $instance[1])) {
-            throw new BadMethodCallException($instance);
+        if (is_array($instance)) {
+            if (is_string($instance[0])) {
+                $instance[0] = $this->createInstance($instance[0]);
+            }
+
+            if (! method_exists(...$instance)) {
+                throw new BadMethodCallException($instance);
+            }
         }
 
         return is_callable($instance);

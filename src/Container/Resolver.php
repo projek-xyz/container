@@ -133,7 +133,7 @@ class Resolver implements ContainerAwareInterface
 
             try {
                 $args[$param->getPosition()] = $this->getContainer(
-                    ($class = $param->getClass()) ? $class->getName() : $param->getName()
+                    $this->getArgsType($param)->getName()
                 );
             } catch (NotFoundException $e) {
                 if (! $param->isOptional()) {
@@ -145,6 +145,19 @@ class Resolver implements ContainerAwareInterface
         }
 
         return $args;
+    }
+
+    /**
+     * Determine parameter type.
+     *
+     * @param \ReflectionParameter $param
+     * @return \ReflectionParameter
+     */
+    private function getArgsType(\ReflectionParameter $param)
+    {
+        $type = $param->getType();
+
+        return $type && ! $type->isBuiltin() ? $type : $param;
     }
 
     /**

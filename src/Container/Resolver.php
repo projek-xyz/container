@@ -13,16 +13,6 @@ use ReflectionMethod;
 class Resolver extends AbstractContainerAware
 {
     /**
-     * Create new instance.
-     *
-     * @param ContainerInterface $container
-     */
-    final public function __construct(ContainerInterface $container)
-    {
-        $this->setContainer($container);
-    }
-
-    /**
      * Handle callable.
      *
      * @param callable $instance

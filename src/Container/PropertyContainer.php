@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
-final class PropertyContainer implements ContainerAwareInterface
+final class PropertyContainer extends AbstractContainerAware
 {
-    use ContainerAware;
-
     /**
      * @param string $name
      * @param mixed $instance

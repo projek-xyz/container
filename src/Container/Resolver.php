@@ -5,16 +5,13 @@ declare(strict_types=1);
 namespace Projek\Container;
 
 use Closure;
-// use Psr\Container\ContainerInterface;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
 use ReflectionMethod;
 
-class Resolver implements ContainerAwareInterface
+class Resolver extends AbstractContainerAware
 {
-    use ContainerAware;
-
     /**
      * Create new instance.
      *

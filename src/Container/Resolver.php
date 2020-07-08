@@ -75,7 +75,9 @@ class Resolver implements ContainerAwareInterface
             case is_object($toResolve):
                 return $this->injectContainer($toResolve);
             case is_string($toResolve) && strpos($toResolve, '::') !== false:
-                return $this->resolve(explode('::', $toResolve));
+                list($class, $method) = explode('::', $toResolve);
+
+                return $this->resolve([$this->resolve($class), $method]);
             case is_string($toResolve) && class_exists($toResolve):
                 return $this->createInstance($toResolve);
             case is_string($toResolve) && $this->getContainer()->has($toResolve):

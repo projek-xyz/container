@@ -269,6 +269,9 @@ describe(Container::class, function () {
     });
 
     it('Should be able to invoke a method directly without condition', function () {
+        // required by the ConcreteBar
+        $this->c->set('dummy', Dummy::class);
+
         expect(
             // Resolve and handle non-static method like a static method
             $this->c->make('Stubs\SomeClass::shouldCalled', ['new value'])

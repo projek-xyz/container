@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Projek\Container;
+namespace Projek\Container\Exception;
+
+use Projek\Container\Exception;
 
 class UnresolvableException extends Exception
 {

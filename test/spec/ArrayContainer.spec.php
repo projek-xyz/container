@@ -1,10 +1,10 @@
 <?php
 
 use Projek\Container;
-use Projek\Container\{ArrayContainer, Exception, UnresolvableException};
+use Projek\Container\{ArrayContainer, Exception};
 use Stubs\AbstractFoo;
-use function Kahlan\describe;
-use function Kahlan\expect;
+
+// use function Kahlan\{describe, expect};
 
 describe(ArrayContainer::class, function () {
     beforeEach(function () {
@@ -29,10 +29,10 @@ describe(ArrayContainer::class, function () {
 
         expect(function () {
             $this->c['foo'] = ['foo', 'bar'];
-        })->toThrow(new UnresolvableException(['foo', 'bar']));
+        })->toThrow(new Exception\UnresolvableException(['foo', 'bar']));
 
         expect(function () {
             $this->c['foo'] = null;
-        })->toThrow(new UnresolvableException(null));
+        })->toThrow(new Exception\UnresolvableException(null));
     });
 });

@@ -1,16 +1,10 @@
 <?php
 
 use Projek\Container;
-use Projek\Container\ContainerAware;
-use Projek\Container\ContainerAwareInterface;
-use Projek\Container\ContainerInterface;
-use Projek\Container\Resolver;
-use Stubs\ { Dummy, AbstractFoo, CloneContainer, ConcreteBar, SomeClass};
+use Projek\Container\{ContainerAware, ContainerAwareInterface, ContainerInterface, Resolver};
+use Stubs\{Dummy, AbstractFoo, CloneContainer, ConcreteBar, SomeClass};
 
-use function Kahlan\context;
-use function Kahlan\describe;
-use function Kahlan\expect;
-use function Kahlan\given;
+// use function Kahlan\{context, describe, expect, given};
 
 describe(Resolver::class, function () {
     given('dummy', function () {

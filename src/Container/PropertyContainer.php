@@ -24,7 +24,7 @@ final class PropertyContainer extends AbstractContainerAware
     {
         try {
             return $this->getContainer($name);
-        } catch (NotFoundException $e) {
+        } catch (Exception\NotFoundException $e) {
             return null;
         }
     }

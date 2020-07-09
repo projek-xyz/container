@@ -24,7 +24,7 @@ final class ArrayContainer extends AbstractContainerAware implements \ArrayAcces
     {
         try {
             return $this->getContainer($name);
-        } catch (NotFoundException $e) {
+        } catch (Exception\NotFoundException $e) {
             return null;
         }
     }

@@ -3,7 +3,7 @@
 use Projek\Container;
 use Projek\Container\{ContainerInterface, Exception, InvalidArgumentException, NotFoundException, RangeException, UnresolvableException};
 use Psr\Container\ContainerInterface as PsrContainer;
-use Stubs\{Dummy, AbstractFoo, ConcreteBar, PrivateFactory, ServiceProvider, SomeClass};
+use Stubs\{Dummy, AbstractFoo, CallableClass, ConcreteBar, PrivateFactory, ServiceProvider, SomeClass};
 
 use function Kahlan\beforeEach;
 use function Kahlan\context;
@@ -146,6 +146,15 @@ describe(Container::class, function () {
             $this->c->set('void', [SomeClass::class, 'voidMethod']);
 
             expect($this->c->get('void'))->toBeEmpty();
+        });
+
+        it('shoud able to register callable service', function () {
+            // dependency of CallableClass::__invoke method
+            $this->c->set(AbstractFoo::class, ConcreteBar::class);
+
+            $this->c->set('callback', new CallableClass($this->c->get('dummy')));
+
+            expect($this->c->get('callback'))->toBeAnInstanceOf(AbstractFoo::class);
         });
 
         it('Should throw exception when setting incorrect param', function () {

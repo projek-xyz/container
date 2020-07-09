@@ -9,7 +9,7 @@ This tiny library aims to provide dead simple PSR-11 implementation with flexibl
 
 ## Requirements
 
-- PHP 7.1+
+- PHP 7.1+ and tested up-to PHP 8.0-alpha
 
 ## Installation
 
@@ -90,7 +90,7 @@ Means it has `get($serviceId)` and `has($serviceId)` method as required by [PSR-
 
 ## Extra Flexibilities
 
-In-case you like the way to accessing a service instance using array, yes you can by registering `ArrayContainer` as a service
+In-case you'd like to accessing a service instance using array, yes you can by registering `ArrayContainer` as a service
 
 ```php
 use Projek\Container\ArrayContainer;

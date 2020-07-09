@@ -9,35 +9,57 @@ $container->set($abstract, $concrete)
 | `$abstract` | `string` | Name of the service |
 | `$concrete` | `callable`, `object` | Instance of the service |
 
-You have few ways registering your services to the container. Example above you can use `Closure`, you also has the options to:
+There's few ways to register your services to the container as follow:
 
-## Use any [`callable`](https://www.php.net/manual/en/language.types.callable.php)
+### 1. Use any [`callable`](https://www.php.net/manual/en/language.types.callable.php)
 
 ```php
 // callable string of a function name
 $container->set('myService', 'aFunctionName');
 
-// callable string of a static method of a class
-$container->set('myService', 'MyServiceProvider::staticMethodName');
+// callable string of a class::method pair
+$container->set('myService', 'SomeClass::methodName');
 
-// callable array as a method of class instance
-$container->set('myService', [$myObj, 'methodName']);
+// callable array as an object of class and method pair
+$container->set('myService', [$classInstance, 'methodName']);
 
-// callable array as a static method of class
-$container->set('myService', [MyServiceProvider::class, 'staticMethodName']);
+// callable array as a string of class name and method pair
+$container->set('myService', [SomeClass::class, 'methodName']);
 ```
 
-## Use object of class instance
+If registering a class-method pair (whether it's a `string` or `array`) it would work regardless the method is a static or not. Let say we have the following
 
 ```php
-$container->set('myService', new MyService);
+class SomeClass implements CertainInterface
+{
+    public static function staticMethod() {
+        // some codes
+    }
+
+    public function nonStaticMethod() {
+        // some codes
+    }
+}
+
+$container->set(CertainInterface::class, 'SomeClass::staticMethod'); // OR
+$container->set(CertainInterface::class, 'SomeClass::nonStaticMethod'); // OR
+$container->set(CertainInterface::class, [SomeClass::class, 'staticMethod']); // OR
+$container->set(CertainInterface::class, [SomeClass::class, 'nonStaticMethod']); // OR
+$container->set(CertainInterface::class, [new SomeClass, 'staticMethod']); // OR
+$container->set(CertainInterface::class, [new SomeClass, 'nonStaticMethod']);
 ```
 
-## Use string of a class name
+### 2. Use object of class instance
+
+```php
+$container->set('myService', new SomeClass);
+```
+
+### 3. Use string of a class name
 
 ```php
 // callable string of a class name
-$container->set('myService', MyServiceProvider::class);
+$container->set('myService', SomeFactoryClass::class);
 ```
 
 By registering a service as class name you have the option to resolve and inject the dependencies either for its `__construct()` and `__invoke()` method, if any. See [#2](https://github.com/projek-xyz/container/pull/2)

@@ -7,13 +7,12 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### ⚠ BREAKING CHANGES
 
-* move all exception class under Exception namespace
+* move all exception classes under `Exception` namespace ([8430d25](https://github.com/projek-xyz/container/commit/8430d25012792091065f8940de9c6d6ece4b9f8c))
 
 ### Features
 
 * add additional exceptions ([1cf58dd](https://github.com/projek-xyz/container/commit/1cf58dd834af19411d7ea72ca4ac2d98a657483d)), closes [#12](https://github.com/projek-xyz/container/issues/12)
-* autowire any ContainerAwareInterface instances ([da3669e](https://github.com/projek-xyz/container/commit/da3669eae2466e340cc74f24c05b445bc6c87e39))
-* move all exception class under Exception namespace ([8430d25](https://github.com/projek-xyz/container/commit/8430d25012792091065f8940de9c6d6ece4b9f8c))
+* autowire any `ContainerAwareInterface` instances ([da3669e](https://github.com/projek-xyz/container/commit/da3669eae2466e340cc74f24c05b445bc6c87e39))
 
 ### [0.3.3](https://github.com/projek-xyz/container/compare/v0.3.2...v0.3.3) (2020-06-28)
 

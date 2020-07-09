@@ -4,6 +4,20 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
+/**
+ * This class allow you to access any instance of the container as array.
+ * All you need is register it in the container.
+ *
+ * ```php
+ * $container->set(ArrayContainer::class, ArrayContainer::class);
+ * $container->set('db', function () { ... });
+ *
+ * // so you could have this available anywhere
+ * $container->set(SomeInterface::class, function (ArrayContainer $container) {
+ *     return new SomeClass($container['db']);
+ * });
+ * ```
+ */
 final class ArrayContainer extends AbstractContainerAware implements \ArrayAccess
 {
     /**

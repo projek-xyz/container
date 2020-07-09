@@ -19,4 +19,14 @@ class ServiceProvider
     {
         return $dummy->lorem($this->abs);
     }
+
+    public function nonStaticMethod()
+    {
+        return 'value from non-static method';
+    }
+
+    public static function staticMethod()
+    {
+        return 'value from static method';
+    }
 }

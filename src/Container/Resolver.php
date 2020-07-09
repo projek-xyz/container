@@ -52,7 +52,7 @@ class Resolver extends AbstractContainerAware
      *
      * @param string|object|callable|Closure $toResolve
      * @return object|callable
-     * @throws UnresolvableException
+     * @throws Exception\UnresolvableException
      */
     public function resolve($toResolve)
     {
@@ -72,11 +72,11 @@ class Resolver extends AbstractContainerAware
             if ($this->assertCallable($toResolve)) {
                 return $toResolve;
             }
-        } catch (UnresolvableException $err) {
+        } catch (Exception\UnresolvableException $err) {
             // do nothing
         }
 
-        throw new UnresolvableException($toResolve);
+        throw new Exception\UnresolvableException($toResolve);
     }
 
     /**
@@ -95,7 +95,7 @@ class Resolver extends AbstractContainerAware
         try {
             $reflector = new ReflectionClass($className);
         } catch (ReflectionException $err) {
-            throw new UnresolvableException($className, $err);
+            throw new Exception\UnresolvableException($className, $err);
         }
 
         if (! $reflector->isInstantiable()) {
@@ -129,7 +129,7 @@ class Resolver extends AbstractContainerAware
                 $args[$position] = $this->getContainer(
                     ($type && ! $type->isBuiltin() ? $type : $param)->getName()
                 );
-            } catch (NotFoundException $e) {
+            } catch (Exception\NotFoundException $e) {
                 if (! $param->isOptional()) {
                     throw $e;
                 }
@@ -163,7 +163,7 @@ class Resolver extends AbstractContainerAware
             }
 
             if (! method_exists(...$instance)) {
-                throw new UnresolvableException([get_class($instance[0]), $instance[1]]);
+                throw new Exception\UnresolvableException([get_class($instance[0]), $instance[1]]);
             }
         }
 

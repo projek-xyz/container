@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Projek;
 
-use Projek\Container\{ContainerInterface, InvalidArgumentException, NotFoundException, RangeException, Resolver};
+use Projek\Container\{ContainerInterface, Exception, Resolver};
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 class Container implements ContainerInterface
@@ -62,7 +62,7 @@ class Container implements ContainerInterface
     public function get($id)
     {
         if (! $this->has($id)) {
-            throw new NotFoundException($id);
+            throw new Exception\NotFoundException($id);
         }
 
         if (isset($this->resolved[$id])) {
@@ -135,9 +135,9 @@ class Container implements ContainerInterface
     {
         if (2 === $count) {
             if (! is_array($params[0])) {
-                throw new InvalidArgumentException(2, ['array'], gettype($params[0]));
+                throw new Exception\InvalidArgumentException(2, ['array'], gettype($params[0]));
             } elseif (! ($params[1] instanceof \Closure) && null !== $params[1]) {
-                throw new InvalidArgumentException(3, ['Closure'], gettype($params[1]));
+                throw new Exception\InvalidArgumentException(3, ['Closure'], gettype($params[1]));
             }
 
             return [$params[0], $params[1]];
@@ -145,7 +145,7 @@ class Container implements ContainerInterface
 
         if (1 === $count) {
             if (! is_array($params[0]) && ! ($params[0] instanceof \Closure)) {
-                throw new InvalidArgumentException(2, ['array', 'Closure'], gettype($params[0]));
+                throw new Exception\InvalidArgumentException(2, ['array', 'Closure'], gettype($params[0]));
             }
 
             $arguments = is_array($params[0]) ? $params[0] : [];
@@ -154,6 +154,6 @@ class Container implements ContainerInterface
             return [$arguments, $condition];
         }
 
-        throw new RangeException(3, $count + 1);
+        throw new Exception\RangeException(3, $count + 1);
     }
 }

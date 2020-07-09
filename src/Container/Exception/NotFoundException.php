@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Projek\Container;
+namespace Projek\Container\Exception;
 
 use Psr\Container\NotFoundExceptionInterface;
 

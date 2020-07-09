@@ -1,14 +1,11 @@
 <?php
 
 use Projek\Container;
-use Projek\Container\{ContainerInterface, Exception, InvalidArgumentException, NotFoundException, RangeException, UnresolvableException};
+use Projek\Container\{ContainerInterface, Exception};
 use Psr\Container\ContainerInterface as PsrContainer;
-use Stubs\{Dummy, AbstractFoo, CallableClass, ConcreteBar, PrivateFactory, ServiceProvider, SomeClass};
+use Stubs\{Dummy, AbstractFoo, CallableClass, ConcreteBar, ServiceProvider, SomeClass};
 
-use function Kahlan\beforeEach;
-use function Kahlan\context;
-use function Kahlan\describe;
-use function Kahlan\expect;
+// use function Kahlan\{beforeEach, context, describe, expect};
 
 describe(Container::class, function () {
     beforeEach(function () {
@@ -56,7 +53,7 @@ describe(Container::class, function () {
 
             expect(function () {
                 return $this->c->get('dummy');
-            })->toThrow(new NotFoundException('dummy'));
+            })->toThrow(new Exception\NotFoundException('dummy'));
         });
 
         it('Should not overwrite existing', function () {
@@ -72,7 +69,7 @@ describe(Container::class, function () {
             });
             expect(function () {
                 return $this->c->get('stds');
-            })->toThrow(new NotFoundException('foo'));
+            })->toThrow(new Exception\NotFoundException('foo'));
         });
 
         it('Should cache resolved instances', function () {
@@ -170,15 +167,15 @@ describe(Container::class, function () {
 
             expect(function () {
                 $this->c->set('foo', 'NotExistsClass');
-            })->toThrow(new UnresolvableException('NotExistsClass'));
+            })->toThrow(new Exception\UnresolvableException('NotExistsClass'));
 
             expect(function () {
                 $this->c->set('foo', ['foo', 'bar']);
-            })->toThrow(new UnresolvableException(['foo', 'bar']));
+            })->toThrow(new Exception\UnresolvableException(['foo', 'bar']));
 
             expect(function () {
                 $this->c->set('foo', null);
-            })->toThrow(new UnresolvableException(null));
+            })->toThrow(new Exception\UnresolvableException(null));
         });
     });
 
@@ -320,7 +317,7 @@ describe(Container::class, function () {
 
                     return null;
                 });
-            })->toThrow(new UnresolvableException([Stubs\SomeClass::class, 'notExists']));
+            })->toThrow(new Exception\UnresolvableException([Stubs\SomeClass::class, 'notExists']));
         });
 
         it('Should pass second parameter as argument for the handler', function () {
@@ -349,31 +346,31 @@ describe(Container::class, function () {
         it('Should throw exception if second parameter were invalid', function () {
             expect(function () {
                 $this->c->make(Stubs\SomeClass::class, 'string');
-            })->toThrow(new InvalidArgumentException(2, ['array', 'Closure'], 'string'));
+            })->toThrow(new Exception\InvalidArgumentException(2, ['array', 'Closure'], 'string'));
 
             // Ignore falsy param
             expect(function () {
                 $this->c->make(Stubs\SomeClass::class, 'string', null);
-            })->toThrow(new InvalidArgumentException(2, ['array', 'Closure'], 'string'));
+            })->toThrow(new Exception\InvalidArgumentException(2, ['array', 'Closure'], 'string'));
 
             expect(function () {
                 // Correct condition with incorrect argument
                 $this->c->make(Stubs\SomeClass::class, 'string', function ($instance) {
                     return [$instance, 'shouldCalled'];
                 });
-            })->toThrow(new InvalidArgumentException(2, ['array'], 'string'));
+            })->toThrow(new Exception\InvalidArgumentException(2, ['array'], 'string'));
         });
 
         it('Should throw exception if third parameter were invalid', function () {
             expect(function () {
                 $this->c->make(Stubs\SomeClass::class, ['string'], 'condition');
-            })->toThrow(new InvalidArgumentException(3, ['Closure'], 'string'));
+            })->toThrow(new Exception\InvalidArgumentException(3, ['Closure'], 'string'));
         });
 
         it('Should throw exception if have more than 3 parameters', function () {
             expect(function () {
                 $this->c->make(Stubs\SomeClass::class, ['string'], 'condition', 'more');
-            })->toThrow(new RangeException(3, 4));
+            })->toThrow(new Exception\RangeException(3, 4));
         });
 
         it('Should ignore the optional arguments if falsy ', function () {

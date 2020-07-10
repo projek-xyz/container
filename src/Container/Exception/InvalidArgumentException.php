@@ -17,7 +17,7 @@ class InvalidArgumentException extends \InvalidArgumentException implements Cont
             'Expect parameter %d to be %s, %s given',
             $num,
             implode(' or ', $expected),
-            $actual
+            gettype($actual)
         ), 0, $prev);
     }
 }

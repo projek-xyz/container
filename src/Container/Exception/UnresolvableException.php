@@ -10,7 +10,7 @@ class UnresolvableException extends Exception
 {
     public function __construct($toResolve, ?\Throwable $prev = null)
     {
-        parent::__construct(sprintf('Couldn\'t resolve %s.', $this->getTypeString($toResolve)), 0, $prev);
+        parent::__construct(sprintf('Couldn\'t resolve %s.', $this->getTypeString($toResolve)), $prev);
     }
 
     private function getTypeString($toResolve)

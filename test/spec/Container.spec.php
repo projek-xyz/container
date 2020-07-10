@@ -5,8 +5,6 @@ use Projek\Container\{ContainerInterface, Exception};
 use Psr\Container\ContainerInterface as PsrContainer;
 use Stubs\{Dummy, AbstractFoo, CallableClass, ConcreteBar, ServiceProvider, SomeClass};
 
-// use function Kahlan\{beforeEach, context, describe, expect};
-
 describe(Container::class, function () {
     beforeEach(function () {
         $this->c = new Container;

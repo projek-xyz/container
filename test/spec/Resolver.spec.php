@@ -4,8 +4,6 @@ use Projek\Container;
 use Projek\Container\{ContainerAware, ContainerAwareInterface, ContainerInterface, Resolver};
 use Stubs\{Dummy, AbstractFoo, CloneContainer, ConcreteBar, SomeClass};
 
-// use function Kahlan\{context, describe, expect, given};
-
 describe(Resolver::class, function () {
     given('dummy', function () {
         return new Dummy;

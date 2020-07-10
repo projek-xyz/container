@@ -4,8 +4,6 @@ use Projek\Container;
 use Projek\Container\{ArrayContainer, Exception};
 use Stubs\AbstractFoo;
 
-// use function Kahlan\{describe, expect};
-
 describe(ArrayContainer::class, function () {
     beforeEach(function () {
         $c = new Container;

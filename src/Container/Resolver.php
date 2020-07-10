@@ -10,8 +10,18 @@ use ReflectionException;
 use ReflectionFunction;
 use ReflectionMethod;
 
-class Resolver extends AbstractContainerAware
+final class Resolver extends AbstractContainerAware
 {
+    /**
+     * Create instance.
+     *
+     * @param ContainerInterface $container
+     */
+    public function __construct(ContainerInterface $container)
+    {
+        $this->setContainer($container);
+    }
+
     /**
      * Handle callable.
      *
@@ -27,7 +37,6 @@ class Resolver extends AbstractContainerAware
 
         $params = [];
         $isMethod = is_array($instance);
-        $isInternalMethod = $isMethod && $instance[1] === '__invoke';
         $reflector = $isMethod
             ? new ReflectionMethod($instance[0], $instance[1])
             : new ReflectionFunction($instance);
@@ -38,7 +47,7 @@ class Resolver extends AbstractContainerAware
 
         // If it was internal method resolve its params as a closure.
         // @link https://bugs.php.net/bug.php?id=50798
-        $toResolve = $isInternalMethod
+        $toResolve = $isMethod && $instance[1] === '__invoke'
             ? new ReflectionFunction($reflector->getClosure($instance[0]))
             : $reflector;
 
@@ -86,7 +95,7 @@ class Resolver extends AbstractContainerAware
      * @return object
      * @throws Exception When $className is not instantiable.
      */
-    protected function createInstance(string $className)
+    private function createInstance(string $className)
     {
         if ($this->getContainer()->has($className)) {
             return $this->getContainer($className);
@@ -114,7 +123,7 @@ class Resolver extends AbstractContainerAware
      * @param array<mixed> $args
      * @return array
      */
-    protected function resolveArgs($reflection, array $args = []): array
+    private function resolveArgs($reflection, array $args = []): array
     {
         foreach ($reflection->getParameters() as $param) {
             $position = $param->getPosition();
@@ -178,7 +187,10 @@ class Resolver extends AbstractContainerAware
      */
     private function injectContainer($instance)
     {
-        if ($instance instanceof ContainerAwareInterface && null === $instance->getContainer()) {
+        if (
+            $instance instanceof ContainerAwareInterface
+            && ! $instance->getContainer() instanceof ContainerInterface
+        ) {
             $instance->setContainer($this->getContainer());
         }
 

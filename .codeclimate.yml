@@ -7,13 +7,15 @@ checks:
     config:
       threshold: 9
 
-engines:
+plugins:
   fixme:
     enabled: true
   phpcodesniffer:
     enabled: false
   phpmd:
     enabled: true
+    config:
+      rulesets: "test/phpmd.xml"
 
 ratings:
   paths:

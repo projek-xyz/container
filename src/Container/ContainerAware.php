@@ -9,7 +9,7 @@ trait ContainerAware
     /**
      * @var ContainerInterface
      */
-    private $container = null;
+    protected $container = null;
 
     /**
      * @see ContainerAwareInterface::setContainer()

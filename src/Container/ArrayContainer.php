@@ -27,7 +27,7 @@ final class ArrayContainer extends AbstractContainerAware implements \ArrayAcces
      */
     public function offsetSet($name, $instance)
     {
-        $this->getContainer()->set($name, $instance);
+        $this->container->set($name, $instance);
     }
 
     /**
@@ -49,7 +49,7 @@ final class ArrayContainer extends AbstractContainerAware implements \ArrayAcces
      */
     public function offsetExists($name)
     {
-        return $this->getContainer()->has($name);
+        return $this->container->has($name);
     }
 
     /**
@@ -58,6 +58,6 @@ final class ArrayContainer extends AbstractContainerAware implements \ArrayAcces
      */
     public function offsetUnset($name)
     {
-        $this->getContainer()->unset($name);
+        $this->container->unset($name);
     }
 }

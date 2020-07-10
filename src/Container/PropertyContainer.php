@@ -27,7 +27,7 @@ final class PropertyContainer extends AbstractContainerAware
      */
     public function __set(string $name, $instance): void
     {
-        $this->getContainer()->set($name, $instance);
+        $this->container->set($name, $instance);
     }
 
     /**
@@ -49,7 +49,7 @@ final class PropertyContainer extends AbstractContainerAware
      */
     public function __isset(string $name): bool
     {
-        return $this->getContainer()->has($name);
+        return $this->container->has($name);
     }
 
     /**
@@ -58,6 +58,6 @@ final class PropertyContainer extends AbstractContainerAware
      */
     public function __unset(string $name): void
     {
-        $this->getContainer()->unset($name);
+        $this->container->unset($name);
     }
 }

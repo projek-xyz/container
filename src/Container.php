@@ -137,23 +137,23 @@ class Container implements ContainerInterface
     {
         if (2 === $count) {
             if (! is_array($params[0])) {
-                throw new Exception\InvalidArgumentException(2, ['array'], gettype($params[0]));
+                throw new Exception\InvalidArgumentException(2, ['array'], $params[0]);
             } elseif (! ($params[1] instanceof \Closure) && null !== $params[1]) {
-                throw new Exception\InvalidArgumentException(3, ['Closure'], gettype($params[1]));
+                throw new Exception\InvalidArgumentException(3, ['Closure'], $params[1]);
             }
 
-            return [$params[0], $params[1]];
+            return $params;
         }
 
         if (1 === $count) {
             if (! is_array($params[0]) && ! ($params[0] instanceof \Closure)) {
-                throw new Exception\InvalidArgumentException(2, ['array', 'Closure'], gettype($params[0]));
+                throw new Exception\InvalidArgumentException(2, ['array', 'Closure'], $params[0]);
             }
 
-            $arguments = is_array($params[0]) ? $params[0] : [];
-            $condition = $params[0] instanceof \Closure ? $params[0] : null;
-
-            return [$arguments, $condition];
+            return [
+                is_array($params[0]) ? $params[0] : [],
+                $params[0] instanceof \Closure ? $params[0] : null
+            ];
         }
 
         throw new Exception\RangeException(3, $count + 1);

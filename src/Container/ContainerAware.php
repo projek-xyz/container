@@ -7,7 +7,7 @@ namespace Projek\Container;
 trait ContainerAware
 {
     /**
-     * @var ContainerInterface
+     * @var null|ContainerInterface
      */
     protected $container = null;
 
@@ -22,9 +22,9 @@ trait ContainerAware
     /**
      * @see ContainerAwareInterface::getContainer()
      */
-    public function getContainer(?string $name = null)
+    public function getContainer(?string $name = null): ?object
     {
-        if ($name) {
+        if ($this->container && $name) {
             return $this->container->get($name);
         }
 

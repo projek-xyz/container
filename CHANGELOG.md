@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.3](https://github.com/projek-xyz/container/compare/v0.4.2...v0.4.3) (2020-11-03)
+
+
+### Bug Fixes
+
+* issue on ContainerAware when theres no Container instance assigned ([03a1d35](https://github.com/projek-xyz/container/commit/03a1d35aeffa7ebcc2ed5403e644daaea1c1257c))
+
 ### [0.4.2](https://github.com/projek-xyz/container/compare/v0.4.1...v0.4.2) (2020-11-02)
 
 ### [0.4.1](https://github.com/projek-xyz/container/compare/v0.4.0...v0.4.1) (2020-07-10)

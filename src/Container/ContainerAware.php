@@ -22,7 +22,7 @@ trait ContainerAware
     /**
      * @see ContainerAwareInterface::getContainer()
      */
-    public function getContainer(?string $name = null): ?object
+    public function getContainer(?string $name = null)
     {
         if ($this->container && $name) {
             return $this->container->get($name);

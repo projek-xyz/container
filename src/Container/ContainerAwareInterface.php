@@ -44,5 +44,5 @@ interface ContainerAwareInterface
      * @param null|string $name Optionally pass a container name, if needed.
      * @return null|mixed|ContainerInterface
      */
-    public function getContainer(?string $name = null): ?object;
+    public function getContainer(?string $name = null);
 }

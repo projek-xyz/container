@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.4](https://github.com/projek-xyz/container/compare/v0.4.3...v0.4.4) (2020-11-08)
+
+
+### Bug Fixes
+
+* fix ContainerAware::getContainer() return value ([5347f98](https://github.com/projek-xyz/container/commit/5347f988307856ef97cbd79170cbc545d8fa1266))
+
 ### [0.4.3](https://github.com/projek-xyz/container/compare/v0.4.2...v0.4.3) (2020-11-03)
 
 

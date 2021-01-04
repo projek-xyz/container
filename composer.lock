@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b0b2086de9a74983460bb518837c853d",
+    "content-hash": "1d02eeff5adff9359afdbcad459bf124",
     "packages": [
         {
             "name": "psr/container",
@@ -63,20 +63,20 @@
     "packages-dev": [
         {
             "name": "kahlan/kahlan",
-            "version": "4.7.7",
+            "version": "5.0.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kahlan/kahlan.git",
-                "reference": "36ec916f7c7b067239431d3da0dc1da172bc98bb"
+                "reference": "20a792c0f2a87b946dd0dccda38ad25bfc34ebc7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kahlan/kahlan/zipball/36ec916f7c7b067239431d3da0dc1da172bc98bb",
-                "reference": "36ec916f7c7b067239431d3da0dc1da172bc98bb",
+                "url": "https://api.github.com/repos/kahlan/kahlan/zipball/20a792c0f2a87b946dd0dccda38ad25bfc34ebc7",
+                "reference": "20a792c0f2a87b946dd0dccda38ad25bfc34ebc7",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.5"
+                "php": ">=7.1"
             },
             "require-dev": {
                 "squizlabs/php_codesniffer": "^3.4"
@@ -115,9 +115,9 @@
             ],
             "support": {
                 "issues": "https://github.com/kahlan/kahlan/issues",
-                "source": "https://github.com/kahlan/kahlan/tree/4.7.7"
+                "source": "https://github.com/kahlan/kahlan/tree/5.0.5"
             },
-            "time": "2020-10-17T08:37:23+00:00"
+            "time": "2020-12-30T13:25:22+00:00"
         },
         {
             "name": "squizlabs/php_codesniffer",

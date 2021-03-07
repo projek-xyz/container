@@ -61,7 +61,7 @@ class Container implements ContainerInterface
     /**
      * {@inheritDoc}
      */
-    public function get($id)
+    public function get(string $id)
     {
         if (! $this->has($id)) {
             throw new Exception\NotFoundException($id);
@@ -83,7 +83,7 @@ class Container implements ContainerInterface
     /**
      * {@inheritDoc}
      */
-    public function has($id)
+    public function has(string $id)
     {
         return array_key_exists($id, $this->instances);
     }

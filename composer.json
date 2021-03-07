@@ -30,7 +30,7 @@
         "lint": "phpcs --standard=PSR12 -n -p src"
     },
     "require": {
-        "php": ">=7.1",
+        "php": ">=7.2",
         "psr/container": "^2.0"
     },
     "provide": {

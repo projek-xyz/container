@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.0](https://github.com/projek-xyz/container/compare/v0.4.5...v0.5.0) (2021-03-07)
+
+
+### Bug Fixes
+
+* few compatibility issue ([28a7b2c](https://github.com/projek-xyz/container/commit/28a7b2c79e6b0ccfca831f42f6653368fd6e5f94))
+
 ### [0.4.5](https://github.com/projek-xyz/container/compare/v0.4.4...v0.4.5) (2021-03-07)
 
 

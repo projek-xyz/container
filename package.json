@@ -1,7 +1,7 @@
 {
     "name": "@projek-xyz/container",
     "private": true,
-    "version": "0.4.4",
+    "version": "0.4.5",
     "author": "Fery Wardiyanto <ferywardiyanto@gmail.com>",
     "repository": "github:projek-xyz/container",
     "scripts": {

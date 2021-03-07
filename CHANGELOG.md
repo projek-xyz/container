@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.5](https://github.com/projek-xyz/container/compare/v0.4.4...v0.4.5) (2021-03-07)
+
+
+### Features
+
+* upgrade minimum php 7.2 ([7c7fe73](https://github.com/projek-xyz/container/commit/7c7fe73a8b4f68d0fb464d1a708409479d720f48))
+* upgrade PSR Container 2.0 ([4c579db](https://github.com/projek-xyz/container/commit/4c579db3038a649e50e58d5cb616238278a8276e))
+
+
+### Bug Fixes
+
+* fix returns type hints ([cd53112](https://github.com/projek-xyz/container/commit/cd53112c9b77797eecedec5b1ce08b1e6093e856))
+
 ### [0.4.4](https://github.com/projek-xyz/container/compare/v0.4.3...v0.4.4) (2020-11-08)
 
 

@@ -31,7 +31,7 @@
     },
     "require": {
         "php": ">=7.2",
-        "psr/container": "^2.0"
+        "psr/container": "^1.0 || ^2.0"
     },
     "provide": {
         "psr/container-implementation": "^2.0"

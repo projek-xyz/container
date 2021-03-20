@@ -18,6 +18,10 @@ class UnresolvableException extends Exception
         if (is_string($toResolve)) {
             return 'string: ' . $toResolve;
         } elseif (is_array($toResolve)) {
+            if (! is_string($toResolve[0])) {
+                $toResolve[0] = get_class($toResolve[0]);
+            }
+
             return 'array: [' . join(', ', $toResolve) . ']';
         }
 

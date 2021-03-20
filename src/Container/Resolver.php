@@ -77,12 +77,8 @@ final class Resolver extends AbstractContainerAware
             return $toResolve instanceof Closure ? $toResolve : $this->injectContainer($toResolve);
         }
 
-        try {
-            if ($this->assertCallable($toResolve)) {
-                return $toResolve;
-            }
-        } catch (Exception\UnresolvableException $err) {
-            // do nothing
+        if ($this->assertCallable($toResolve)) {
+            return $toResolve;
         }
 
         throw new Exception\UnresolvableException($toResolve);
@@ -152,12 +148,12 @@ final class Resolver extends AbstractContainerAware
     }
 
     /**
-     * Assert $instance is callable.
+     * Assert callable $instance.
      *
      * @param callable $instance
      * @return bool
-     * @throws UnresolvableException When $instance is an array but the callable
-     *                                 method not exists.
+     * @throws Exception\UnresolvableException When $instance is an array but the callable
+     *                                         method not exists.
      */
     private function assertCallable(&$instance): bool
     {
@@ -169,11 +165,15 @@ final class Resolver extends AbstractContainerAware
 
         if (is_array($instance)) {
             if (is_string($instance[0])) {
-                $instance[0] = $this->createInstance($instance[0]);
+                try {
+                    $instance[0] = $this->createInstance($instance[0]);
+                } catch (Exception\UnresolvableException $err) {
+                    throw new Exception\UnresolvableException($instance, $err);
+                }
             }
 
             if (! method_exists(...$instance)) {
-                throw new Exception\UnresolvableException([get_class($instance[0]), $instance[1]]);
+                throw new Exception\UnresolvableException($instance);
             }
         }
 

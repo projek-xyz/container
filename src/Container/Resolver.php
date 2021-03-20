@@ -134,6 +134,7 @@ final class Resolver extends AbstractContainerAware
             }
 
             try {
+                /** @var ReflectionNamedType $type */
                 $type = $param->getType();
                 $args[$position] = $this->getContainer(
                     ($type && ! $type->isBuiltin() ? $type : $param)->getName()

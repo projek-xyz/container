@@ -20,7 +20,7 @@ describe(ArrayContainer::class, function () {
         expect($this->c['std'])->toBeNull();
     });
 
-    it('Should throw exception when setting incorrect param', function () {
+    it('should throw exception when setting incorrect param', function () {
         expect(function () {
             $this->c['foo'] = AbstractFoo::class;
         })->toThrow(new Exception(sprintf('Target "%s" is not instantiable.', AbstractFoo::class)));

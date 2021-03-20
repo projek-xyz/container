@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Projek\Container;
 use Projek\Container\{ContainerInterface, Exception};
 use Psr\Container\ContainerInterface as PsrContainer;

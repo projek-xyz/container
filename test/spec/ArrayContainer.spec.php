@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Projek\Container;
 use Projek\Container\{ArrayContainer, Exception};
 use Stubs\AbstractFoo;

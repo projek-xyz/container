@@ -122,10 +122,8 @@ final class Resolver extends AbstractContainerAware
     private function resolveArgs($reflection, array $args = []): array
     {
         foreach ($reflection->getParameters() as $param) {
-            $position = $param->getPosition();
-
             // Just skip if parameter already provided.
-            if (array_key_exists($position, $args)) {
+            if (array_key_exists($position = $param->getPosition(), $args)) {
                 continue;
             }
 

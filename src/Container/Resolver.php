@@ -77,15 +77,9 @@ final class Resolver extends AbstractContainerAware
             return $toResolve instanceof Closure ? $toResolve : $this->injectContainer($toResolve);
         }
 
-        try {
-            if ($this->assertCallable($toResolve)) {
-                return $toResolve;
-            }
-        } catch (Exception\UnresolvableException $err) {
-            // do nothing
-        }
+        $this->assertCallable($toResolve);
 
-        throw new Exception\UnresolvableException($toResolve);
+        return $toResolve;
     }
 
     /**
@@ -119,7 +113,7 @@ final class Resolver extends AbstractContainerAware
     /**
      * Callable argumetns resolver.
      *
-     * @param ReflectionMethod|ReflectionFunction $reflection
+     * @param \ReflectionFunctionAbstract $reflection
      * @param array<mixed> $args
      * @return array
      */
@@ -134,6 +128,7 @@ final class Resolver extends AbstractContainerAware
             }
 
             try {
+                /** @var \ReflectionNamedType $type */
                 $type = $param->getType();
                 $args[$position] = $this->getContainer(
                     ($type && ! $type->isBuiltin() ? $type : $param)->getName()
@@ -171,12 +166,16 @@ final class Resolver extends AbstractContainerAware
                 $instance[0] = $this->createInstance($instance[0]);
             }
 
-            if (! method_exists(...$instance)) {
-                throw new Exception\UnresolvableException([get_class($instance[0]), $instance[1]]);
+            if (method_exists(...$instance)) {
+                return true;
             }
         }
 
-        return is_callable($instance);
+        if (is_callable($instance)) {
+            return true;
+        }
+
+        throw new Exception\UnresolvableException([get_class($instance[0]), $instance[1]]);
     }
 
     /**

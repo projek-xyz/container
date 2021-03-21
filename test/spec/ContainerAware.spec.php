@@ -5,8 +5,6 @@ declare(strict_types=1);
 use Projek\Container;
 use Projek\Container\{ContainerAware, ContainerAwareInterface, ContainerInterface};
 
-use function Kahlan\{describe, expect, given, it};
-
 describe(ContainerAware::class, function () {
     given('container', function () {
         return new Container;

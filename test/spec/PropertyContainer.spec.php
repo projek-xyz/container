@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Projek\Container;
 use Projek\Container\{Exception, PropertyContainer};
-use Stubs\AbstractFoo;
 
 describe(PropertyContainer::class, function () {
     beforeEach(function () {
@@ -24,8 +23,8 @@ describe(PropertyContainer::class, function () {
 
     it('should throw exception when setting incorrect param', function () {
         expect(function () {
-            $this->c->foo = AbstractFoo::class;
-        })->toThrow(new Exception(sprintf('Target "%s" is not instantiable.', AbstractFoo::class)));
+            $this->c->foo = Stubs\AbstractFoo::class;
+        })->toThrow(new Exception(sprintf('Target "%s" is not instantiable.', Stubs\AbstractFoo::class)));
 
         expect(function () {
             $this->c->foo = ['foo', 'bar'];

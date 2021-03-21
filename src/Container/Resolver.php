@@ -31,7 +31,8 @@ final class Resolver extends AbstractContainerAware
      */
     public function handle($instance, array $args = [])
     {
-        if (! $this->assertCallable($instance)) {
+        if (! $this->assertCallable($instance) && is_object($instance)) {
+            // Returns the object if it was non-callable instance.
             return $instance;
         }
 
@@ -39,7 +40,7 @@ final class Resolver extends AbstractContainerAware
         $reflector = $this->createReflection($instance);
 
         if ($isMethod = ($reflector instanceof ReflectionMethod)) {
-            $params[] = $reflector->isStatic() ? null : $instance[0];
+            $params[] = $reflector->isStatic() && ! is_object($instance[0]) ? null : $instance[0];
         }
 
         // If it was internal method resolve its params as a closure.
@@ -48,7 +49,11 @@ final class Resolver extends AbstractContainerAware
             ? new ReflectionFunction($reflector->getClosure($instance[0]))
             : $reflector;
 
-        $params[] = $this->resolveArgs($toResolve, $args);
+        try {
+            $params[] = $this->resolveArgs($toResolve, $args);
+        } catch (Exception\NotFoundException $err) {
+            throw new Exception\UnresolvableException($err);
+        }
 
         return $reflector->invokeArgs(...$params);
     }
@@ -120,27 +125,37 @@ final class Resolver extends AbstractContainerAware
     /**
      * Instance resolver.
      *
-     * @param string|object|callable|Closure $toResolve
-     * @return object|callable
+     * @param callable $callable
+     * @return ReflectionMethod|ReflectionFunction|null
      * @throws Exception\UnresolvableException
      */
-    private function createReflection(callable $callable)
+    private function createReflection($callable)
     {
         if (is_string($callable)) {
             if (false === strpos($callable, '::')) {
                 return new ReflectionFunction($callable);
             }
 
-            return new ReflectionMethod($callable);
+            $callable = explode('::', $callable);
         }
 
-        return new ReflectionMethod($callable[0], $callable[1]);
+        $ref = new ReflectionMethod($callable[0], $callable[1]);
+
+        // If trying to statically call a non-static method (at least on PHP 7.x)
+        if (! $ref->isStatic() && is_string($callable[0])) {
+            throw new Exception(sprintf(
+                'Non-static method %s should not be called statically',
+                join('::', $callable)
+            ));
+        }
+
+        return $ref;
     }
 
     /**
      * Callable argumetns resolver.
      *
-     * @param ReflectionMethod|ReflectionFunction $reflection
+     * @param \ReflectionFunctionAbstract $reflection
      * @param array<mixed> $args
      * @return array
      */
@@ -158,9 +173,9 @@ final class Resolver extends AbstractContainerAware
                 $args[$position] = $this->getContainer(
                     ($type && ! $type->isBuiltin() ? $type : $param)->getName()
                 );
-            } catch (Exception\NotFoundException $e) {
+            } catch (Exception\NotFoundException $err) {
                 if (! $param->isOptional()) {
-                    throw $e;
+                    throw new Exception\UnresolvableException($err);
                 }
 
                 $args[$position] = $param->getDefaultValue();

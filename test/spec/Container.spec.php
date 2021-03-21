@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Projek\Container;
-use Projek\Container\{ContainerInterface, Exception};
+use Projek\Container\Exception;
 use Psr\Container\ContainerInterface as PsrContainer;
 
 describe(Container::class, function () {
@@ -11,89 +11,108 @@ describe(Container::class, function () {
         $this->c = new Container;
     });
 
-    context(Container::class.' instances', function () {
-        it('should instantiable', function () {
-            $m = new Container([
-                stdClass::class => function() {
-                    return new stdClass;
-                }
-            ]);
+    it('should resolve it-self', function () {
+        $self = [Container::class, PsrContainer::class, Container\ContainerInterface::class];
 
-            expect($m->get(stdClass::class))->toBeAnInstanceOf(stdClass::class);
-        });
-
-        it('should resolve it-self', function () {
-            $self = [Container::class, PsrContainer::class, ContainerInterface::class];
-
-            foreach ($self as $a) {
-                foreach ($self as $b) {
-                    expect($this->c->get($a))->toBeAnInstanceOf($b);
-                }
+        foreach ($self as $a) {
+            foreach ($self as $b) {
+                expect($this->c->get($a))->toBeAnInstanceOf($b);
+                expect($this->c->get($a))->toBe($this->c->get($b));
             }
-        });
+        }
+    });
 
-        it('should resolve serivce provider', function () {
-            $this->c->set('dummy', Stubs\Dummy::class);
+    it('should instantiable', function () {
+        $m = new Container([
+            stdClass::class => function() {
+                return new stdClass;
+            }
+        ]);
+
+        expect($m->get(stdClass::class))->toBeAnInstanceOf(stdClass::class);
+    });
+
+    it('should autowire dependency if exists', function () {
+        $this->c->set('dummy', Stubs\Dummy::class);
+        $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
+
+        $this->c->set('a', [Stubs\SomeClass::class, 'handle']);
+
+        expect($this->c->get('a'))->toEqual('lorem');
+    });
+
+    it('should throw an UnresolvableException if dependency not exists', function () {
+        $this->c->set('a', [Stubs\SomeClass::class, 'handle']);
+
+        $unresolvable = function (string $name) {
+            return new Exception\UnresolvableException(
+                new Exception\NotFoundException($name)
+            );
+        };
+
+        expect(function () {
             $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
+        })->toThrow($unresolvable('dummy'));
 
-            $this->c->set('myService', Stubs\ServiceProvider::class);
+        expect(function () {
+            return $this->c->get('a');
+        })->toThrow($unresolvable(Stubs\AbstractFoo::class));
+    });
 
-            expect($this->c->get('myService'))->toEqual('dummy lorem');
+    it('should manage instance', function () {
+        $this->c->set('dummy', Stubs\Dummy::class);
+
+        expect($this->c->has('dummy'))->toBeTruthy();
+        expect($this->c->get('dummy'))->toBeAnInstanceOf(Stubs\Dummy::class);
+
+        $this->c->unset('dummy');
+        expect($this->c->has('dummy'))->toBeFalsy();
+
+        expect(function () {
+            return $this->c->get('dummy');
+        })->toThrow(new Exception\NotFoundException('dummy'));
+    });
+
+    it('should not overwrite existing', function () {
+        $this->c->set('std', stdClass::class);
+        $this->c->set('std', function () {
+            return null;
         });
 
-        it('should manage instance', function () {
-            $this->c->set('dummy', Stubs\Dummy::class);
+        expect($this->c->get('std'))->toBeAnInstanceOf(stdClass::class);
 
-            expect($this->c->has('dummy'))->toBeTruthy();
-            expect($this->c->get('dummy'))->toBeAnInstanceOf(Stubs\Dummy::class);
+        $this->c->set('stds', function ($foo) {
+            return $foo;
+        });
+        expect(function () {
+            return $this->c->get('stds');
+        })->toThrow(new Exception\UnresolvableException(
+            new Exception\NotFoundException('foo')
+        ));
+    });
 
-            $this->c->unset('dummy');
-            expect($this->c->has('dummy'))->toBeFalsy();
+    it('should cache resolved instances', function () {
+        $this->c->set('foo', function () {
+            return 'foo';
+        });
+        $this->c->set('bar', function ($foo) {
+            expect($foo)->toEqual('foo');
 
-            expect(function () {
-                return $this->c->get('dummy');
-            })->toThrow(new Exception\NotFoundException('dummy'));
+            return 'bar';
         });
 
-        it('should not overwrite existing', function () {
-            $this->c->set('std', stdClass::class);
-            $this->c->set('std', function () {
-                return null;
-            });
+        expect($this->c->get('foo'))->toEqual('foo');
+    });
 
-            expect($this->c->get('std'))->toBeAnInstanceOf(stdClass::class);
+    it('should be cloned with new resolver instance', function () {
+        // Dependencies.
+        $this->c->set('dummy', Stubs\Dummy::class);
 
-            $this->c->set('stds', function ($foo) {
-                return $foo;
-            });
-            expect(function () {
-                return $this->c->get('stds');
-            })->toThrow(new Exception\NotFoundException('foo'));
-        });
+        $c = clone $this->c;
+        $c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
 
-        it('should cache resolved instances', function () {
-            $this->c->set('foo', function () {
-                return 'foo';
-            });
-            $this->c->set('bar', function ($foo) {
-                expect($foo)->toEqual('foo');
-
-                return 'bar';
-            });
-
-            expect($this->c->get('foo'))->toEqual('foo');
-        });
-
-        it('should be cloned with new resolver instance', function () {
-            // Dependencies.
-            $this->c->set('dummy', Stubs\Dummy::class);
-
-            $c = clone $this->c;
-            $c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
-
-            expect($this->c->has(Stubs\AbstractFoo::class))->toBeFalsy();
-            expect($c->has('dummy'))->toBeTruthy();
-        });
+        expect($this->c->has(Stubs\AbstractFoo::class))->toBeFalsy();
+        expect($c->has('dummy'))->toBeTruthy();
     });
 
     context(Container::class.'::set', function () {
@@ -165,7 +184,13 @@ describe(Container::class, function () {
 
             expect(function () {
                 $this->c->set('foo', 'NotExistsClass');
-            })->toThrow(new Exception\UnresolvableException('NotExistsClass'));
+            })->toThrow(new Exception\UnresolvableException(
+                'NotExistsClass',
+                new \ReflectionException()
+            ));
+            expect(function () {
+                $this->c->set('foo', 'bar');
+            })->toThrow(new Exception\UnresolvableException('bar'));
 
             expect(function () {
                 $this->c->set('foo', ['foo', 'bar']);

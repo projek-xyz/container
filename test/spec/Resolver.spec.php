@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Projek\Container;
-use Projek\Container\{ContainerAware, ContainerAwareInterface, ContainerInterface, Resolver};
+use Projek\Container\{Exception, Resolver};
 
 describe(Resolver::class, function () {
     given('dummy', function () {
@@ -31,10 +31,12 @@ describe(Resolver::class, function () {
             )->toBe('value from static method');
         });
 
-        xit('should not handle array of class name & non-static method pair', function () {
-            expect(
-                $this->r->handle([Stubs\SomeClass::class, 'nonStaticMethod'])
-            )->toBe('value from non-static method');
+        it('should not handle array of class name & non-static method pair', function () {
+            expect(function () {
+                $this->r->handle([Stubs\SomeClass::class, 'nonStaticMethod']);
+            })->toThrow(new Exception(
+                'Non-static method Stubs\\SomeClass::nonStaticMethod should not be called statically'
+            ));
         });
 
         it('should handle array of class instance & static method pair', function () {
@@ -43,7 +45,7 @@ describe(Resolver::class, function () {
             )->toBe('value from static method');
         });
 
-        it('should not handle array of class instance & non-static method pair', function () {
+        it('should handle array of class instance & non-static method pair', function () {
             expect(
                 $this->r->handle([new Stubs\SomeClass, 'nonStaticMethod'])
             )->toBe('value from non-static method');
@@ -55,10 +57,12 @@ describe(Resolver::class, function () {
             )->toBe('value from static method');
         });
 
-        xit('should handle string of class name & static method pair', function () {
-            expect(
-                $this->r->handle('Stubs\SomeClass::nonStaticMethod')
-            )->toBe('value from non-static method');
+        it('should not handle string of class name & static method pair', function () {
+            expect(function () {
+                $this->r->handle('Stubs\SomeClass::nonStaticMethod');
+            })->toThrow(new Exception(
+                'Non-static method Stubs\\SomeClass::nonStaticMethod should not be called statically'
+            ));
         });
 
         it('should handle string of function name', function () {

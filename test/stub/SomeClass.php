@@ -9,9 +9,9 @@ class SomeClass implements CertainInterface
         return $param ?? $this;
     }
 
-    public function handle(AbstractFoo $dummy): string
+    public function handle(AbstractFoo $dummy, ?string $text = null): string
     {
-        return $dummy->lorem();
+        return $dummy->lorem($text);
     }
 
     public function shouldCalled($param = 'a value')

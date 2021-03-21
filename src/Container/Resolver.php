@@ -36,18 +36,15 @@ final class Resolver extends AbstractContainerAware
         }
 
         $params = [];
-        $isMethod = is_array($instance);
-        $reflector = $isMethod
-            ? new ReflectionMethod($instance[0], $instance[1])
-            : new ReflectionFunction($instance);
+        $reflector = $this->createReflection($instance);
 
-        if ($isMethod) {
-            $params[] = is_object($instance[0]) ? $instance[0] : null;
+        if ($isMethod = ($reflector instanceof ReflectionMethod)) {
+            $params[] = $reflector->isStatic() ? null : $instance[0];
         }
 
         // If it was internal method resolve its params as a closure.
         // @link https://bugs.php.net/bug.php?id=50798
-        $toResolve = $isMethod && $instance[1] === '__invoke'
+        $toResolve = $isMethod && $reflector->getName() === '__invoke'
             ? new ReflectionFunction($reflector->getClosure($instance[0]))
             : $reflector;
 
@@ -113,6 +110,26 @@ final class Resolver extends AbstractContainerAware
     }
 
     /**
+     * Instance resolver.
+     *
+     * @param string|object|callable|Closure $toResolve
+     * @return object|callable
+     * @throws Exception\UnresolvableException
+     */
+    private function createReflection(callable $callable)
+    {
+        if (is_string($callable)) {
+            if (false === strpos($callable, '::')) {
+                return new ReflectionFunction($callable);
+            }
+
+            return new ReflectionMethod($callable);
+        }
+
+        return new ReflectionMethod($callable[0], $callable[1]);
+    }
+
+    /**
      * Callable argumetns resolver.
      *
      * @param ReflectionMethod|ReflectionFunction $reflection
@@ -155,9 +172,7 @@ final class Resolver extends AbstractContainerAware
      */
     private function assertCallable(&$instance): bool
     {
-        if (is_string($instance) && false !== strpos($instance, '::')) {
-            $instance = explode('::', $instance);
-        } elseif (is_object($instance) && method_exists($instance, '__invoke')) {
+        if (is_object($instance) && method_exists($instance, '__invoke')) {
             $instance = [$instance, '__invoke'];
         }
 

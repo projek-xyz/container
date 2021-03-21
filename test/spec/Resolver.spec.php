@@ -41,12 +41,6 @@ describe(Resolver::class, function () {
             )->toBeAnInstanceOf(stdClass::class);
         });
 
-        it('should handle string of class name & non-static method pair', function () {
-            expect(
-                $this->r->handle('Stubs\SomeClass::shouldCalled')
-            )->toEqual('a value');
-        });
-
         it('should handle string of function name', function () {
             expect($this->r->handle('Stubs\dummyLorem'))->toEqual('lorem');
         });

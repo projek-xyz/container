@@ -62,7 +62,15 @@ final class Resolver extends AbstractContainerAware
      */
     public function resolve($toResolve)
     {
-        if (is_string($toResolve) && ! function_exists($toResolve)) {
+        if (is_object($toResolve)) {
+            return $toResolve instanceof Closure ? $toResolve : $this->injectContainer($toResolve);
+        }
+
+        if (is_string($toResolve)) {
+            if (function_exists($toResolve)) {
+                return $toResolve;
+            }
+
             if (false === strpos($toResolve, '::')) {
                 return $this->createInstance($toResolve);
             }
@@ -70,8 +78,12 @@ final class Resolver extends AbstractContainerAware
             $toResolve = explode('::', $toResolve);
         }
 
-        if (is_object($toResolve)) {
-            return $toResolve instanceof Closure ? $toResolve : $this->injectContainer($toResolve);
+        if (is_array($toResolve)) {
+            try {
+                $toResolve[0] = $this->resolve($toResolve[0]);
+            } catch (Exception\UnresolvableException $err) {
+                throw new Exception\UnresolvableException($toResolve, $err);
+            }
         }
 
         if ($this->assertCallable($toResolve)) {
@@ -176,18 +188,8 @@ final class Resolver extends AbstractContainerAware
             $instance = [$instance, '__invoke'];
         }
 
-        if (is_array($instance)) {
-            if (is_string($instance[0])) {
-                try {
-                    $instance[0] = $this->createInstance($instance[0]);
-                } catch (Exception\UnresolvableException $err) {
-                    throw new Exception\UnresolvableException($instance, $err);
-                }
-            }
-
-            if (! method_exists(...$instance)) {
-                throw new Exception\UnresolvableException($instance);
-            }
+        if (is_array($instance) && ! method_exists(...$instance)) {
+            throw new Exception\UnresolvableException($instance);
         }
 
         return is_callable($instance);

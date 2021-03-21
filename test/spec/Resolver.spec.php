@@ -25,20 +25,40 @@ describe(Resolver::class, function () {
             expect($this->r->handle([$this->dummy, 'lorem']))->toEqual('dummy lorem');
         });
 
-        it('should handle array of class instance & static method pair', function () {
-            expect($this->r->handle([Stubs\ConcreteBar::class, 'std']))->toBeAnInstanceOf(stdClass::class);
+        it('should handle array of class name & static method pair', function () {
+            expect(
+                $this->r->handle([Stubs\SomeClass::class, 'staticMethod'])
+            )->toBe('value from static method');
+        });
+
+        it('should not handle array of class name & non-static method pair', function () {
+            expect(
+                $this->r->handle([Stubs\SomeClass::class, 'nonStaticMethod'])
+            )->toBe('value from non-static method');
         });
 
         it('should handle array of class instance & static method pair', function () {
             expect(
-                $this->r->handle([Stubs\SomeClass::class, 'shouldCalled'])
-            )->toEqual('a value');
+                $this->r->handle([new Stubs\SomeClass, 'staticMethod'])
+            )->toBe('value from static method');
+        });
+
+        it('should not handle array of class instance & non-static method pair', function () {
+            expect(
+                $this->r->handle([new Stubs\SomeClass, 'nonStaticMethod'])
+            )->toBe('value from non-static method');
         });
 
         it('should handle string of class name & static method pair', function () {
             expect(
-                $this->r->handle('Stubs\ConcreteBar::std')
-            )->toBeAnInstanceOf(stdClass::class);
+                $this->r->handle('Stubs\SomeClass::staticMethod')
+            )->toBe('value from static method');
+        });
+
+        it('should handle string of class name & static method pair', function () {
+            expect(
+                $this->r->handle('Stubs\SomeClass::nonStaticMethod')
+            )->toBe('value from non-static method');
         });
 
         it('should handle string of function name', function () {

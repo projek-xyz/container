@@ -49,11 +49,15 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ${{ steps.composer-cache.outputs.dir }}
-        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-        restore-keys: ${{ runner.os }}-composer-
+        key: php-${{ matrix.php-versions }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: php-${{ matrix.php-versions }}-composer-
 
     - name: Install dependencies
-      run: composer install --prefer-dist --no-progress --no-suggest
+      env:
+        phpVersion: ${{ matrix.php-versions }}
+      run: |
+        if [[ $phpVersion = "7.1" ]]; then rm composer.lock; fi
+        composer install --prefer-dist --no-progress --no-suggest
 
     # https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
     # https://github.com/deivid-rodriguez/pry-byebug/blob/377e5b7d229a157bb896f21d776f71fc389a5c00/.github/workflows/ubuntu.yml#L46-L57

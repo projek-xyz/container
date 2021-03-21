@@ -24,9 +24,7 @@ describe(Container::class, function () {
 
     it('should instantiable', function () {
         $m = new Container([
-            stdClass::class => function() {
-                return new stdClass;
-            }
+            stdClass::class => stdClass::class
         ]);
 
         expect($m->get(stdClass::class))->toBeAnInstanceOf(stdClass::class);

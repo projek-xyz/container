@@ -31,7 +31,7 @@ describe(Resolver::class, function () {
             )->toBe('value from static method');
         });
 
-        it('should not handle array of class name & non-static method pair', function () {
+        xit('should not handle array of class name & non-static method pair', function () {
             expect(
                 $this->r->handle([Stubs\SomeClass::class, 'nonStaticMethod'])
             )->toBe('value from non-static method');
@@ -55,7 +55,7 @@ describe(Resolver::class, function () {
             )->toBe('value from static method');
         });
 
-        it('should handle string of class name & static method pair', function () {
+        xit('should handle string of class name & static method pair', function () {
             expect(
                 $this->r->handle('Stubs\SomeClass::nonStaticMethod')
             )->toBe('value from non-static method');
@@ -95,33 +95,53 @@ describe(Resolver::class, function () {
         });
 
         it('should resolve array of class name & static method pair', function () {
+            $instance = new Stubs\SomeClass;
+
             expect(
-                $callable = $this->r->resolve([Stubs\ConcreteBar::class, 'std'])
-            )->toEqual([new Stubs\ConcreteBar($this->dummy), 'std']);
+                $callable = $this->r->resolve([$instance, 'staticMethod'])
+            )->toBe([$instance, 'staticMethod']);
+
+            expect(is_callable($callable))->toBeTruthy();
+        });
+
+        it('should resolve array of class name & non-static method pair', function () {
+            $instance = new Stubs\SomeClass;
+
+            expect(
+                $callable = $this->r->resolve([$instance, 'nonStaticMethod'])
+            )->toBe([$instance, 'nonStaticMethod']);
+
+            expect(is_callable($callable))->toBeTruthy();
+        });
+
+        it('should resolve array of class name & static method pair', function () {
+            expect(
+                $callable = $this->r->resolve([Stubs\SomeClass::class, 'staticMethod'])
+            )->toEqual([new Stubs\SomeClass, 'staticMethod']);
 
             expect(is_callable($callable))->toBeTruthy();
         });
 
         it('should resolve array of class name & non-static method pair', function () {
             expect(
-                $callable = $this->r->resolve([Stubs\SomeClass::class, 'shouldCalled'])
-            )->toEqual([new Stubs\SomeClass, 'shouldCalled']);
+                $callable = $this->r->resolve([Stubs\SomeClass::class, 'nonStaticMethod'])
+            )->toEqual([new Stubs\SomeClass, 'nonStaticMethod']);
 
             expect(is_callable($callable))->toBeTruthy();
         });
 
         it('should resolve string of class name & static method pair', function () {
             expect(
-                $callable = $this->r->resolve('Stubs\ConcreteBar::std')
-            )->toEqual([new Stubs\ConcreteBar($this->dummy), 'std']);
+                $callable = $this->r->resolve('Stubs\SomeClass::staticMethod')
+            )->toEqual([new Stubs\SomeClass, 'staticMethod']);
 
             expect(is_callable($callable))->toBeTruthy();
         });
 
         it('should resolve string of class name & non-static method pair', function () {
             expect(
-                $callable = $this->r->resolve('Stubs\SomeClass::shouldCalled')
-            )->toEqual([new Stubs\SomeClass, 'shouldCalled']);
+                $callable = $this->r->resolve('Stubs\SomeClass::nonStaticMethod')
+            )->toEqual([new Stubs\SomeClass, 'nonStaticMethod']);
 
             expect(is_callable($callable))->toBeTruthy();
         });
@@ -129,7 +149,7 @@ describe(Resolver::class, function () {
         it('should resolve string of function name', function () {
             expect(
                 $callable = $this->r->resolve('Stubs\dummyLorem')
-            )->toEqual('Stubs\dummyLorem');
+            )->toBe('Stubs\dummyLorem');
 
             expect(is_callable($callable))->toBeTruthy();
         });

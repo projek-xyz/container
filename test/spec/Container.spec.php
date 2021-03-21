@@ -11,7 +11,7 @@ describe(Container::class, function () {
         $this->c = new Container;
     });
 
-    context('instances', function () {
+    context(Container::class.' instances', function () {
         it('should instantiable', function () {
             $m = new Container([
                 stdClass::class => function() {
@@ -96,7 +96,7 @@ describe(Container::class, function () {
         });
     });
 
-    context('set', function () {
+    context(Container::class.'::set', function () {
         beforeEach(function () {
             $this->c->set('dummy', Stubs\Dummy::class);
         });
@@ -126,15 +126,14 @@ describe(Container::class, function () {
         ] as $method => $value) {
             it('should set a class-method pair regardless is static or non-static', function () use ($method, $value) {
                 // dependency
-                $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
 
-                $this->c->set('default', Stubs\ServiceProvider::class);
-                $this->c->set('asString', 'Stubs\ServiceProvider::'.$method);
-                $this->c->set('asArray', [Stubs\ServiceProvider::class, $method]);
+                $this->c->set('a', 'Stubs\SomeClass::'.$method);
+                $this->c->set('b', [Stubs\SomeClass::class, $method]);
+                $this->c->set('c', [new Stubs\SomeClass, $method]);
 
-                expect($this->c->get('default'))->toBe('dummy lorem');
-                expect($this->c->get('asString'))->toBe($value);
-                expect($this->c->get('asArray'))->toBe($value);
+                expect($this->c->get('a'))->toBe($value);
+                expect($this->c->get('b'))->toBe($value);
+                expect($this->c->get('c'))->toBe($value);
             });
         }
 
@@ -178,7 +177,7 @@ describe(Container::class, function () {
         });
     });
 
-    context('get', function () {
+    context(Container::class.'::get', function () {
         it('should have same instance everywhere', function () {
             $this->c->set('foo', function () {
                 return new class {
@@ -209,7 +208,7 @@ describe(Container::class, function () {
         });
     });
 
-    context('make', function () {
+    context(Container::class.'::make', function () {
         beforeEach(function () {
             // Dependencies.
             $this->c->set('dummy', Stubs\Dummy::class);
@@ -276,16 +275,11 @@ describe(Container::class, function () {
             }))->toEqual('value');
         });
 
-        foreach ([
-            'a value'   => null,
-            'new value' => ['new value'],
-        ] as $expected => $params) {
-            it('should make a class-method pair regardless is static or non-static', function () use ($params, $expected) {
-                foreach (['shouldCalled', 'staticMethod'] as $method) {
-                    expect($this->c->make('Stubs\SomeClass::'.$method, $params))->toEqual($expected);
-                    expect($this->c->make(['Stubs\SomeClass', $method], $params))->toEqual($expected);
-                    expect($this->c->make([new Stubs\SomeClass, $method], $params))->toEqual($expected);
-                }
+        foreach (['nonStaticMethod', 'staticMethod'] as $method) {
+            it('should make an '.$method, function () use ($method) {
+                expect($this->c->make('Stubs\SomeClass::'.$method, ['value']))->toEqual('value');
+                expect($this->c->make(['Stubs\SomeClass', $method], ['value']))->toEqual('value');
+                expect($this->c->make([new Stubs\SomeClass, $method], ['value']))->toEqual('value');
             });
         }
 

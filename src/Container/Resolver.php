@@ -66,11 +66,7 @@ final class Resolver extends AbstractContainerAware
             return $toResolve instanceof Closure ? $toResolve : $this->injectContainer($toResolve);
         }
 
-        if (is_string($toResolve)) {
-            if (function_exists($toResolve)) {
-                return $toResolve;
-            }
-
+        if (is_string($toResolve) && ! function_exists($toResolve)) {
             if (false === strpos($toResolve, '::')) {
                 return $this->createInstance($toResolve);
             }

@@ -31,13 +31,13 @@
     },
     "require": {
         "php": ">=7.2",
-        "psr/container": "^1.0 || ^2.0"
+        "psr/container": "^1.0|^2.0"
     },
     "provide": {
-        "psr/container-implementation": "^2.0"
+        "psr/container-implementation": "1.0"
     },
     "require-dev": {
-        "kahlan/kahlan": "^4.7 || ^5.0",
+        "kahlan/kahlan": "^5.0",
         "squizlabs/php_codesniffer": "^3.5"
     },
     "config": {

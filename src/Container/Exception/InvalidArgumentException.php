@@ -9,9 +9,11 @@ use Psr\Container\ContainerExceptionInterface;
 class InvalidArgumentException extends \InvalidArgumentException implements ContainerExceptionInterface
 {
     /**
-     * {@inheritDoc}
+     * @param int $num
+     * @param string[] $expected
+     * @param \Throwable|null $prev
      */
-    public function __construct(int $num, array $expected, string $actual, \Throwable $prev = null)
+    public function __construct(int $num, array $expected, string $actual, ?\Throwable $prev = null)
     {
         parent::__construct(sprintf(
             'Expect parameter %d to be %s, %s given',

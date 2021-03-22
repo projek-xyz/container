@@ -1,108 +1,126 @@
 <?php
 
+declare(strict_types=1);
+
 use Projek\Container;
-use Projek\Container\{ContainerInterface, Exception};
+use Projek\Container\Exception;
 use Psr\Container\ContainerInterface as PsrContainer;
-use Stubs\{Dummy, AbstractFoo, CallableClass, ConcreteBar, ServiceProvider, SomeClass};
 
 describe(Container::class, function () {
     beforeEach(function () {
         $this->c = new Container;
     });
 
-    context('instances', function () {
-        it('Instantiable', function () {
-            $m = new Container([
-                stdClass::class => function() {
-                    return new stdClass;
-                }
-            ]);
+    it('should resolve it-self', function () {
+        $self = [Container::class, PsrContainer::class, Container\ContainerInterface::class];
 
-            expect($m->get(stdClass::class))->toBeAnInstanceOf(stdClass::class);
-        });
-
-        it('Should resolve it-self', function () {
-            $self = [Container::class, PsrContainer::class, ContainerInterface::class];
-
-            foreach ($self as $a) {
-                foreach ($self as $b) {
-                    expect($this->c->get($a))->toBeAnInstanceOf($b);
-                }
+        foreach ($self as $a) {
+            foreach ($self as $b) {
+                expect($this->c->get($a))->toBeAnInstanceOf($b);
+                expect($this->c->get($a))->toBe($this->c->get($b));
             }
-        });
-
-        it('Should resolve serivce provider', function () {
-            $this->c->set('dummy', Dummy::class);
-            $this->c->set(AbstractFoo::class, ConcreteBar::class);
-
-            $this->c->set('myService', ServiceProvider::class);
-
-            expect($this->c->get('myService'))->toEqual('dummy lorem');
-        });
-
-        it('Should manage instance', function () {
-            $this->c->set('dummy', Dummy::class);
-
-            expect($this->c->has('dummy'))->toBeTruthy();
-            expect($this->c->get('dummy'))->toBeAnInstanceOf(Dummy::class);
-
-            $this->c->unset('dummy');
-            expect($this->c->has('dummy'))->toBeFalsy();
-
-            expect(function () {
-                return $this->c->get('dummy');
-            })->toThrow(new Exception\NotFoundException('dummy'));
-        });
-
-        it('Should not overwrite existing', function () {
-            $this->c->set('std', stdClass::class);
-            $this->c->set('std', function () {
-                return null;
-            });
-
-            expect($this->c->get('std'))->toBeAnInstanceOf(stdClass::class);
-
-            $this->c->set('stds', function ($foo) {
-                return $foo;
-            });
-            expect(function () {
-                return $this->c->get('stds');
-            })->toThrow(new Exception\NotFoundException('foo'));
-        });
-
-        it('Should cache resolved instances', function () {
-            $this->c->set('foo', function () {
-                return 'foo';
-            });
-            $this->c->set('bar', function ($foo) {
-                expect($foo)->toEqual('foo');
-
-                return 'bar';
-            });
-
-            expect($this->c->get('foo'))->toEqual('foo');
-        });
-
-        it('Should be cloned with new resolver instance', function () {
-            // Dependencies.
-            $this->c->set('dummy', Dummy::class);
-
-            $c = clone $this->c;
-            $c->set(AbstractFoo::class, ConcreteBar::class);
-
-            expect($this->c->has(AbstractFoo::class))->toBeFalsy();
-            expect($c->has('dummy'))->toBeTruthy();
-        });
+        }
     });
 
-    context('set', function () {
-        beforeEach(function () {
-            $this->c->set('dummy', Dummy::class);
+    it('should instantiable', function () {
+        $m = new Container([
+            stdClass::class => stdClass::class
+        ]);
+
+        expect($m->get(stdClass::class))->toBeAnInstanceOf(stdClass::class);
+    });
+
+    it('should autowire dependency if exists', function () {
+        $this->c->set('dummy', Stubs\Dummy::class);
+        $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
+
+        $this->c->set('a', [Stubs\SomeClass::class, 'handle']);
+
+        expect($this->c->get('a'))->toEqual('lorem');
+    });
+
+    it('should throw an UnresolvableException if dependency not exists', function () {
+        $this->c->set('a', [Stubs\SomeClass::class, 'handle']);
+
+        $unresolvable = function (string $name) {
+            return new Exception\UnresolvableException(
+                new Exception\NotFoundException($name)
+            );
+        };
+
+        expect(function () {
+            $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
+        })->toThrow($unresolvable('dummy'));
+
+        expect(function () {
+            return $this->c->get('a');
+        })->toThrow($unresolvable(Stubs\AbstractFoo::class));
+    });
+
+    it('should manage instance', function () {
+        $this->c->set('dummy', Stubs\Dummy::class);
+
+        expect($this->c->has('dummy'))->toBeTruthy();
+        expect($this->c->get('dummy'))->toBeAnInstanceOf(Stubs\Dummy::class);
+
+        $this->c->unset('dummy');
+        expect($this->c->has('dummy'))->toBeFalsy();
+
+        expect(function () {
+            return $this->c->get('dummy');
+        })->toThrow(new Exception\NotFoundException('dummy'));
+    });
+
+    it('should not overwrite existing', function () {
+        $this->c->set('std', stdClass::class);
+        $this->c->set('std', function () {
+            return null;
         });
 
-        it('Should set an alias', function () {
-            $this->c->set(AbstractFoo::class, ConcreteBar::class);
-            $this->c->set('abstract', AbstractFoo::class);
+        expect($this->c->get('std'))->toBeAnInstanceOf(stdClass::class);
+
+        $this->c->set('stds', function ($foo) {
+            return $foo;
+        });
+        expect(function () {
+            return $this->c->get('stds');
+        })->toThrow(new Exception\UnresolvableException(
+            new Exception\NotFoundException('foo')
+        ));
+    });
+
+    it('should cache resolved instances', function () {
+        $this->c->set('foo', function () {
+            return 'foo';
+        });
+        $this->c->set('bar', function ($foo) {
+            expect($foo)->toEqual('foo');
+
+            return 'bar';
+        });
+
+        expect($this->c->get('foo'))->toEqual('foo');
+    });
+
+    it('should be cloned with new resolver instance', function () {
+        // Dependencies.
+        $this->c->set('dummy', Stubs\Dummy::class);
+
+        $c = clone $this->c;
+        $c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
+
+        expect($this->c->has(Stubs\AbstractFoo::class))->toBeFalsy();
+        expect($c->has('dummy'))->toBeTruthy();
+    });
+
+    context(Container::class.'::set', function () {
+        beforeEach(function () {
+            $this->c->set('dummy', Stubs\Dummy::class);
+        });
+
+        it('should set an alias', function () {
+            $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
+            $this->c->set('abstract', Stubs\AbstractFoo::class);
             $this->c->set('foo', 'abstract');
             $this->c->set('bar', 'foo');
             $this->c->set('foobar', function ($foo, $bar, $dummy) {
@@ -112,10 +130,10 @@ describe(Container::class, function () {
             });
 
             $concrete = $this->c->get('abstract');
-            expect($concrete)->toBeAnInstanceOf(AbstractFoo::class);
-            expect($this->c->get('foo'))->toBeAnInstanceOf(AbstractFoo::class);
+            expect($concrete)->toBeAnInstanceOf(Stubs\AbstractFoo::class);
+            expect($this->c->get('foo'))->toBeAnInstanceOf(Stubs\AbstractFoo::class);
             expect($this->c->get('foo'))->toBe($concrete);
-            expect($this->c->get('bar'))->toBeAnInstanceOf(AbstractFoo::class);
+            expect($this->c->get('bar'))->toBeAnInstanceOf(Stubs\AbstractFoo::class);
             expect($this->c->get('bar'))->toBe($concrete);
         });
 
@@ -123,49 +141,54 @@ describe(Container::class, function () {
             'nonStaticMethod' => 'value from non-static method',
             'staticMethod' => 'value from static method',
         ] as $method => $value) {
-            it('Should set a class-method pair regardless is static or non-static', function () use ($method, $value) {
+            it('should set a class-method pair regardless is static or non-static', function () use ($method, $value) {
                 // dependency
-                $this->c->set(AbstractFoo::class, ConcreteBar::class);
 
-                $this->c->set('default', ServiceProvider::class);
-                $this->c->set('asString', 'Stubs\ServiceProvider::'.$method);
-                $this->c->set('asArray', [ServiceProvider::class, $method]);
+                $this->c->set('a', 'Stubs\SomeClass::'.$method);
+                $this->c->set('b', [Stubs\SomeClass::class, $method]);
+                $this->c->set('c', [new Stubs\SomeClass, $method]);
 
-                expect($this->c->get('default'))->toBe('dummy lorem');
-                expect($this->c->get('asString'))->toBe($value);
-                expect($this->c->get('asArray'))->toBe($value);
+                expect($this->c->get('a'))->toBe($value);
+                expect($this->c->get('b'))->toBe($value);
+                expect($this->c->get('c'))->toBe($value);
             });
         }
 
         it('shoud able to register void service', function () {
-            $this->c->set('void', [SomeClass::class, 'voidMethod']);
+            $this->c->set('void', [Stubs\SomeClass::class, 'voidMethod']);
 
             expect($this->c->get('void'))->toBeEmpty();
         });
 
         it('shoud able to register callable service', function () {
-            // dependency of CallableClass::__invoke method
-            $this->c->set(AbstractFoo::class, ConcreteBar::class);
+            // dependency of Stubs\CallableClass::__invoke method
+            $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
 
-            $this->c->set('callback', new CallableClass($this->c->get('dummy')));
+            $this->c->set('callback', new Stubs\CallableClass($this->c->get('dummy')));
 
-            expect($this->c->get('callback'))->toBeAnInstanceOf(AbstractFoo::class);
+            expect($this->c->get('callback'))->toBeAnInstanceOf(Stubs\AbstractFoo::class);
         });
 
-        it('Should throw exception when setting incorrect param', function () {
-            $notoInstantible = new Exception(sprintf('Target "%s" is not instantiable.', AbstractFoo::class));
+        it('should throw exception when setting incorrect param', function () {
+            $notoInstantible = new Exception(sprintf('Target "%s" is not instantiable.', Stubs\AbstractFoo::class));
 
             expect(function () {
-                $this->c->make(AbstractFoo::class);
+                $this->c->make(Stubs\AbstractFoo::class);
             })->toThrow($notoInstantible);
 
             expect(function () {
-                $this->c->set('foo', AbstractFoo::class);
+                $this->c->set('foo', Stubs\AbstractFoo::class);
             })->toThrow($notoInstantible);
 
             expect(function () {
                 $this->c->set('foo', 'NotExistsClass');
-            })->toThrow(new Exception\UnresolvableException('NotExistsClass'));
+            })->toThrow(new Exception\UnresolvableException(
+                'NotExistsClass',
+                new \ReflectionException()
+            ));
+            expect(function () {
+                $this->c->set('foo', 'bar');
+            })->toThrow(new Exception\UnresolvableException('bar'));
 
             expect(function () {
                 $this->c->set('foo', ['foo', 'bar']);
@@ -177,8 +200,8 @@ describe(Container::class, function () {
         });
     });
 
-    context('get', function () {
-        it('Should have same instance everywhere', function () {
+    context(Container::class.'::get', function () {
+        it('should have same instance everywhere', function () {
             $this->c->set('foo', function () {
                 return new class {
                     protected $items = [];
@@ -208,26 +231,26 @@ describe(Container::class, function () {
         });
     });
 
-    context('make', function () {
+    context(Container::class.'::make', function () {
         beforeEach(function () {
             // Dependencies.
-            $this->c->set('dummy', Dummy::class);
-            $this->c->set(AbstractFoo::class, ConcreteBar::class);
+            $this->c->set('dummy', Stubs\Dummy::class);
+            $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
         });
 
         foreach ([
-            Stubs\CallableClass::class => AbstractFoo::class,
+            Stubs\CallableClass::class => Stubs\AbstractFoo::class,
             Stubs\InstantiableClass::class => Stubs\InstantiableClass::class,
             Stubs\SomeClass::class => Stubs\SomeClass::class,
         ] as $concrete => $instance) {
-            it('Should make an instance without adding to the stack', function () use ($concrete, $instance) {
+            it('should make an instance without adding to the stack', function () use ($concrete, $instance) {
                 expect($this->c->has($concrete))->toBeFalsy();
                 expect($this->c->make($concrete))->toBeAnInstanceOf($instance);
                 expect($this->c->has($concrete))->toBeFalsy();
             });
         }
 
-        it('Should make an instance using class name', function () {
+        it('should make an instance using class name', function () {
             expect(
                 $this->c->make(Stubs\SomeClass::class)
             )->toBeAnInstanceOf(Stubs\CertainInterface::class);
@@ -240,15 +263,15 @@ describe(Container::class, function () {
             )->toBeAnInstanceOf(Stubs\CertainInterface::class);
         });
 
-        it('Should make a container name', function () {
-            expect($this->c->make('dummy'))->toBeAnInstanceOf(Dummy::class);
+        it('should make a container name', function () {
+            expect($this->c->make('dummy'))->toBeAnInstanceOf(Stubs\Dummy::class);
         });
 
         it('shoud able to make void method', function () {
-            expect($this->c->make([SomeClass::class, 'voidMethod']))->toBeEmpty();
+            expect($this->c->make([Stubs\SomeClass::class, 'voidMethod']))->toBeEmpty();
         });
 
-        it('Should make a function name', function () {
+        it('should make a function name', function () {
             function func() {
                 return 'value';
             }
@@ -256,7 +279,7 @@ describe(Container::class, function () {
             expect($this->c->make('func'))->toBe('value');
         });
 
-        it('Should make a closure', function () {
+        it('should make a closure', function () {
             // Closure parameter passed from the second argument
             expect($this->c->make(function ($param) {
                 return $param;
@@ -275,20 +298,15 @@ describe(Container::class, function () {
             }))->toEqual('value');
         });
 
-        foreach ([
-            'a value'   => null,
-            'new value' => ['new value'],
-        ] as $expected => $params) {
-            it('Should make a class-method pair regardless is static or non-static', function () use ($params, $expected) {
-                foreach (['shouldCalled', 'staticMethod'] as $method) {
-                    expect($this->c->make('Stubs\SomeClass::'.$method, $params))->toEqual($expected);
-                    expect($this->c->make(['Stubs\SomeClass', $method], $params))->toEqual($expected);
-                    expect($this->c->make([new SomeClass, $method], $params))->toEqual($expected);
-                }
+        foreach (['nonStaticMethod', 'staticMethod'] as $method) {
+            it('should make an '.$method, function () use ($method) {
+                expect($this->c->make('Stubs\SomeClass::'.$method, ['value']))->toEqual('value');
+                expect($this->c->make(['Stubs\SomeClass', $method], ['value']))->toEqual('value');
+                expect($this->c->make([new Stubs\SomeClass, $method], ['value']))->toEqual('value');
             });
         }
 
-        it('Should make and optionally modify handler', function () {
+        it('should make and optionally modify handler', function () {
             // Overide handler by condition
             expect(
                 $this->c->make(Stubs\SomeClass::class, function ($instance) {
@@ -318,7 +336,7 @@ describe(Container::class, function () {
             })->toThrow(new Exception\UnresolvableException([Stubs\SomeClass::class, 'notExists']));
         });
 
-        it('Should pass second parameter as argument for the handler', function () {
+        it('should pass second parameter as argument for the handler', function () {
             expect(
                 $this->c->make(Stubs\SomeClass::class, ['new value'])
             )->toBe('new value');
@@ -329,7 +347,7 @@ describe(Container::class, function () {
             )->toBe('new value');
         });
 
-        it('Should ignore second parameter if class is not callable', function () {
+        it('should ignore second parameter if class is not callable', function () {
             // Returns the class instance
             expect(
                 $this->c->make(Stubs\InstantiableClass::class, ['new value'])
@@ -341,7 +359,7 @@ describe(Container::class, function () {
             )->toBeAnInstanceOf(Stubs\InstantiableClass::class);
         });
 
-        it('Should throw exception if second parameter were invalid', function () {
+        it('should throw exception if second parameter were invalid', function () {
             expect(function () {
                 $this->c->make(Stubs\SomeClass::class, 'string');
             })->toThrow(new Exception\InvalidArgumentException(2, ['array', 'Closure'], 'string'));
@@ -359,19 +377,19 @@ describe(Container::class, function () {
             })->toThrow(new Exception\InvalidArgumentException(2, ['array'], 'string'));
         });
 
-        it('Should throw exception if third parameter were invalid', function () {
+        it('should throw exception if third parameter were invalid', function () {
             expect(function () {
                 $this->c->make(Stubs\SomeClass::class, ['string'], 'condition');
             })->toThrow(new Exception\InvalidArgumentException(3, ['Closure'], 'string'));
         });
 
-        it('Should throw exception if have more than 3 parameters', function () {
+        it('should throw exception if have more than 3 parameters', function () {
             expect(function () {
                 $this->c->make(Stubs\SomeClass::class, ['string'], 'condition', 'more');
             })->toThrow(new Exception\RangeException(3, 4));
         });
 
-        it('Should ignore the optional arguments if falsy ', function () {
+        it('should ignore the optional arguments if falsy ', function () {
             expect(
                 // Iggnore falsy params
                 $this->c->make(Stubs\SomeClass::class, null, null)

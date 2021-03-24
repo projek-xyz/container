@@ -102,6 +102,46 @@ describe(Container::class, function () {
         expect($this->c->get('foo'))->toEqual('foo');
     });
 
+    it('should handle aliases', function () {
+        interface FooInterface {
+            public function fooMethod();
+        }
+
+        interface BarInterface {
+            public function barMethod();
+        }
+
+        interface FooBarInterface extends FooInterface, BarInterface {}
+
+        class FooBar implements FooBarInterface {
+            public function fooMethod() {
+                return 'value from foo';
+            }
+
+            public function barMethod() {
+                return 'value from bar';
+            }
+        }
+
+        // Set the implementation
+        $this->c->set(FooBar::class, FooBar::class);
+        // Assign alias of the implementation to the interface container
+        $this->c->set(FooBarInterface::class, FooBar::class);
+
+        // Assign alias of the implementation to the interface container
+        $this->c->set(FooInterface::class, FooBarInterface::class);
+        $this->c->set(BarInterface::class, FooBarInterface::class);
+
+        $this->c->set('foobar', function (FooInterface $foo, BarInterface $bar) {
+            expect($foo->fooMethod())->toBe('value from foo');
+            expect($bar->barMethod())->toBe('value from bar');
+
+            return 'foobar';
+        });
+
+        expect($this->c->get('foobar'))->toBe('foobar');
+    });
+
     it('should be cloned with new resolver instance', function () {
         // Dependencies.
         $this->c->set('dummy', Stubs\Dummy::class);

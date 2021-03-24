@@ -42,7 +42,7 @@ class Container implements ContainerInterface
         $instances = array_merge([
             self::class => $this,
             ContainerInterface::class => self::class,
-            PsrContainerInterface::class => self::class,
+            PsrContainerInterface::class => ContainerInterface::class,
         ], $instances);
 
         foreach ($instances as $id => $instance) {

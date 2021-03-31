@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
-use Closure;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionFunction;
-use ReflectionMethod;
-
 final class Resolver extends AbstractContainerAware
 {
     /**
@@ -39,14 +33,14 @@ final class Resolver extends AbstractContainerAware
         $params = [];
         $ref = $this->createReflection($instance);
 
-        if ($isMethod = ($ref instanceof ReflectionMethod)) {
+        if ($isMethod = ($ref instanceof \ReflectionMethod)) {
             $params[] = $ref->isStatic() && ! is_object($instance[0]) ? null : $instance[0];
         }
 
         // If it was internal method resolve its params as a closure.
         // @link https://bugs.php.net/bug.php?id=50798
         $toResolve = $isMethod && $ref->getName() === '__invoke'
-            ? new ReflectionFunction($ref->getClosure($instance[0]))
+            ? new \ReflectionFunction($ref->getClosure($instance[0]))
             : $ref;
 
         try {
@@ -61,7 +55,7 @@ final class Resolver extends AbstractContainerAware
     /**
      * Instance resolver.
      *
-     * @param string|object|callable|Closure $toResolve
+     * @param string|object|callable|\Closure $toResolve
      * @return object|callable
      * @throws Exception\UnresolvableException
      */
@@ -109,7 +103,7 @@ final class Resolver extends AbstractContainerAware
         }
 
         try {
-            $ref = new ReflectionClass($className);
+            $ref = new \ReflectionClass($className);
             $args = ($constructor = $ref->getConstructor()) ? $this->resolveArgs($constructor) : [];
 
             return $ref->newInstanceArgs($args);
@@ -124,20 +118,20 @@ final class Resolver extends AbstractContainerAware
      * Instance resolver.
      *
      * @param callable $callable
-     * @return ReflectionMethod|ReflectionFunction|null
+     * @return \ReflectionMethod|\ReflectionFunction|null
      * @throws Exception\UnresolvableException
      */
     private function createReflection($callable)
     {
         if (is_string($callable)) {
             if (false === strpos($callable, '::')) {
-                return new ReflectionFunction($callable);
+                return new \ReflectionFunction($callable);
             }
 
             $callable = explode('::', $callable);
         }
 
-        $ref = new ReflectionMethod($callable[0], $callable[1]);
+        $ref = new \ReflectionMethod($callable[0], $callable[1]);
 
         // If trying to statically call a non-static method (at least on PHP 7.x)
         if (! $ref->isStatic() && is_string($callable[0])) {
@@ -166,7 +160,7 @@ final class Resolver extends AbstractContainerAware
             }
 
             try {
-                /** @var ReflectionNamedType $type */
+                /** @var \ReflectionNamedType $type */
                 $type = $param->getType();
                 $args[$position] = $this->getContainer(
                     ($type && ! $type->isBuiltin() ? $type : $param)->getName()

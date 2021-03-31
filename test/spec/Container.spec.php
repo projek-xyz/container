@@ -211,7 +211,7 @@ describe(Container::class, function () {
 
         it('should throw exception when setting incorrect param', function () {
             $refException = function (string $class) {
-                return new \ReflectionException(sprintf('Class "%s" does not exist', $class));
+                return new \ReflectionException(sprintf('Class %s does not exist', $class));
             };
 
             expect(function () {

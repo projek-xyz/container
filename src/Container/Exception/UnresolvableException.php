@@ -33,22 +33,26 @@ class UnresolvableException extends Exception
             return $toResolve->getMessage();
         }
 
-        if (is_string($toResolve)) {
-            $message = 'string: ' . $toResolve;
-        } elseif (is_array($toResolve)) {
-            if (! is_string($toResolve[0])) {
-                $toResolve[0] = get_class($toResolve[0]);
-            }
+        switch (true) {
+            case is_array($toResolve):
+                if (! is_string($toResolve[0])) {
+                    $toResolve[0] = get_class($toResolve[0]);
+                }
 
-            $message = 'array: [' . join(', ', $toResolve) . ']';
-        } elseif ($toResolve instanceof NotFoundException) {
-            $message = 'container: ' . $toResolve->getName();
-        } elseif ($toResolve instanceof \ReflectionException) {
-            $message = 'instance: ' . str_replace('"', '', $toResolve->getMessage());
-        } elseif (is_object($toResolve)) {
-            $message = 'class: ' . get_class($toResolve);
-        } else {
-            $message = 'type: ' . gettype($toResolve);
+                $message = 'array: [' . join(', ', $toResolve) . ']';
+                break;
+            case $toResolve instanceof NotFoundException:
+                $message = 'container: ' . $toResolve->getName();
+                break;
+            case $toResolve instanceof \ReflectionException:
+                $message = 'instance: ' . str_replace('"', '', $toResolve->getMessage());
+                break;
+            case is_object($toResolve):
+                $message = 'class: ' . get_class($toResolve);
+                break;
+            default:
+                $message = 'type: ' . gettype($toResolve);
+                break;
         }
 
         return sprintf('Cannot resolve %s', $message);

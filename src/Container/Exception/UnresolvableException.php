@@ -20,7 +20,7 @@ class UnresolvableException extends Exception
             $prev = $toResolve;
         }
 
-        parent::__construct(sprintf('Couldn\'t resolve %s.', $this->getTypeString($toResolve)), $prev);
+        parent::__construct($this->getTypeString($toResolve), $prev);
     }
 
     /**
@@ -29,8 +29,10 @@ class UnresolvableException extends Exception
      */
     private function getTypeString($toResolve): string
     {
+        $message = 'Cannot resolve %s';
+
         if (is_string($toResolve)) {
-            return 'string: ' . $toResolve;
+            return sprintf($message, 'string: ' . $toResolve);
         }
 
         if (is_array($toResolve)) {
@@ -38,13 +40,21 @@ class UnresolvableException extends Exception
                 $toResolve[0] = get_class($toResolve[0]);
             }
 
-            return 'array: [' . join(', ', $toResolve) . ']';
+            return sprintf($message, 'array: [' . join(', ', $toResolve) . ']');
         }
 
         if ($toResolve instanceof NotFoundException) {
-            return 'container: ' . $toResolve->getName();
+            return sprintf($message, 'container: ' . $toResolve->getName());
         }
 
-        return 'type: ' . gettype($toResolve);
+        if ($toResolve instanceof \ReflectionException) {
+            return sprintf($message, 'instance: ' . $toResolve->getMessage());
+        }
+
+        if ($toResolve instanceof \Throwable) {
+            return $toResolve->getMessage();
+        }
+
+        return 'type: ' . (is_object($toResolve) ? get_class($toResolve) : gettype($toResolve));
     }
 }

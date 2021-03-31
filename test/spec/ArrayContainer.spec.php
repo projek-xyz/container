@@ -24,7 +24,9 @@ describe(ArrayContainer::class, function () {
     it('should throw exception when setting incorrect param', function () {
         expect(function () {
             $this->c['foo'] = Stubs\AbstractFoo::class;
-        })->toThrow(new Exception(sprintf('Target "%s" is not instantiable.', Stubs\AbstractFoo::class)));
+        })->toThrow(new Exception\UnresolvableException(
+            new \Error('Cannot instantiate abstract class Stubs\\AbstractFoo')
+        ));
 
         expect(function () {
             $this->c['foo'] = ['foo', 'bar'];

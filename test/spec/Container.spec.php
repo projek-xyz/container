@@ -210,25 +210,28 @@ describe(Container::class, function () {
         });
 
         it('should throw exception when setting incorrect param', function () {
-            $notoInstantible = new Exception(sprintf('Target "%s" is not instantiable.', Stubs\AbstractFoo::class));
+            $refException = function (string $class) {
+                return new \ReflectionException(sprintf('Class "%s" does not exist', $class));
+            };
 
             expect(function () {
                 $this->c->make(Stubs\AbstractFoo::class);
-            })->toThrow($notoInstantible);
+            })->toThrow(new Exception\UnresolvableException(
+                new \Error('Cannot instantiate abstract class Stubs\\AbstractFoo')
+            ));
 
             expect(function () {
                 $this->c->set('foo', Stubs\AbstractFoo::class);
-            })->toThrow($notoInstantible);
+            })->toThrow(new Exception\UnresolvableException(
+                new \Error('Cannot instantiate abstract class Stubs\\AbstractFoo')
+            ));
 
             expect(function () {
                 $this->c->set('foo', 'NotExistsClass');
-            })->toThrow(new Exception\UnresolvableException(
-                'NotExistsClass',
-                new \ReflectionException()
-            ));
+            })->toThrow(new Exception\UnresolvableException($refException('NotExistsClass')));
             expect(function () {
                 $this->c->set('foo', 'bar');
-            })->toThrow(new Exception\UnresolvableException('bar'));
+            })->toThrow(new Exception\UnresolvableException($refException('bar')));
 
             expect(function () {
                 $this->c->set('foo', ['foo', 'bar']);

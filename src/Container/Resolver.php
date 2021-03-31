@@ -37,17 +37,17 @@ final class Resolver extends AbstractContainerAware
         }
 
         $params = [];
-        $reflector = $this->createReflection($instance);
+        $ref = $this->createReflection($instance);
 
-        if ($isMethod = ($reflector instanceof ReflectionMethod)) {
-            $params[] = $reflector->isStatic() && ! is_object($instance[0]) ? null : $instance[0];
+        if ($isMethod = ($ref instanceof ReflectionMethod)) {
+            $params[] = $ref->isStatic() && ! is_object($instance[0]) ? null : $instance[0];
         }
 
         // If it was internal method resolve its params as a closure.
         // @link https://bugs.php.net/bug.php?id=50798
-        $toResolve = $isMethod && $reflector->getName() === '__invoke'
-            ? new ReflectionFunction($reflector->getClosure($instance[0]))
-            : $reflector;
+        $toResolve = $isMethod && $ref->getName() === '__invoke'
+            ? new ReflectionFunction($ref->getClosure($instance[0]))
+            : $ref;
 
         try {
             $params[] = $this->resolveArgs($toResolve, $args);
@@ -55,7 +55,7 @@ final class Resolver extends AbstractContainerAware
             throw new Exception\UnresolvableException($err);
         }
 
-        return $reflector->invokeArgs(...$params);
+        return $ref->invokeArgs(...$params);
     }
 
     /**
@@ -67,16 +67,21 @@ final class Resolver extends AbstractContainerAware
      */
     public function resolve($toResolve)
     {
-        if (is_object($toResolve)) {
-            return $toResolve instanceof Closure ? $toResolve : $this->injectContainer($toResolve);
+        if (is_string($toResolve) && ! function_exists($toResolve)) {
+            $toResolve = false === strpos($toResolve, '::')
+                ? $this->createInstance($toResolve)
+                : explode('::', $toResolve);
         }
 
-        if (is_string($toResolve) && ! function_exists($toResolve)) {
-            if (false === strpos($toResolve, '::')) {
-                return $this->createInstance($toResolve);
+        if (is_object($toResolve)) {
+            if (
+                $toResolve instanceof ContainerAwareInterface
+                && ! $toResolve->getContainer() instanceof ContainerInterface
+            ) {
+                $toResolve->setContainer($this->getContainer());
             }
 
-            $toResolve = explode('::', $toResolve);
+            return $toResolve;
         }
 
         if (is_array($toResolve)) {
@@ -104,11 +109,10 @@ final class Resolver extends AbstractContainerAware
         }
 
         try {
-            $reflector = new ReflectionClass($className);
+            $ref = new ReflectionClass($className);
+            $args = ($constructor = $ref->getConstructor()) ? $this->resolveArgs($constructor) : [];
 
-            $args = ($constructor = $reflector->getConstructor()) ? $this->resolveArgs($constructor) : [];
-
-            return $this->injectContainer($reflector->newInstanceArgs($args));
+            return $ref->newInstanceArgs($args);
         } catch (Exception\UnresolvableException $err) {
             throw $err;
         } catch (\Throwable $err) {
@@ -198,23 +202,5 @@ final class Resolver extends AbstractContainerAware
         }
 
         return is_callable($instance);
-    }
-
-    /**
-     * Injecting Container instance if $instance implements ContainerAwareInterface.
-     *
-     * @param object $instance
-     * @return object
-     */
-    private function injectContainer($instance)
-    {
-        if (
-            $instance instanceof ContainerAwareInterface
-            && ! $instance->getContainer() instanceof ContainerInterface
-        ) {
-            $instance->setContainer($this->getContainer());
-        }
-
-        return $instance;
     }
 }

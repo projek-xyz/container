@@ -235,7 +235,9 @@ describe(Container::class, function () {
 
             expect(function () {
                 $this->c->set('foo', ['foo', 'bar']);
-            })->toThrow(new Exception\UnresolvableException(['foo', 'bar']));
+            })->toThrow(new Exception\UnresolvableException(
+                new \ReflectionException('Class foo does not exist')
+            ));
 
             expect(function () {
                 $this->c->set('foo', null);

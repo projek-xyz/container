@@ -80,11 +80,7 @@ final class Resolver extends AbstractContainerAware
         }
 
         if (is_array($toResolve)) {
-            try {
-                $toResolve[0] = $this->resolve($toResolve[0]);
-            } catch (Exception\UnresolvableException $err) {
-                throw new Exception\UnresolvableException($toResolve, $err);
-            }
+            $toResolve[0] = $this->resolve($toResolve[0]);
         }
 
         if ($this->assertCallable($toResolve)) {
@@ -109,17 +105,15 @@ final class Resolver extends AbstractContainerAware
 
         try {
             $reflector = new ReflectionClass($className);
-        } catch (ReflectionException $err) {
-            throw new Exception\UnresolvableException($className, $err);
+
+            $args = ($constructor = $reflector->getConstructor()) ? $this->resolveArgs($constructor) : [];
+
+            return $this->injectContainer($reflector->newInstanceArgs($args));
+        } catch (Exception\UnresolvableException $err) {
+            throw $err;
+        } catch (\Throwable $err) {
+            throw new Exception\UnresolvableException($err);
         }
-
-        if (! $reflector->isInstantiable()) {
-            throw new Exception(sprintf('Target "%s" is not instantiable.', $className));
-        }
-
-        $args = ($constructor = $reflector->getConstructor()) ? $this->resolveArgs($constructor) : [];
-
-        return $this->injectContainer($reflector->newInstanceArgs($args));
     }
 
     /**

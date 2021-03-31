@@ -20,7 +20,7 @@ class UnresolvableException extends Exception
             $prev = $toResolve;
         }
 
-        parent::__construct(sprintf('Couldn\'t resolve %s.', $this->getTypeString($toResolve)), $prev);
+        parent::__construct($this->getTypeString($toResolve), $prev);
     }
 
     /**
@@ -29,22 +29,32 @@ class UnresolvableException extends Exception
      */
     private function getTypeString($toResolve): string
     {
-        if (is_string($toResolve)) {
-            return 'string: ' . $toResolve;
+        if ($toResolve instanceof self) {
+            return $toResolve->getMessage();
         }
 
-        if (is_array($toResolve)) {
-            if (! is_string($toResolve[0])) {
-                $toResolve[0] = get_class($toResolve[0]);
-            }
+        switch (true) {
+            case is_array($toResolve):
+                if (! is_string($toResolve[0])) {
+                    $toResolve[0] = get_class($toResolve[0]);
+                }
 
-            return 'array: [' . join(', ', $toResolve) . ']';
+                $message = 'array: [' . join(', ', $toResolve) . ']';
+                break;
+            case $toResolve instanceof NotFoundException:
+                $message = 'container: ' . $toResolve->getName();
+                break;
+            case $toResolve instanceof \ReflectionException:
+                $message = 'instance: ' . str_replace('"', '', $toResolve->getMessage());
+                break;
+            case is_object($toResolve):
+                $message = 'class: ' . get_class($toResolve);
+                break;
+            default:
+                $message = 'type: ' . gettype($toResolve);
+                break;
         }
 
-        if ($toResolve instanceof NotFoundException) {
-            return 'container: ' . $toResolve->getName();
-        }
-
-        return 'type: ' . gettype($toResolve);
+        return sprintf('Cannot resolve %s', $message);
     }
 }

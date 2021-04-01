@@ -38,12 +38,11 @@ class Container implements ContainerInterface
     public function __construct(array $instances = [])
     {
         $this->resolver = new Resolver($this);
-
-        $instances = array_merge([
+        $this->instances = [
             self::class => $this,
-            ContainerInterface::class => self::class,
-            PsrContainerInterface::class => ContainerInterface::class,
-        ], $instances);
+            ContainerInterface::class => $this,
+            PsrContainerInterface::class => $this,
+        ];
 
         foreach ($instances as $id => $instance) {
             $this->set($id, $instance);

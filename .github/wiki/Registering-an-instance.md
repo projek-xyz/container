@@ -11,7 +11,7 @@ $container->set($abstract, $concrete)
 
 There's few ways to register your services to the container as follow:
 
-### 1. Use any [`callable`](https://www.php.net/manual/en/language.types.callable.php)
+### 1. Use [`callable`](https://www.php.net/manual/en/language.types.callable.php) string or array
 
 ```php
 // callable string of a function name
@@ -49,56 +49,69 @@ $container->set(CertainInterface::class, [new SomeClass, 'staticMethod']); // OR
 $container->set(CertainInterface::class, [new SomeClass, 'nonStaticMethod']);
 ```
 
-### 2. Use object of class instance
+Also you have the option to register a method from existing container as follow
 
 ```php
-$container->set('myService', new SomeClass);
+class SomeClass implements CertainInterface
+{
+    public function theMethod() {
+        return 'a value';
+    }
+}
+
+$container->set(CertainInterface::class, SomeClass::class);
+$container->set('foo', function (CertainInterface $bar) {
+    return $bar;
+});
+
+// Because the container 'foo' is technically returns the instance of CertainInterface
+$container->set('bar', 'foo::theMethod');                       // => returns 'a value'
+
+// Because the CertainInterface is registered as a container 
+$container->set('baz', [CertainInterface::class, 'theMethod']); // => returns 'a value'
 ```
 
-### 3. Use string of a class name
+### 2. Use instance or name of a class
 
 ```php
-// callable string of a class name
+// Instance of class
+$container->set('myService', new SomeClass);
+
+// String of class name
 $container->set('myService', SomeFactoryClass::class);
 ```
 
-By registering a service as class name you have the option to resolve and inject the dependencies either for its `__construct()` and `__invoke()` method, if any. See [#2](https://github.com/projek-xyz/container/pull/2)
+Things you should aware of
+
+* By registering a service this way, the container will check whether it's a callable class or not.
+* If it's a callable class, then the `Container::get()` method will returns any returns value from the `__invoke()` method instead of the instance of the class.
+
+Let say you have the following class
 
 ```php
-class FooBarProvider {
+class FooBar {
     protected $foo
 
-    /**
-     * The constructor dependency will be injected and the class will be initiated on register `set()`.
-     * 
-     * @param Foo $foo
-     */
     public function __construct(Foo $foo) {
         $this->foo = $foo;
     }
 
     /**
-     * The dependency will be injected on retrieval `get()`
-     * and the returns value will be available for the `serviceId` instead of the class instance.
-     * 
-     * @param Bar $bar
-     * @return FooBar
+     * The __invoke method returns void.
      */
     public function __invoke(Bar $bar) {
-        return $this->foo->bar($bar);
+        $this->foo->setBar($bar);
     }
 }
 
-/**
- * So when you register a service like this.
- */
-$container->set(FooBarInterface::class, FooBarProvider::class);
+$container->set(FooBar::class, FooBar::class);
 
-/**
- * You'll get instance of `FooBar` instead of `FooBarProvider`
- */
-$fooBar = $container->get(FooBarInterface::class);
+// What you'll get
+$container->get(FooBar::class); // => returns void
 ```
+
+That said, it's possible to have a container that returns completely unrelated value with the name, in case you were using a class name as container name
+
 ## `set()` an alias of existing service
 
 you can use name of the registered service as the `$concrete` parameter.

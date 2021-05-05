@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Projek\Container;
 use Projek\Container\Exception;
 use Psr\Container\ContainerInterface as PsrContainer;
+use Stubs\SomeClass;
 
 describe(Container::class, function () {
     beforeEach(function () {
@@ -103,38 +104,17 @@ describe(Container::class, function () {
     });
 
     it('should handle aliases', function () {
-        interface FooInterface {
-            public function fooMethod();
-        }
-
-        interface BarInterface {
-            public function barMethod();
-        }
-
-        interface FooBarInterface extends FooInterface, BarInterface {}
-
-        class FooBar implements FooBarInterface {
-            public function fooMethod() {
-                return 'value from foo';
-            }
-
-            public function barMethod() {
-                return 'value from bar';
-            }
-        }
-
         // Set the implementation
-        $this->c->set(FooBar::class, FooBar::class);
-        // Assign alias of the implementation to the interface container
-        $this->c->set(FooBarInterface::class, FooBar::class);
+        $this->c->set(Stubs\FooBarInterface::class, Stubs\FooBar::class);
 
         // Assign alias of the implementation to the interface container
-        $this->c->set(FooInterface::class, FooBarInterface::class);
-        $this->c->set(BarInterface::class, FooBarInterface::class);
+        $this->c->set(Stubs\FooInterface::class, Stubs\FooBarInterface::class);
+        $this->c->set(Stubs\BarInterface::class, Stubs\FooBarInterface::class);
 
-        $this->c->set('foobar', function (FooInterface $foo, BarInterface $bar) {
+        $this->c->set('foobar', function (Stubs\FooInterface $foo, Stubs\BarInterface $bar) {
             expect($foo->fooMethod())->toBe('value from foo');
             expect($bar->barMethod())->toBe('value from bar');
+            expect($foo)->toBe($bar);
 
             return 'foobar';
         });

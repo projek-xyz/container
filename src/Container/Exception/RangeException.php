@@ -15,6 +15,6 @@ class RangeException extends \RangeException implements ContainerExceptionInterf
      */
     public function __construct(int $expected, int $actual, ?\Throwable $prev = null)
     {
-        parent::__construct(sprintf('Could not accept more than %d arguments, %d given', $expected, $actual), 0, $prev);
+        parent::__construct(\sprintf('Could not accept more than %d arguments, %d given', $expected, $actual), 0, $prev);
     }
 }

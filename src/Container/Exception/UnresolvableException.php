@@ -34,24 +34,24 @@ class UnresolvableException extends Exception
         }
 
         switch (true) {
-            case is_array($toResolve):
-                if (! is_string($toResolve[0])) {
-                    $toResolve[0] = get_class($toResolve[0]);
+            case \is_array($toResolve):
+                if (! \is_string($toResolve[0])) {
+                    $toResolve[0] = \get_class($toResolve[0]);
                 }
 
-                $message = 'array: [' . join(', ', $toResolve) . ']';
+                $message = 'array: [' . \join(', ', $toResolve) . ']';
                 break;
             case $toResolve instanceof NotFoundException:
                 $message = 'container: ' . $toResolve->getName();
                 break;
             case $toResolve instanceof \ReflectionException:
-                $message = 'instance: ' . str_replace('"', '', $toResolve->getMessage());
+                $message = 'instance: ' . \str_replace('"', '', $toResolve->getMessage());
                 break;
-            case is_object($toResolve):
-                $message = 'class: ' . get_class($toResolve);
+            case \is_object($toResolve):
+                $message = 'class: ' . \get_class($toResolve);
                 break;
             default:
-                $message = 'type: ' . gettype($toResolve);
+                $message = 'type: ' . \gettype($toResolve);
                 break;
         }
 

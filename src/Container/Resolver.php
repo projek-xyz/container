@@ -25,7 +25,7 @@ final class Resolver extends AbstractContainerAware
      */
     public function handle($instance, array $args = [])
     {
-        if (! $this->assertCallable($instance) && is_object($instance)) {
+        if (! $this->assertCallable($instance) && \is_object($instance)) {
             // Returns the object if it was non-callable instance.
             return $instance;
         }
@@ -34,7 +34,7 @@ final class Resolver extends AbstractContainerAware
         $ref = $this->createReflection($instance);
 
         if ($isMethod = ($ref instanceof \ReflectionMethod)) {
-            $params[] = $ref->isStatic() && ! is_object($instance[0]) ? null : $instance[0];
+            $params[] = $ref->isStatic() && ! \is_object($instance[0]) ? null : $instance[0];
         }
 
         // If it was internal method resolve its params as a closure.
@@ -61,13 +61,13 @@ final class Resolver extends AbstractContainerAware
      */
     public function resolve($toResolve)
     {
-        if (is_string($toResolve) && ! function_exists($toResolve)) {
-            $toResolve = false === strpos($toResolve, '::')
+        if (\is_string($toResolve) && ! \function_exists($toResolve)) {
+            $toResolve = false === \strpos($toResolve, '::')
                 ? $this->createInstance($toResolve)
-                : explode('::', $toResolve);
+                : \explode('::', $toResolve);
         }
 
-        if (is_object($toResolve)) {
+        if (\is_object($toResolve)) {
             if (
                 $toResolve instanceof ContainerAwareInterface
                 && ! $toResolve->getContainer() instanceof ContainerInterface
@@ -78,7 +78,7 @@ final class Resolver extends AbstractContainerAware
             return $toResolve;
         }
 
-        if (is_array($toResolve)) {
+        if (\is_array($toResolve)) {
             $toResolve[0] = $this->resolve($toResolve[0]);
         }
 
@@ -123,21 +123,21 @@ final class Resolver extends AbstractContainerAware
      */
     private function createReflection($callable)
     {
-        if (is_string($callable)) {
-            if (false === strpos($callable, '::')) {
+        if (\is_string($callable)) {
+            if (false === \strpos($callable, '::')) {
                 return new \ReflectionFunction($callable);
             }
 
-            $callable = explode('::', $callable);
+            $callable = \explode('::', $callable);
         }
 
         $ref = new \ReflectionMethod($callable[0], $callable[1]);
 
         // If trying to statically call a non-static method (at least on PHP 7.x)
-        if (! $ref->isStatic() && is_string($callable[0])) {
-            throw new Exception(sprintf(
+        if (! $ref->isStatic() && \is_string($callable[0])) {
+            throw new Exception(\sprintf(
                 'Non-static method %s should not be called statically',
-                join('::', $callable)
+                \join('::', $callable)
             ));
         }
 
@@ -155,7 +155,7 @@ final class Resolver extends AbstractContainerAware
     {
         foreach ($reflection->getParameters() as $param) {
             // Just skip if parameter already provided.
-            if (array_key_exists($position = $param->getPosition(), $args)) {
+            if (\array_key_exists($position = $param->getPosition(), $args)) {
                 continue;
             }
 
@@ -187,14 +187,14 @@ final class Resolver extends AbstractContainerAware
      */
     private function assertCallable(&$instance): bool
     {
-        if (is_object($instance) && method_exists($instance, '__invoke')) {
+        if (\is_object($instance) && \method_exists($instance, '__invoke')) {
             $instance = [$instance, '__invoke'];
         }
 
-        if (is_array($instance) && ! method_exists(...$instance)) {
+        if (\is_array($instance) && ! \method_exists(...$instance)) {
             throw new Exception\UnresolvableException($instance);
         }
 
-        return is_callable($instance);
+        return \is_callable($instance);
     }
 }

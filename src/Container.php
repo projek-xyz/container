@@ -21,7 +21,7 @@ class Container implements ContainerInterface
      *
      * @var array<string, mixed>
      */
-    private $cached = [];
+    private $handledInstances = [];
 
     /**
      * Service container resolver.
@@ -66,14 +66,12 @@ class Container implements ContainerInterface
             throw new Exception\NotFoundException($id);
         }
 
-        if (isset($this->cached[$id])) {
-            return $this->cached[$id];
+        if (isset($this->handledInstances[$id])) {
+            return $this->handledInstances[$id];
         }
 
-        $instance = $this->instances[$id];
-
-        if (is_callable($instance)) {
-            return $this->cached[$id] = $this->resolver->handle($instance);
+        if (\is_callable($instance = $this->instances[$id])) {
+            return $this->handledInstances[$id] = $this->resolver->handle($instance);
         }
 
         return $instance;
@@ -84,7 +82,7 @@ class Container implements ContainerInterface
      */
     public function has(string $id): bool
     {
-        return array_key_exists($id, $this->instances);
+        return \array_key_exists($id, $this->instances);
     }
 
     /**
@@ -114,11 +112,11 @@ class Container implements ContainerInterface
     {
         $instance = $this->resolver->resolve($concrete);
 
-        list($args, $condition) = ($count = count($args = array_filter($args)))
+        [$args, $condition] = ($count = \count($args = \array_filter($args)))
             ? $this->assertParams($count, $args)
             : [[], null];
 
-        if (null !== $condition) {
+        if ($condition instanceof \Closure) {
             $instance = $condition($instance) ?: $instance;
         }
 
@@ -135,7 +133,7 @@ class Container implements ContainerInterface
     private function assertParams(int $count, array $params = []): array
     {
         if (2 === $count) {
-            if (! is_array($params[0])) {
+            if (! \is_array($params[0])) {
                 throw new Exception\InvalidArgumentException(2, ['array'], $params[0]);
             } elseif (! ($params[1] instanceof \Closure) && null !== $params[1]) {
                 throw new Exception\InvalidArgumentException(3, ['Closure'], $params[1]);
@@ -145,12 +143,12 @@ class Container implements ContainerInterface
         }
 
         if (1 === $count) {
-            if (! is_array($params[0]) && ! ($params[0] instanceof \Closure)) {
+            if (! \is_array($params[0]) && ! ($params[0] instanceof \Closure)) {
                 throw new Exception\InvalidArgumentException(2, ['array', 'Closure'], $params[0]);
             }
 
             return [
-                is_array($params[0]) ? $params[0] : [],
+                \is_array($params[0]) ? $params[0] : [],
                 $params[0] instanceof \Closure ? $params[0] : null
             ];
         }

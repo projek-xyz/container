@@ -38,11 +38,8 @@ interface ContainerInterface extends PsrContainerInterface
      *
      * // Treat 2nd parameter as condition
      * $container->make(SomeClass::class, function ($instance) {
-     *     if ($instance instanceof CertainInterface) {
-     *         return [$instance, 'theMethod'];
-     *     }
-     *
-     *     return null; // Accepts falsy or $instance of the class
+     *     // Accepts falsy or $instance of the class
+     *     return $instance instanceof CertainInterface ? [$instance, 'theMethod'] : null;
      * })
      *
      * // Treat 2nd parameter as arguments and 3rd as condition

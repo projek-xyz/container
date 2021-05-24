@@ -18,9 +18,9 @@ interface ContainerAware
      * Assign a container to the instance.
      *
      * @param ContainerInterface $container
-     * @return void
+     * @return static
      */
-    public function setContainer(ContainerInterface $container): void;
+    public function setContainer(ContainerInterface $container): ContainerAware;
 
     /**
      * Retrieve container instance or the instance of registered service.

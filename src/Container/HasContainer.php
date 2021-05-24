@@ -12,15 +12,17 @@ trait HasContainer
     protected $container = null;
 
     /**
-     * @see ContainerAwareInterface::setContainer()
+     * @see ContainerAware::setContainer()
      */
-    public function setContainer(ContainerInterface $container): void
+    public function setContainer(ContainerInterface $container): ContainerAware
     {
         $this->container = $container;
+
+        return $this;
     }
 
     /**
-     * @see ContainerAwareInterface::getContainer()
+     * @see ContainerAware::getContainer()
      */
     public function getContainer(?string $name = null)
     {

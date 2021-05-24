@@ -88,13 +88,15 @@ class Container implements ContainerInterface
     /**
      * {@inheritDoc}
      */
-    public function set(string $id, $instance): void
+    public function set(string $id, $instance): ContainerInterface
     {
         if ($this->has($id)) {
             return;
         }
 
         $this->instances[$id] = $this->resolver->resolve($instance);
+
+        return $this;
     }
 
     /**

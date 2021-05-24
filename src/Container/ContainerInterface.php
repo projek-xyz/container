@@ -13,9 +13,9 @@ interface ContainerInterface extends PsrContainerInterface
      *
      * @param string $id
      * @param mixed $instance
-     * @return void
+     * @return static
      */
-    public function set(string $id, $instance): void;
+    public function set(string $id, $instance): ContainerInterface;
 
     /**
      * Unset instance.

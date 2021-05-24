@@ -12,7 +12,7 @@ namespace Projek\Container;
  *
  * @see Resolver::injectContainer()
  */
-interface ContainerAwareInterface
+interface ContainerAware
 {
     /**
      * Assign a container to the instance.

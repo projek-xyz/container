@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
-trait ContainerAware
+trait HasContainer
 {
     /**
      * @var null|ContainerInterface

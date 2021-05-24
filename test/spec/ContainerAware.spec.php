@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Projek\Container;
-use Projek\Container\{ContainerAware, ContainerAwareInterface, ContainerInterface};
+use Projek\Container\{HasContainer, ContainerAware, ContainerInterface};
 
 describe(ContainerAware::class, function () {
     given('container', function () {
@@ -11,8 +11,8 @@ describe(ContainerAware::class, function () {
     });
 
     given('stub', function () {
-        return new class implements ContainerAwareInterface {
-            use ContainerAware;
+        return new class implements ContainerAware {
+            use HasContainer;
         };
     });
 

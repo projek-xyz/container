@@ -2,11 +2,11 @@
 
 namespace Stubs;
 
-use Projek\Container\{ContainerAware, ContainerAwareInterface, ContainerInterface};
+use Projek\Container\{HasContainer, ContainerAware, ContainerInterface};
 
-class CloneContainer implements ContainerAwareInterface
+class CloneContainer implements ContainerAware
 {
-    use ContainerAware;
+    use HasContainer;
 
     public function __construct(ContainerInterface $container)
     {

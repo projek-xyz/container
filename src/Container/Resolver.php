@@ -69,7 +69,7 @@ final class Resolver extends AbstractContainerAware
 
         if (\is_object($toResolve)) {
             if (
-                $toResolve instanceof ContainerAwareInterface
+                $toResolve instanceof ContainerAware
                 && ! $toResolve->getContainer() instanceof ContainerInterface
             ) {
                 $toResolve->setContainer($this->getContainer());

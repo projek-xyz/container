@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Projek\Container;
 use Projek\Container\Exception;
 use Psr\Container\ContainerInterface as PsrContainer;
-use Stubs\SomeClass;
 
 describe(Container::class, function () {
     beforeEach(function () {
@@ -419,6 +418,69 @@ describe(Container::class, function () {
                 // Iggnore falsy params
                 $this->c->make(Stubs\SomeClass::class, null, null)
             )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+        });
+    });
+
+    context(Container::class.'::extend', function () {
+        beforeEach(function () {
+            $this->c->set('dummy', Stubs\Dummy::class);
+        });
+
+        it('should not extends non-exists entry', function () {
+            expect(function () {
+                $this->c->extend('foo', function ($foo) {
+                    return $foo;
+                });
+            })->toThrow(new Exception\NotFoundException('foo'));
+        });
+
+        it('should not extend a closure entries', function () {
+            $this->c->set('cb', function () {
+                // .
+            });
+
+            expect(function () {
+                $this->c->extend('cb', function ($cb) {
+                    return $cb;
+                });
+            })->toThrow(new Exception('Could not extending a non-object entry of cb'));
+        });
+
+        it('should not extend a invocable object entries', function () {
+            $this->c->set(Stubs\CallableClass::class, Stubs\CallableClass::class);
+
+            expect(function () {
+                $this->c->extend(Stubs\CallableClass::class, function ($cb) {
+                    return $cb;
+                });
+            })->toThrow(new Exception('Could not extending a non-object entry of Stubs\CallableClass'));
+        });
+
+        it('should only extend a non-callable object entries', function () {
+            $this->c->set(Stubs\CouldExtends::class, Stubs\CouldExtends::class);
+
+            $oldEntry = $this->c->get(Stubs\CouldExtends::class);
+            // Make sure one of the entry's props is correct
+            expect($oldEntry->dummy)->toBe($this->c->get('dummy'));
+
+            // The first argument passed to the extend callback is the actual object instance of the entry
+            $newEntry = $this->c->extend(Stubs\CouldExtends::class, function (Stubs\CouldExtends $entry, $dummy) {
+                // Make sure to retrieve any registered entries from the callback argument
+                expect($entry->dummy)->toBe($dummy);
+
+                // Assume this as extending some functionalities of the current instance
+                $entry->dummy = new Stubs\Dummy;
+
+                // Returns the new entry
+                return $entry;
+            });
+
+            // It should over-write the instance
+            expect($newEntry)->toBe($oldEntry);
+            // Make sure it have the correct object
+            expect($newEntry)->toBeAnInstanceOf(Stubs\CouldExtends::class);
+            expect($oldEntry->dummy)->not->toBe($this->c->get('dummy'));
+            expect($newEntry->dummy)->not->toBe($this->c->get('dummy'));
         });
     });
 });

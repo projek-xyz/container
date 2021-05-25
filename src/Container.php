@@ -70,11 +70,13 @@ class Container implements ContainerInterface
             return $this->handledInstances[$id];
         }
 
-        if (\is_callable($instance = $this->instances[$id])) {
-            return $this->handledInstances[$id] = $this->resolver->handle($instance);
+        $instance = $this->instances[$id];
+
+        if (\is_object($instance) && ! \is_callable($instance)) {
+            return $instance;
         }
 
-        return $instance;
+        return $this->handledInstances[$id] = $this->resolver->handle($instance);
     }
 
     /**
@@ -91,10 +93,14 @@ class Container implements ContainerInterface
     public function set(string $id, $instance): ContainerInterface
     {
         if ($this->has($id)) {
-            return;
+            return $this;
         }
 
         $this->instances[$id] = $this->resolver->resolve($instance);
+
+        if (isset($this->handledInstances[$id])) {
+            unset($this->handledInstances[$id]);
+        }
 
         return $this;
     }
@@ -105,6 +111,10 @@ class Container implements ContainerInterface
     public function unset(string $id): void
     {
         unset($this->instances[$id]);
+
+        if (isset($this->handledInstances[$id])) {
+            unset($this->handledInstances[$id]);
+        }
     }
 
     /**

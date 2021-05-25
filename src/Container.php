@@ -152,13 +152,17 @@ class Container implements ContainerInterface
         // We tread any callable like a factory which could returns different instance
         // when it invoked. So we should only extend object instance.
         if (! \is_object($entry) || method_exists($entry, '__invoke')) {
-            throw new Exception('Could not extending a non-object or callable entry of ' . $id);
+            throw new Exception(
+                sprintf('Could not extending a non-object or callable entry of "%s"', $id)
+            );
         }
 
         $extended = $this->make($callable, [$entry]);
 
         if (! is_a($extended, $class = get_class($entry))) {
-            throw new Exception('Argument #2 the returns value of the callback must be of type ' . $class);
+            throw new Exception(
+                sprintf('Argument #2 callback must be returns of type "%s"', $class)
+            );
         }
 
         $this->unset($id);

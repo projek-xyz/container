@@ -8,6 +8,16 @@ class Dummy
     {
         return $foo->lorem($text);
     }
+
+    public function nonStaticMethod(?string $param = null)
+    {
+        return $param ?: 'value from non-static method';
+    }
+
+    public static function staticMethod(?string $param = null)
+    {
+        return $param ?: 'value from static method';
+    }
 }
 
 function dummyLorem(AbstractFoo $foo) {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Projek\Container;
 use Projek\Container\Exception;
 use Psr\Container\ContainerInterface as PsrContainer;
-use Stubs\Dummy;
 
 describe(Container::class, function () {
     beforeEach(function () {
@@ -162,8 +161,6 @@ describe(Container::class, function () {
             'staticMethod' => 'value from static method',
         ] as $method => $value) {
             it('should set a class-method pair regardless is static or non-static', function () use ($method, $value) {
-                // dependency
-
                 $this->c->set('a', 'Stubs\SomeClass::'.$method);
                 $this->c->set('b', [Stubs\SomeClass::class, $method]);
                 $this->c->set('c', [new Stubs\SomeClass, $method]);
@@ -171,6 +168,14 @@ describe(Container::class, function () {
                 expect($this->c->get('a'))->toBe($value);
                 expect($this->c->get('b'))->toBe($value);
                 expect($this->c->get('c'))->toBe($value);
+            });
+
+            it('should set a entry-method pair the same way as class-method pair', function () use ($method, $value) {
+                $this->c->set('a', 'dummy::'.$method);
+                $this->c->set('b', ['dummy', $method]);
+
+                expect($this->c->get('a'))->toBe($value);
+                expect($this->c->get('b'))->toBe($value);
             });
         }
 
@@ -209,6 +214,7 @@ describe(Container::class, function () {
             expect(function () {
                 $this->c->set('foo', 'NotExistsClass');
             })->toThrow(new Exception\UnresolvableException($refException('NotExistsClass')));
+
             expect(function () {
                 $this->c->set('foo', 'bar');
             })->toThrow(new Exception\UnresolvableException($refException('bar')));
@@ -445,7 +451,7 @@ describe(Container::class, function () {
                 $this->c->extend('cb', function ($cb) {
                     return $cb;
                 });
-            })->toThrow(new Exception('Could not extending a non-object or callable entry of cb'));
+            })->toThrow(new Exception('Could not extending a non-object or callable entry of "cb"'));
         });
 
         it('should not allowed to extend a callable object entries', function () {
@@ -457,15 +463,15 @@ describe(Container::class, function () {
                 $this->c->extend(Stubs\CallableClass::class, function (Stubs\CallableClass $cb) {
                     return $cb;
                 });
-            })->toThrow(new Exception('Could not extending a non-object or callable entry of Stubs\CallableClass'));
+            })->toThrow(new Exception('Could not extending a non-object or callable entry of "Stubs\CallableClass"'));
         });
 
         it('should only returns the same object as existing entries', function () {
             expect(function () {
-                $this->c->extend('dummy', function (Dummy $dummy) {
+                $this->c->extend('dummy', function (Stubs\Dummy $dummy) {
                     return;
                 });
-            })->toThrow(new Exception('Argument #2 the returns value of the callback must be of type Stubs\Dummy'));
+            })->toThrow(new Exception('Argument #2 callback must be returns of type "Stubs\Dummy"'));
         });
 
         it('should only extend a non-callable object entries', function () {

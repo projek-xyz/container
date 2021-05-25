@@ -2,7 +2,7 @@
 
 namespace Stubs;
 
-class SomeClass implements CertainInterface
+class SomeClass extends Dummy implements CertainInterface
 {
     public function __invoke($param = null)
     {
@@ -17,16 +17,6 @@ class SomeClass implements CertainInterface
     public function shouldCalled($param = 'a value')
     {
         return $param;
-    }
-
-    public function nonStaticMethod(?string $param = null)
-    {
-        return $param ?: 'value from non-static method';
-    }
-
-    public static function staticMethod(?string $param = null)
-    {
-        return $param ?: 'value from static method';
     }
 
     public function voidMethod()

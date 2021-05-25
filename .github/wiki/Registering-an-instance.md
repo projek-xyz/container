@@ -1,13 +1,15 @@
 # Register an instance
 
 ```php
-$container->set($abstract, $concrete)
+$container->set(string $id, $entry): static
 ```
 
 | Parameters | Type | Description |
 | --- | --- | --- |
-| `$abstract` | `string` | Name of the service |
-| `$concrete` | `callable`, `object` | Instance of the service |
+| `$id` | `string` | Name of the service |
+| `$entry` | `callable`, `object` | Instance of the service |
+
+## Usage
 
 There's few ways to register your services to the container as follow:
 
@@ -15,19 +17,19 @@ There's few ways to register your services to the container as follow:
 
 ```php
 // callable string of a function name
-$container->set('myService', 'aFunctionName');
+$container->set('id', 'functionName');
 
 // callable string of a class::method pair
-$container->set('myService', 'SomeClass::methodName');
+$container->set('id', 'ClassName::methodName');
 
 // callable array as an object of class and method pair
-$container->set('myService', [$classInstance, 'methodName']);
+$container->set('id', [$classInstance, 'methodName']);
 
 // callable array as a string of class name and method pair
-$container->set('myService', [SomeClass::class, 'methodName']);
+$container->set('id', [ClassName::class, 'methodName']);
 ```
 
-If registering a class-method pair (whether it's a `string` or `array`) it would work regardless the method is a static or not. Let say we have the following
+By passing 2nd argument as a class-method pair (whether it's a `string` or `array`) it would work regardless the method is a static or not. Let say we have the following
 
 ```php
 class SomeClass implements CertainInterface
@@ -49,7 +51,35 @@ $container->set(CertainInterface::class, [new SomeClass, 'staticMethod']); // OR
 $container->set(CertainInterface::class, [new SomeClass, 'nonStaticMethod']);
 ```
 
-Also you have the option to register a method from existing container as follow
+### 2. Use instance or name of a class
+
+```php
+// Instance of class
+$container->set('myService', new SomeClass);
+
+// String of class name
+$container->set('myService', SomeFactoryClass::class);
+```
+
+### 3. Use existing entry (as an alias)
+
+you can use name of the registered service as the `$concrete` parameter.
+```php
+// Based on example above
+$container->set(CertainInterface::class, function () {
+    return new SomeClass;
+});
+
+$container->set(AnotherInterface::class, CertainInterface::class);
+$container->set('someClass', CertainInterface::class);
+
+// So you could access instance of SomeClass with the following
+$container->get(CertainInterface::class); // OR
+$container->get(AnotherInterface::class); // OR
+$container->get('someClass');
+```
+
+That said, we also have the option to register a method from existing container as follow
 
 ```php
 class SomeClass implements CertainInterface
@@ -71,19 +101,9 @@ $container->set('bar', 'foo::theMethod');                       // => returns 'a
 $container->set('baz', [CertainInterface::class, 'theMethod']); // => returns 'a value'
 ```
 
-### 2. Use instance or name of a class
+## Things you should aware of
 
-```php
-// Instance of class
-$container->set('myService', new SomeClass);
-
-// String of class name
-$container->set('myService', SomeFactoryClass::class);
-```
-
-Things you should aware of
-
-* By registering a service this way, the container will check whether it's a callable class or not.
+* By registering an entry this way, the container will check whether it's a callable class or not.
 * If it's a callable class, then the `Container::get()` method will returns any returns value from the `__invoke()` method instead of the instance of the class.
 
 Let say you have the following class
@@ -99,7 +119,7 @@ class FooBar {
     /**
      * The __invoke method returns void.
      */
-    public function __invoke(Bar $bar) {
+    public function __invoke(Bar $bar): void {
         $this->foo->setBar($bar);
     }
 }
@@ -110,19 +130,10 @@ $container->set(FooBar::class, FooBar::class);
 $container->get(FooBar::class); // => returns void
 ```
 
-That said, it's possible to have a container that returns completely unrelated value with the name, in case you were using a class name as container name
+That said, it's possible to have an entry that returns unexpected value, so its recommended to always use `Closure` as an entry factory and injecting the required dependencies from its arguments.
 
-## `set()` an alias of existing service
-
-you can use name of the registered service as the `$concrete` parameter.
 ```php
-// Based on example above
-$container->set(CertainInterface::class, SomeClass::class);
-$container->set(AnotherInterface::class, CertainInterface::class);
-$container->set('someClass', CertainInterface::class);
-
-// So you could access instance of SomeClass with the following
-$container->get(CertainInterface::class); // OR
-$container->get(AnotherInterface::class); // OR
-$container->get('someClass');
+$container->set('foobar', function (Foo $foo, Bar $bar) {
+    return new FooBar($foo, $bar);
+});
 ```

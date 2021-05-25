@@ -1,7 +1,7 @@
 # Create an instance of class without register it to the container stack.
 
 ```php
-$container->make($callable[, $arguments|$condition[, $condition]])
+$container->make($callable[, $arguments|$condition[, $condition]]) mixed
 ```
 
 | Parameters | Type | Description |
@@ -12,93 +12,95 @@ $container->make($callable[, $arguments|$condition[, $condition]])
 
 ## Usage
 
-```php
-// Treat 2nd parameter as arguments
-$container->make(SomeClass::class, ['a value']);
+This method will always asumed that the first argument is a callable, which means the returns value of this method is the returns value of the callable. 
 
-// Treat 2nd parameter as condition
+```php
+$container->make(SomeClass::class);
+```
+
+So, if the `SomeClass` has `__invoke()` method it will returns value from `__invoke()` instead. Otherwise, it will returns the class instance. Also, any arguments required for the `__construct()` and the `__invoke()` method will automatically injected if they're available in the container.
+
+```php
+class SomeClass {
+    // Will call $container->get(Foo::class)
+    public function __construct(Foo $foo) {
+        // some codes
+    }
+
+    // Will call $container->get(Bar::class)
+    public function __invoke(Bar $bar) {
+        // some codes
+    }
+}
+
+$container->make(SomeClass::class);
+```
+
+The 1st argument of `make()` would behave exactly the same as [2nd argument of the `set()` method](Registering-an-instance#1-use-callable-string-or-array), means you can have the following:
+
+```php
+class SomeClass {
+    public function __invoke(Bar $bar) {
+        return $bar;
+    }
+
+    public function otherMethod(Bar $bar) {
+        return $bar;
+    }
+}
+
+// Class name
+$container->make(SomeClass::class); // returns instance or the return value of `__invoke`.
+// Method
+$container->make('SomeClass::otherMethod'); // returns the value from `otherMethod
+$container->make(['SomeClass', 'otherMethod']); // returns the value from `otherMethod
+$container->make([new SomeClass, 'otherMethod']); // returns the value from `otherMethod
+```
+
+### 1. Second argument an array of the callable arguments
+
+Let say, we have something like this.
+
+```php
+class SomeClass {
+    public function __invoke($value) {
+        return $value;
+    }
+}
+
+$foo = $container->make(SomeClass::class, ['the value']); // return 'the value'
+```
+**NOTE :**
+- The second argument will only be passed to the callback, not the class constructor.
+
+### 2. Passing a closure as condition
+
+By default it will try to call `__invoke()` method if available, but in some cases if we need to perform some checks and call another method if it meet certain condition, we could do by the following.
+
+```php
+use Psr\Http\Server\RequestHandlerInterface;
+
 $container->make(SomeClass::class, function ($instance) {
-    if ($instance instanceof CertainInterface) {
-        return [$instance, 'theMethod'];
+    if ($instance instanceof RequestHandlerInterface) {
+        return [$instance, 'handle'];
     }
 
     return null; // Accepts falsy or $instance of the class
 });
+```
+By returning an array of class-method pair means the returns value of `make()` will be the returns value of defined method.
 
-// Treat 2nd parameter as arguments and 3rd one as condition
-$container->make(SomeClass::class, ['a value'], function ($instance) {
-    // a condition
+**NOTE :**
+- The `Closure` on the last argument will only works if the first argument is a string class name or an object.
+
+### 3. Combine the two options
+
+In case we need to change default callback and passing the arguments, we could do by the following.
+
+```php
+$container->make(SomeClass::class, ['the value'], function ($instance) {
+    return [$instance, 'handle'];
 });
 ```
-
-## Notes:
-
-- If `SomeClass` is a callable, the value from 2nd parameter will passed to `__invoke` method and `make()` will returns the return value from `__invoke` method. Otherwise, the value from 2nd parameter will be ignored and `make()` will returns the instance of `SomeClass`.
-- The 1st parameter accepts `string` or `callable`, means you can have the following:
-    ```php
-    class SomeClass {
-        public function __invoke(Bar $bar) {
-            return $bar;
-        }
-
-        public function theMethod(Bar $bar) {
-            return $bar;
-        }
-    }
-
-    // Class name
-    $container->make(SomeClass::class); // returns instance or the return value of `__invoke`.
-    // Method
-    $container->make('SomeClass::theMethod'); // returns the value from `theMethod
-    $container->make(['SomeClass', 'theMethod']); // returns the value from `theMethod
-    $container->make([new SomeClass, 'theMethod']); // returns the value from `theMethod
-    ```
-- The 2nd parameter could be `array` of `$arguments` or `Closure` of `$condition`
-    ```php
-    class SomeClass {
-        public function theMethod(Foobar $foobar) {
-            return $foobar;
-        }
-    }
-
-    $container->make(SomeClass::class, ['value']); // The $arguments will be ignored
-    $container->make('SomeClass::theMethod', [new Foobar]); // The `theMethod` will get the instance of `Foobar` class
-    ```
-- If no `$arguments` provided, the container will try to resolve the required parameter(s) from registered container.
-    ```php
-    class SomeClass {
-        // Will call $container->get(Foo::class)
-        public function __construct(Foo $foo) {
-            // some codes
-        }
-
-        // Will call $container->get(Bar::class)
-        public function __invoke(Bar $bar) {
-            // some codes
-        }
-    }
-
-    $container->make(SomeClass::class);
-    ```
-- The 3rd parameter should be `Closure` of `$condition`. In this case you need to invoke another method if it have certain condition otherwise it will fallback to default `__invoke` 
-    ```php
-    class SomeClass implements CertainInterface {
-        public function __invoke(Bar $bar) {
-            return $bar;
-        }
-
-        public function theMethod(Foobar $foobar) {
-            return $foobar;
-        }
-    }
-
-    $container->make(SomeClass::class, function ($instance) {
-        if ($instance instanceof CertainInterface) {
-            return [$instance, 'theMethod'];
-        }
-
-        return null; // Accepts falsy or $instance of the class
-    });
-    ```
 
 See [#11](https://github.com/projek-xyz/container/pull/11) & [#12](https://github.com/projek-xyz/container/pull/12) for details.

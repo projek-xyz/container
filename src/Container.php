@@ -14,14 +14,14 @@ class Container implements ContainerInterface
      *
      * @var array<string, mixed>
      */
-    private $instances = [];
+    private $entries = [];
 
     /**
      * List of instances that been handled.
      *
      * @var array<string, mixed>
      */
-    private $handledInstances = [];
+    private $handledEntries = [];
 
     /**
      * Service container resolver.
@@ -33,18 +33,18 @@ class Container implements ContainerInterface
     /**
      * Create new instance.
      *
-     * @param array<string, mixed> $instances
+     * @param array<string, mixed> $entries
      */
-    public function __construct(array $instances = [])
+    public function __construct(array $entries = [])
     {
         $this->resolver = new Resolver($this);
-        $this->instances = [
+        $this->entries = [
             self::class => $this,
             ContainerInterface::class => $this,
             PsrContainerInterface::class => $this,
         ];
 
-        foreach ($instances as $id => $instance) {
+        foreach ($entries as $id => $instance) {
             $this->set($id, $instance);
         }
     }
@@ -66,17 +66,17 @@ class Container implements ContainerInterface
             throw new Exception\NotFoundException($id);
         }
 
-        if (isset($this->handledInstances[$id])) {
-            return $this->handledInstances[$id];
+        if (isset($this->handledEntries[$id])) {
+            return $this->handledEntries[$id];
         }
 
-        $instance = $this->instances[$id];
+        $entry = $this->entries[$id];
 
-        if (\is_object($instance) && ! \is_callable($instance)) {
-            return $instance;
+        if (\is_object($entry) && ! \is_callable($entry)) {
+            return $entry;
         }
 
-        return $this->handledInstances[$id] = $this->resolver->handle($instance);
+        return $this->handledEntries[$id] = $this->resolver->handle($entry);
     }
 
     /**
@@ -84,22 +84,22 @@ class Container implements ContainerInterface
      */
     public function has(string $id): bool
     {
-        return \array_key_exists($id, $this->instances);
+        return \array_key_exists($id, $this->entries);
     }
 
     /**
      * {@inheritDoc}
      */
-    public function set(string $id, $instance): ContainerInterface
+    public function set(string $id, $entry): ContainerInterface
     {
         if ($this->has($id)) {
             return $this;
         }
 
-        $this->instances[$id] = $this->resolver->resolve($instance);
+        $this->entries[$id] = $this->resolver->resolve($entry);
 
-        if (isset($this->handledInstances[$id])) {
-            unset($this->handledInstances[$id]);
+        if (isset($this->handledEntries[$id])) {
+            unset($this->handledEntries[$id]);
         }
 
         return $this;
@@ -110,29 +110,29 @@ class Container implements ContainerInterface
      */
     public function unset(string $id): void
     {
-        unset($this->instances[$id]);
+        unset($this->entries[$id]);
 
-        if (isset($this->handledInstances[$id])) {
-            unset($this->handledInstances[$id]);
+        if (isset($this->handledEntries[$id])) {
+            unset($this->handledEntries[$id]);
         }
     }
 
     /**
      * {@inheritDoc}
      */
-    public function make($concrete, ...$args)
+    public function make($entry, ...$args)
     {
-        $instance = $this->resolver->resolve($concrete);
+        $entry = $this->resolver->resolve($entry);
 
         [$args, $condition] = ($count = \count($args = \array_filter($args)))
             ? $this->assertParams($count, $args)
             : [[], null];
 
         if ($condition instanceof \Closure) {
-            $instance = $condition($instance) ?: $instance;
+            $entry = $condition($entry) ?: $entry;
         }
 
-        return $this->resolver->handle($instance, $args);
+        return $this->resolver->handle($entry, $args);
     }
 
     /**

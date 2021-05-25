@@ -12,10 +12,10 @@ interface ContainerInterface extends PsrContainerInterface
      * Add new instance.
      *
      * @param string $id
-     * @param mixed $instance
+     * @param mixed $entry
      * @return static
      */
-    public function set(string $id, $instance): ContainerInterface;
+    public function set(string $id, $entry): ContainerInterface;
 
     /**
      * Unset instance.
@@ -49,9 +49,9 @@ interface ContainerInterface extends PsrContainerInterface
      * ```
      *
      * @link https://github.com/projek-xyz/container/pull/12
-     * @param string|callable $concrete String of class name or callable
+     * @param string|callable $entry String of class name or callable
      * @param null|array|\Closure ...$args
      * @return mixed
      */
-    public function make($concrete, ...$args);
+    public function make($entry, ...$args);
 }

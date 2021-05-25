@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Projek\Container;
 use Projek\Container\Exception;
 use Psr\Container\ContainerInterface as PsrContainer;
+use Stubs\Dummy;
 
 describe(Container::class, function () {
     beforeEach(function () {
@@ -424,6 +425,7 @@ describe(Container::class, function () {
     context(Container::class.'::extend', function () {
         beforeEach(function () {
             $this->c->set('dummy', Stubs\Dummy::class);
+            $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
         });
 
         it('should not extends non-exists entry', function () {
@@ -434,26 +436,36 @@ describe(Container::class, function () {
             })->toThrow(new Exception\NotFoundException('foo'));
         });
 
-        it('should not extend a closure entries', function () {
+        it('should not allowed to extend a non-object entries', function () {
             $this->c->set('cb', function () {
-                // .
+                return [];
             });
 
             expect(function () {
                 $this->c->extend('cb', function ($cb) {
                     return $cb;
                 });
-            })->toThrow(new Exception('Could not extending a non-object entry of cb'));
+            })->toThrow(new Exception('Could not extending a non-object or callable entry of cb'));
         });
 
-        it('should not extend a invocable object entries', function () {
-            $this->c->set(Stubs\CallableClass::class, Stubs\CallableClass::class);
+        it('should not allowed to extend a callable object entries', function () {
+            $this->c->set(Stubs\CallableClass::class, function ($dummy) {
+                return new Stubs\CallableClass($dummy);
+            });
 
             expect(function () {
-                $this->c->extend(Stubs\CallableClass::class, function ($cb) {
+                $this->c->extend(Stubs\CallableClass::class, function (Stubs\CallableClass $cb) {
                     return $cb;
                 });
-            })->toThrow(new Exception('Could not extending a non-object entry of Stubs\CallableClass'));
+            })->toThrow(new Exception('Could not extending a non-object or callable entry of Stubs\CallableClass'));
+        });
+
+        it('should only returns the same object as existing entries', function () {
+            expect(function () {
+                $this->c->extend('dummy', function (Dummy $dummy) {
+                    return;
+                });
+            })->toThrow(new Exception('Argument #2 the returns value of the callback must be of type Stubs\Dummy'));
         });
 
         it('should only extend a non-callable object entries', function () {

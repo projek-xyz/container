@@ -137,31 +137,33 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Extending the current entry.
+     * Extending an entry.
      *
-     * @param string $id
-     * @param Closure $callable
-     * @return mixed
-     * @throws Exception\NotFoundException
-     * @throws Exception
+     * @param string $id Identifier of existing entry.
+     * @param Closure $callable Callback to extend the functionality of the entry.
+     * @return object Returns the object instance.
+     * @throws Exception\NotFoundException If $id is not found.
+     * @throws Exception If trying to extends a callable.
      */
-    public function extend(string $id, \Closure $callable)
+    public function extend(string $id, \Closure $callable): object
     {
-        if (! $this->has($id)) {
-            throw new Exception\NotFoundException($id);
-        }
-
-        $entry = $this->entries[$id];
+        $entry = $this->get($id);
 
         // We tread any callable like a factory which could returns different instance
         // when it invoked. So we should only extend object instance.
-        if (\is_object($entry) && ! method_exists($entry, '__invoke')) {
-            $this->unset($id);
-
-            return $this->entries[$id] = $this->make($callable, [$entry]);
+        if (! \is_object($entry) || method_exists($entry, '__invoke')) {
+            throw new Exception('Could not extending a non-object or callable entry of ' . $id);
         }
 
-        throw new Exception('Could not extending a non-object entry of ' . $id);
+        $extended = $this->make($callable, [$entry]);
+
+        if (! is_a($extended, $class = get_class($entry))) {
+            throw new Exception('Argument #2 the returns value of the callback must be of type ' . $class);
+        }
+
+        $this->unset($id);
+
+        return $this->entries[$id] = $extended;
     }
 
     /**

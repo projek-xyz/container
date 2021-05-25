@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Projek;
 
+use Closure;
 use Projek\Container\{ContainerInterface, Exception, Resolver};
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
@@ -133,6 +134,34 @@ class Container implements ContainerInterface
         }
 
         return $this->resolver->handle($entry, $args);
+    }
+
+    /**
+     * Extending the current entry.
+     *
+     * @param string $id
+     * @param Closure $callable
+     * @return mixed
+     * @throws Exception\NotFoundException
+     * @throws Exception
+     */
+    public function extend(string $id, \Closure $callable)
+    {
+        if (! $this->has($id)) {
+            throw new Exception\NotFoundException($id);
+        }
+
+        $entry = $this->entries[$id];
+
+        // We tread any callable like a factory which could returns different instance
+        // when it invoked. So we should only extend object instance.
+        if (\is_object($entry) && ! method_exists($entry, '__invoke')) {
+            $this->unset($id);
+
+            return $this->entries[$id] = $this->make($callable, [$entry]);
+        }
+
+        throw new Exception('Could not extending a non-object entry of ' . $id);
     }
 
     /**

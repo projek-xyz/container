@@ -9,7 +9,7 @@ This tiny library aims to provide dead simple PSR-11 implementation with flexibl
 
 ## Requirements
 
-- PHP 7.1+ and tested up-to PHP 8.0-alpha
+- PHP 7.2+ and tested up-to PHP 8.0
 
 ## Installation
 
@@ -24,6 +24,7 @@ $ composer require projek-xyz/container --prefer-dist
 - [`Container::set()`](Registering-an-instance) to Registering an instance
 - [`Container::unset()`](Remove-an-instance) to Remove an instance
 - [`Container::make()`](Create-an-instance) to Create an instance
+- [`Container::extend()`](Extending-an-instance) to Extending an instance
 
 ## Basic Usage
 
@@ -74,7 +75,7 @@ return [
 
 ```
 
-Now time to initiate the services
+Now time to initialize the services
 
 ```php
 $container = new Projek\Container(require 'path/to/services.php');
@@ -86,7 +87,7 @@ $container->get('db'); // etc
 
 ### PSR-11 Compliant
 
-Means it has `get($serviceId)` and `has($serviceId)` method as required by [PSR-11 Standard](https://www.php-fig.org/psr/psr-11/)
+Means it has `get($id)` and `has($id)` method as required by [PSR-11 Standard](https://www.php-fig.org/psr/psr-11/)
 
 ## Extra Flexibilities
 

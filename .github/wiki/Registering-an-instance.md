@@ -130,7 +130,17 @@ $container->set(FooBar::class, FooBar::class);
 $container->get(FooBar::class); // => returns void
 ```
 
-That said, it's possible to have an entry that returns unexpected value, so its recommended to always use `Closure` as an entry factory and injecting the required dependencies from its arguments.
+That said, it's possible to have an entry that returns unexpected value, this will led you to an error when you trying to register a new entry and require the _invalid_ entry as dependency.
+
+```php
+$container->set('foo', function (FooBar $foobar) {
+    // the codes.
+});
+```
+
+When the container trying to resolve `foo` entry, it will fetch `FooBar` entry and inject it to the callback, so you'll got `TypeError` thrown.
+
+So its recommended to always use `Closure` as an entry factory and injecting the required dependencies from its arguments.
 
 ```php
 $container->set('foobar', function (Foo $foo, Bar $bar) {

@@ -208,9 +208,7 @@ describe(Container::class, function () {
 
             expect(function () {
                 $this->c->get('foobar');
-            })->toThrow(
-                new TypeError('Kahlan\Cli\Kahlan::{closure}(): Argument #1 ($cb) must be of type Stubs\CallableClass, Stubs\ConcreteBar given')
-            );
+            })->toThrow(new TypeError);
         });
 
         it('should throw exception when setting incorrect param', function () {

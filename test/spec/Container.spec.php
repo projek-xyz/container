@@ -194,22 +194,22 @@ describe(Container::class, function () {
             expect($this->c->get('callback'))->toBeAnInstanceOf(Stubs\AbstractFoo::class);
         });
 
-        xit('should throw TypeError when trying to depends on invalid entries', function () {
+        it('should throw TypeError when trying to depends on invalid entries', function () {
             // dependency of Stubs\CallableClass::__invoke method
             $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
 
             // Register the callable class that has different returns type on its invoke method
             $this->c->set(Stubs\CallableClass::class, Stubs\CallableClass::class);
 
-            expect(function () {
-                $this->c->set('foobar', function (Stubs\CallableClass $cb) {
-                    expect($cb)->toBeAnInstanceOf(Stubs\CallableClass::class);
-                    return $cb;
-                });
+            $this->c->set('foobar', function (Stubs\CallableClass $cb) {
+                expect($cb)->toBeAnInstanceOf(Stubs\CallableClass::class);
+                return $cb;
+            });
 
+            expect(function () {
                 $this->c->get('foobar');
             })->toThrow(
-                new TypeError('Argument #1 (\$cb) must be of type Stubs\CallableClass, Stubs\ConcreteBar given')
+                new TypeError('Argument #1 ($cb) must be of type Stubs\CallableClass, Stubs\ConcreteBar given')
             );
         });
 

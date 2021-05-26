@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 use Projek\Container;
-use Projek\Container\{HasContainer, ContainerAware, ContainerInterface};
+use Projek\Container\{HasContainer, ContainerAware};
+use Psr\Container\ContainerInterface;
 
 describe(ContainerAware::class, function () {
     given('container', function () {

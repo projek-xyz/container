@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Projek;
 
 use Closure;
-use Projek\Container\{ContainerInterface, Exception, Resolver};
-use Psr\Container\ContainerInterface as PsrContainerInterface;
+use Projek\Container\{Exception, Resolver};
+use Psr\Container\ContainerInterface;
 
 class Container implements ContainerInterface
 {
@@ -42,7 +42,7 @@ class Container implements ContainerInterface
         $this->entries = [
             self::class => $this,
             ContainerInterface::class => $this,
-            PsrContainerInterface::class => $this,
+            Container\ContainerInterface::class => $this,
         ];
 
         foreach ($entries as $id => $instance) {
@@ -89,9 +89,13 @@ class Container implements ContainerInterface
     }
 
     /**
-     * {@inheritDoc}
+     * Add new instance.
+     *
+     * @param string $id
+     * @param mixed $entry
+     * @return static
      */
-    public function set(string $id, $entry): ContainerInterface
+    public function set(string $id, $entry)
     {
         if ($this->has($id)) {
             return $this;
@@ -107,7 +111,10 @@ class Container implements ContainerInterface
     }
 
     /**
-     * {@inheritDoc}
+     * Unset instance.
+     *
+     * @param string ...$id
+     * @return void
      */
     public function unset(string ...$id): void
     {
@@ -121,7 +128,32 @@ class Container implements ContainerInterface
     }
 
     /**
-     * {@inheritDoc}
+     * Resolve an instance without adding it to the stack.
+     *
+     * It's possible to add 2nd parameter as an array and it will pass it to
+     * `Resolver::handle($instance, $args)`. While if it was a Closure, it will
+     * treaten as condition.
+     *
+     * ```php
+     * // Treat 2nd parameter as arguments
+     * $container->make(SomeClass::class, ['a value'])
+     *
+     * // Treat 2nd parameter as condition
+     * $container->make(SomeClass::class, function ($instance) {
+     *     // Accepts falsy or $instance of the class
+     *     return $instance instanceof CertainInterface ? [$instance, 'theMethod'] : null;
+     * })
+     *
+     * // Treat 2nd parameter as arguments and 3rd as condition
+     * $container->make(SomeClass::class, ['a value'], function ($instance) {
+     *     // a condition
+     * })
+     * ```
+     *
+     * @link https://github.com/projek-xyz/container/pull/12
+     * @param string|callable $entry String of class name or callable
+     * @param null|array|\Closure ...$args
+     * @return mixed
      */
     public function make($entry, ...$args)
     {

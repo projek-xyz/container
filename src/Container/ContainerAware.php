@@ -17,18 +17,18 @@ interface ContainerAware
     /**
      * Assign a container to the instance.
      *
-     * @param ContainerInterface $container
+     * @param \Projek\Container $container
      * @return static
      */
-    public function setContainer(ContainerInterface $container): ContainerAware;
+    public function setContainer(\Projek\Container $container): ContainerAware;
 
     /**
      * Retrieve container instance or the instance of registered service.
      *
-     * If no parameter given, this method should returns instance of `ContainerInterface`
+     * If no parameter given, this method should returns instance of `Projek\Container`
      *
      * ```php
-     * $instance->getContainer(); // ContainerInterface
+     * $instance->getContainer(); // \Projek\Container
      * ```
      *
      * But if a string given, this method should returns instance of registered
@@ -42,7 +42,7 @@ interface ContainerAware
      * ```
      *
      * @param null|string $name Optionally pass a container name, if needed.
-     * @return null|mixed|ContainerInterface
+     * @return \Projek\Container|mixed
      */
     public function getContainer(?string $name = null);
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Projek\Container;
 use Projek\Container\Exception;
-use Psr\Container\ContainerInterface as PsrContainer;
+use Psr\Container\ContainerInterface;
 
 describe(Container::class, function () {
     beforeEach(function () {
@@ -12,7 +12,7 @@ describe(Container::class, function () {
     });
 
     it('should resolve it-self', function () {
-        $self = [Container::class, PsrContainer::class, Container\ContainerInterface::class];
+        $self = [Container::class, ContainerInterface::class];
 
         foreach ($self as $a) {
             foreach ($self as $b) {

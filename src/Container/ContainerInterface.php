@@ -20,10 +20,10 @@ interface ContainerInterface extends PsrContainerInterface
     /**
      * Unset instance.
      *
-     * @param string $id
+     * @param string ...$id
      * @return void
      */
-    public function unset(string $id): void;
+    public function unset(string ...$id): void;
 
     /**
      * Resolve an instance without adding it to the stack.

@@ -109,12 +109,14 @@ class Container implements ContainerInterface
     /**
      * {@inheritDoc}
      */
-    public function unset(string $id): void
+    public function unset(string ...$id): void
     {
-        unset($this->entries[$id]);
+        foreach ($id as $entry) {
+            unset($this->entries[$entry]);
 
-        if (isset($this->handledEntries[$id])) {
-            unset($this->handledEntries[$id]);
+            if (isset($this->handledEntries[$entry])) {
+                unset($this->handledEntries[$entry]);
+            }
         }
     }
 

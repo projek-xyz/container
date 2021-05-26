@@ -6,6 +6,9 @@ namespace Projek\Container;
 
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
+/**
+ * @deprecated Since v0.6
+ */
 interface ContainerInterface extends PsrContainerInterface
 {
     /**
@@ -15,7 +18,7 @@ interface ContainerInterface extends PsrContainerInterface
      * @param mixed $entry
      * @return static
      */
-    public function set(string $id, $entry): ContainerInterface;
+    public function set(string $id, $entry);
 
     /**
      * Unset instance.

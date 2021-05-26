@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
+use Projek\Container;
+
 final class Resolver extends AbstractContainerAware
 {
     /**
      * Create instance.
      *
-     * @param ContainerInterface $container
+     * @param Container $container
      */
-    public function __construct(ContainerInterface $container)
+    public function __construct(Container $container)
     {
         $this->setContainer($container);
     }
@@ -64,10 +66,7 @@ final class Resolver extends AbstractContainerAware
         }
 
         if (\is_object($toResolve)) {
-            if (
-                $toResolve instanceof ContainerAware
-                && ! $toResolve->getContainer() instanceof ContainerInterface
-            ) {
+            if ($toResolve instanceof ContainerAware && null === $toResolve->getContainer()) {
                 $toResolve->setContainer($this->getContainer());
             }
 

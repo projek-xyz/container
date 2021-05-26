@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.6.0](https://github.com/projek-xyz/container/compare/v0.5.0...v0.6.0) (2021-05-26)
+
+
+### Features
+
+* add backward slash to all global functions ([9e4e475](https://github.com/projek-xyz/container/commit/9e4e4754328ce1ebe890e882e4fca39f6872fc5b))
+* add extend method ([f911b2f](https://github.com/projek-xyz/container/commit/f911b2fe23a2fb45a6984e8eaae97ff95d85aa66)), closes [#39](https://github.com/projek-xyz/container/issues/39)
+* change returns type of set() method ([3cf9636](https://github.com/projek-xyz/container/commit/3cf9636952fa4b2144c6c54cd06811d211909569))
+* change returns value of setContainer() method ([0a4dd7a](https://github.com/projek-xyz/container/commit/0a4dd7a9d3ea930c981142d5f5d53892cf657a10))
+* mark ArrayContainer & PropertyContainer as deprecated ([a74109b](https://github.com/projek-xyz/container/commit/a74109b0a5ee92990e5f6795bd61e97cd24b1495))
+* mark ContainerInterace as deprecated & remove the use of it ([8f743eb](https://github.com/projek-xyz/container/commit/8f743ebb4135bdc29b4c443bcbdfc9d628e9064b))
+* some behavior changes ([c7ddba2](https://github.com/projek-xyz/container/commit/c7ddba271927dfb1a715a19c9b63621da4099ea8))
+* unset now accepts spread operator in the argument ([d56f12b](https://github.com/projek-xyz/container/commit/d56f12b3cfef15447be88840959025aaaea39fff))
+* **excaption:** make clearer excaption message ([a0fc0b2](https://github.com/projek-xyz/container/commit/a0fc0b2c43de60acc3e03b4a67157e4c89da2a72))
+* **resolver:** cleanup methods ([c63f18c](https://github.com/projek-xyz/container/commit/c63f18c93684c99007cf10648ab1dc1e25984019))
+* **resolver:** simplify resolve method ([1c6c606](https://github.com/projek-xyz/container/commit/1c6c60689bd3d668dd0e94b99018e09a14aec63a))
+
+
+### Bug Fixes
+
+* **resolver:** fix some unpredictable exceptions & only returns non-callable object as is ([60b355d](https://github.com/projek-xyz/container/commit/60b355d71e2074e8b7223fe9c52b4e99164026bc))
+* fix undefined method ([6fcee4d](https://github.com/projek-xyz/container/commit/6fcee4dfc9e0f886855c606ad45a204f9986116e)), closes [#29](https://github.com/projek-xyz/container/issues/29)
+
 ## [0.5.0](https://github.com/projek-xyz/container/compare/v0.4.5...v0.5.0) (2021-03-07)
 
 

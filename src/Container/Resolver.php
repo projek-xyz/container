@@ -43,11 +43,7 @@ final class Resolver extends AbstractContainerAware
             ? new \ReflectionFunction($ref->getClosure($instance[0]))
             : $ref;
 
-        try {
-            $params[] = $this->resolveArgs($toResolve, $args);
-        } catch (Exception\NotFoundException $err) {
-            throw new Exception\UnresolvableException($err);
-        }
+        $params[] = $this->resolveArgs($toResolve, $args);
 
         return $ref->invokeArgs(...$params);
     }
@@ -153,18 +149,19 @@ final class Resolver extends AbstractContainerAware
      */
     private function resolveArgs($reflection, array $args = []): array
     {
+        $container = $this->getContainer();
+
         foreach ($reflection->getParameters() as $param) {
             // Just skip if parameter already provided.
             if (\array_key_exists($position = $param->getPosition(), $args)) {
                 continue;
             }
 
+            $type = $param->getType();
+            $dependency = ($type && ! $type->isBuiltin() ? $type : $param)->getName();
+
             try {
-                /** @var \ReflectionNamedType $type */
-                $type = $param->getType();
-                $args[$position] = $this->getContainer(
-                    ($type && ! $type->isBuiltin() ? $type : $param)->getName()
-                );
+                $args[$position] = $container->get($dependency);
             } catch (Exception\NotFoundException $err) {
                 if (! $param->isOptional()) {
                     throw new Exception\UnresolvableException($err);

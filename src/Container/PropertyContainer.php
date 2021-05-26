@@ -17,6 +17,8 @@ namespace Projek\Container;
  *     return new SomeClass($container->db);
  * });
  * ```
+ *
+ * @deprecated Since v0.6
  */
 final class PropertyContainer extends AbstractContainerAware
 {

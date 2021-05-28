@@ -89,6 +89,7 @@ class Container implements ContainerInterface
     /**
      * Add new instance.
      *
+     * @link https://github.com/projek-xyz/container/wiki/registering-an-instance
      * @param string $id
      * @param mixed $entry
      * @return static
@@ -111,6 +112,7 @@ class Container implements ContainerInterface
     /**
      * Unset instance.
      *
+     * @link https://github.com/projek-xyz/container/wiki/remove-an-instance
      * @param string ...$id
      * @return void
      */
@@ -148,10 +150,13 @@ class Container implements ContainerInterface
      * })
      * ```
      *
-     * @link https://github.com/projek-xyz/container/pull/12
+     * @link https://github.com/projek-xyz/container/wiki/create-an-instance
      * @param string|callable $instance String of class name or callable
-     * @param null|array|\Closure ...$args
+     * @param array|\Closure ...$args
+     * @param null|\Closure ...$callback
      * @return mixed
+     * @throws Container\InvalidArgumentException
+     * @throws Container\Exception
      */
     public function make($instance, $args = [], ?\Closure $callback = null)
     {
@@ -164,7 +169,7 @@ class Container implements ContainerInterface
             throw new Container\InvalidArgumentException(\sprintf(
                 'Argument #2 must be an %s, %s given',
                 (null === $callback ? 'array or instance of closure' : 'array'),
-                gettype($args)
+                \gettype($args)
             ));
         }
 
@@ -180,8 +185,9 @@ class Container implements ContainerInterface
     /**
      * Extending an entry.
      *
+     * @link https://github.com/projek-xyz/container/wiki/extending-an-instance
      * @param string $id Identifier of existing entry.
-     * @param Closure $callable Callback to extend the functionality of the entry.
+     * @param \Closure $callable Callback to extend the functionality of the entry.
      * @return object Returns the object instance.
      * @throws Container\NotFoundException If $id is not found.
      * @throws Container\Exception If trying to extends a callable.

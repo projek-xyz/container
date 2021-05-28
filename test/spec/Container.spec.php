@@ -207,21 +207,13 @@ describe(Container::class, function () {
         });
 
         it('should throw exception when setting incorrect param', function () {
-            $refException = function (string $class) {
-                return new \ReflectionException(sprintf('Class %s does not exist', $class));
-            };
-
             expect(function () {
                 $this->c->make(Stubs\AbstractFoo::class);
-            })->toThrow(new Container\Exception(
-                'Cannot instantiate abstract class Stubs\AbstractFoo'
-            ));
+            })->toThrow(new Container\Exception('Cannot instantiate abstract class Stubs\AbstractFoo'));
 
             expect(function () {
                 $this->c->set('foo', Stubs\AbstractFoo::class);
-            })->toThrow(new Container\Exception(
-                'Cannot instantiate abstract class Stubs\AbstractFoo'
-            ));
+            })->toThrow(new Container\Exception('Cannot instantiate abstract class Stubs\AbstractFoo'));
 
             expect(function () {
                 $this->c->set('foo', 'NotExistsClass');

@@ -9,8 +9,6 @@ use Psr\Container\ContainerExceptionInterface;
 class Exception extends \RuntimeException implements ContainerExceptionInterface
 {
     /**
-     * Create instance.
-     *
      * @param string $message
      * @param \Throwable|null $prev
      */

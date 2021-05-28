@@ -1,11 +1,11 @@
 ## Contents
 
-- [Home](Home)
+- [Home](home)
 - [Changelog](https://github.com/projek-xyz/container/blob/master/CHANGELOG.md)
 
 ## API
 
-- [Registering an instance](Registering-an-instance)
-- [Remove an instance](Remove-an-instance)
-- [Create an instance](Create-an-instance)
-- [Extending an instance](Extending-an-instance)
+- [Registering an instance](registering-an-instance)
+- [Remove an instance](remove-an-instance)
+- [Create an instance](create-an-instance)
+- [Extending an instance](extending-an-instance)

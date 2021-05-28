@@ -21,7 +21,7 @@ $container->has('id'); // returns false
 
 **NOTES :**
 
-- Since we don't have such a _alias_ feature (yet), the way we do is by [registering the existing entry with the new name](Registering-an-instance#3-use-existing-entry-as-an-alias). So we `unset`-ing one `$id` the other `$id` with the same instance will remain exists.
+- Since we don't have such a _alias_ feature (yet), the way we do is by [registering the existing entry with the new name](registering-an-instance#3-use-existing-entry-as-an-alias). So when we `unset`-ing one `$id` the other `$id` with the same instance will remain exists.
 
 ```php
 $container->set(CertainInterface::class, SomeClass::class);

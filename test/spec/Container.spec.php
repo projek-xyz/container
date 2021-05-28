@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Projek\Container;
-use Projek\Container\Exception;
 use Psr\Container\ContainerInterface;
 
 describe(Container::class, function () {
@@ -42,19 +41,17 @@ describe(Container::class, function () {
     it('should throw an UnresolvableException if dependency not exists', function () {
         $this->c->set('a', [Stubs\SomeClass::class, 'handle']);
 
-        $unresolvable = function (string $name) {
-            return new Exception\UnresolvableException(
-                new Exception\NotFoundException($name)
-            );
-        };
-
         expect(function () {
             $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
-        })->toThrow($unresolvable('dummy'));
+        })->toThrow(new Container\Exception(
+            'Stubs\ConcreteBar::__construct(): Argument #1 dummy depends on entry "dummy" of non-exists'
+        ));
 
         expect(function () {
             return $this->c->get('a');
-        })->toThrow($unresolvable(Stubs\AbstractFoo::class));
+        })->toThrow(new Container\Exception(
+            'Stubs\SomeClass::handle(): Argument #1 dummy depends on entry "Stubs\AbstractFoo" of non-exists'
+        ));
     });
 
     it('should manage instance', function () {
@@ -68,7 +65,7 @@ describe(Container::class, function () {
 
         expect(function () {
             return $this->c->get('dummy');
-        })->toThrow(new Exception\NotFoundException('dummy'));
+        })->toThrow(new Container\NotFoundException('dummy'));
     });
 
     it('should not overwrite existing', function () {
@@ -84,9 +81,7 @@ describe(Container::class, function () {
         });
         expect(function () {
             return $this->c->get('stds');
-        })->toThrow(new Exception\UnresolvableException(
-            new Exception\NotFoundException('foo')
-        ));
+        })->toThrow(new Container\Exception('Closure::__invoke(): Argument #1 foo depends on entry "foo" of non-exists'));
     });
 
     it('should cache resolved instances', function () {
@@ -218,33 +213,31 @@ describe(Container::class, function () {
 
             expect(function () {
                 $this->c->make(Stubs\AbstractFoo::class);
-            })->toThrow(new Exception\UnresolvableException(
-                new \Error('Cannot instantiate abstract class Stubs\\AbstractFoo')
+            })->toThrow(new Container\Exception(
+                'Cannot instantiate abstract class Stubs\AbstractFoo'
             ));
 
             expect(function () {
                 $this->c->set('foo', Stubs\AbstractFoo::class);
-            })->toThrow(new Exception\UnresolvableException(
-                new \Error('Cannot instantiate abstract class Stubs\\AbstractFoo')
+            })->toThrow(new Container\Exception(
+                'Cannot instantiate abstract class Stubs\AbstractFoo'
             ));
 
             expect(function () {
                 $this->c->set('foo', 'NotExistsClass');
-            })->toThrow(new Exception\UnresolvableException($refException('NotExistsClass')));
+            })->toThrow(new Container\Exception('Cannot resolve an entry or class named "NotExistsClass" of non-exists'));
 
             expect(function () {
                 $this->c->set('foo', 'bar');
-            })->toThrow(new Exception\UnresolvableException($refException('bar')));
+            })->toThrow(new Container\Exception('Cannot resolve an entry or class named "bar" of non-exists'));
 
             expect(function () {
                 $this->c->set('foo', ['foo', 'bar']);
-            })->toThrow(new Exception\UnresolvableException(
-                new \ReflectionException('Class foo does not exist')
-            ));
+            })->toThrow(new Container\Exception('Cannot resolve an entry or class named "foo" of non-exists'));
 
             expect(function () {
                 $this->c->set('foo', null);
-            })->toThrow(new Exception\UnresolvableException(null));
+            })->toThrow(new Container\InvalidArgumentException('Cannot resolve invalid entry of NULL'));
         });
     });
 
@@ -381,7 +374,7 @@ describe(Container::class, function () {
 
                     return null;
                 });
-            })->toThrow(new Exception\UnresolvableException([Stubs\SomeClass::class, 'notExists']));
+            })->toThrow(new Container\InvalidArgumentException('Method Stubs\SomeClass::notExists() is not exists'));
         });
 
         it('should pass second parameter as argument for the handler', function () {
@@ -410,38 +403,18 @@ describe(Container::class, function () {
         it('should throw exception if second parameter were invalid', function () {
             expect(function () {
                 $this->c->make(Stubs\SomeClass::class, 'string');
-            })->toThrow(new Exception\InvalidArgumentException(2, ['array', 'Closure'], 'string'));
-
-            // Ignore falsy param
-            expect(function () {
-                $this->c->make(Stubs\SomeClass::class, 'string', null);
-            })->toThrow(new Exception\InvalidArgumentException(2, ['array', 'Closure'], 'string'));
+            })->toThrow(new Container\InvalidArgumentException(
+                'Argument #2 must be an array or instance of closure, string given'
+            ));
 
             expect(function () {
                 // Correct condition with incorrect argument
                 $this->c->make(Stubs\SomeClass::class, 'string', function ($instance) {
                     return [$instance, 'shouldCalled'];
                 });
-            })->toThrow(new Exception\InvalidArgumentException(2, ['array'], 'string'));
-        });
-
-        it('should throw exception if third parameter were invalid', function () {
-            expect(function () {
-                $this->c->make(Stubs\SomeClass::class, ['string'], 'condition');
-            })->toThrow(new Exception\InvalidArgumentException(3, ['Closure'], 'string'));
-        });
-
-        it('should throw exception if have more than 3 parameters', function () {
-            expect(function () {
-                $this->c->make(Stubs\SomeClass::class, ['string'], 'condition', 'more');
-            })->toThrow(new Exception\RangeException(3, 4));
-        });
-
-        it('should ignore the optional arguments if falsy ', function () {
-            expect(
-                // Iggnore falsy params
-                $this->c->make(Stubs\SomeClass::class, null, null)
-            )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+            })->toThrow(new Container\InvalidArgumentException(
+                'Argument #2 must be an array, string given'
+            ));
         });
     });
 
@@ -456,7 +429,7 @@ describe(Container::class, function () {
                 $this->c->extend('foo', function ($foo) {
                     return $foo;
                 });
-            })->toThrow(new Exception\NotFoundException('foo'));
+            })->toThrow(new Container\NotFoundException('foo'));
         });
 
         it('should not allowed to extend a non-object entries', function () {
@@ -468,7 +441,7 @@ describe(Container::class, function () {
                 $this->c->extend('cb', function ($cb) {
                     return $cb;
                 });
-            })->toThrow(new Exception('Could not extending a non-object or callable entry of "cb"'));
+            })->toThrow(new Container\Exception('Cannot extending a non-object or a callable entry of "cb"'));
         });
 
         it('should not allowed to extend a callable object entries', function () {
@@ -480,7 +453,7 @@ describe(Container::class, function () {
                 $this->c->extend(Stubs\CallableClass::class, function (Stubs\CallableClass $cb) {
                     return $cb;
                 });
-            })->toThrow(new Exception('Could not extending a non-object or callable entry of "Stubs\CallableClass"'));
+            })->toThrow(new Container\Exception('Cannot extending a non-object or a callable entry of "Stubs\CallableClass"'));
         });
 
         it('should only returns the same object as existing entries', function () {
@@ -488,7 +461,7 @@ describe(Container::class, function () {
                 $this->c->extend('dummy', function (Stubs\Dummy $dummy) {
                     return;
                 });
-            })->toThrow(new Exception('Argument #2 callback must be returns of type "Stubs\Dummy"'));
+            })->toThrow(new Container\Exception('Argument #2 callback must be returns of type "Stubs\Dummy"'));
         });
 
         it('should only extend a non-callable object entries', function () {

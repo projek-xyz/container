@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 use Projek\Container;
-use Projek\Container\{Exception, Resolver};
 
-describe(Resolver::class, function () {
+describe(Container\Resolver::class, function () {
     given('dummy', function () {
         return new Stubs\Dummy;
     });
@@ -17,10 +16,10 @@ describe(Resolver::class, function () {
             Stubs\AbstractFoo::class => Stubs\ConcreteBar::class,
         ]);
 
-        $this->r = new Resolver($c);
+        $this->r = new Container\Resolver($c);
     });
 
-    context(Resolver::class.'::handle', function () {
+    context('::handle', function () {
         it('should handle array of class instance & method pair', function () {
             expect($this->r->handle([$this->dummy, 'lorem']))->toEqual('dummy lorem');
         });
@@ -34,7 +33,7 @@ describe(Resolver::class, function () {
         it('should not handle array of class name & non-static method pair', function () {
             expect(function () {
                 $this->r->handle([Stubs\SomeClass::class, 'nonStaticMethod']);
-            })->toThrow(new Exception(
+            })->toThrow(new Container\Exception(
                 'Non-static method Stubs\\SomeClass::nonStaticMethod should not be called statically'
             ));
         });
@@ -60,7 +59,7 @@ describe(Resolver::class, function () {
         it('should not handle string of class name & static method pair', function () {
             expect(function () {
                 $this->r->handle('Stubs\SomeClass::nonStaticMethod');
-            })->toThrow(new Exception(
+            })->toThrow(new Container\Exception(
                 'Non-static method Stubs\\SomeClass::nonStaticMethod should not be called statically'
             ));
         });
@@ -89,7 +88,7 @@ describe(Resolver::class, function () {
         });
     });
 
-    context(Resolver::class.'::resolve', function () {
+    context('::resolve', function () {
         it('should resolve array of class instance & method pair', function () {
             expect(
                 $callable = $this->r->resolve([$this->dummy, 'lorem'])

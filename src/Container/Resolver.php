@@ -35,8 +35,10 @@ final class Resolver extends AbstractContainerAware
 
         $params = [];
         $ref = $this->createReflection($entry);
+        $caller = $ref->getName();
 
         if ($isMethod = ($ref instanceof \ReflectionMethod)) {
+            $caller = $ref->getDeclaringClass()->getName() . '::' . $ref->getName();
             $params[] = $ref->isStatic() && ! \is_object($entry[0]) ? null : $entry[0];
         }
 
@@ -51,10 +53,6 @@ final class Resolver extends AbstractContainerAware
 
             return $ref->invokeArgs(...$params);
         } catch (Exception $err) {
-            $caller = $isMethod
-                ? $ref->getDeclaringClass()->getName() . '::' . $ref->getName()
-                : $ref->getName();
-
             throw new Exception($caller . '(): ' . $err->getMessage(), $err->getPrevious());
         }
     }
@@ -165,8 +163,6 @@ final class Resolver extends AbstractContainerAware
      */
     private function resolveArgs($reflection, array $args = []): array
     {
-        $container = $this->getContainer();
-
         foreach ($reflection->getParameters() as $param) {
             // Just skip if parameter already provided.
             if (\array_key_exists($position = $param->getPosition(), $args)) {
@@ -174,17 +170,16 @@ final class Resolver extends AbstractContainerAware
             }
 
             $type = $param->getType();
-            $hasType = $type && ! $type->isBuiltin();
 
             try {
-                $args[$position] = $container->get(
-                    ($hasType ? $type : $param)->getName()
+                $args[$position] = $this->getContainer(
+                    ($type && ! $type->isBuiltin() ? $type : $param)->getName()
                 );
             } catch (NotFoundException $err) {
                 if (! $param->isOptional()) {
                     throw new Exception(\sprintf(
                         'Argument #%d %s depends on entry "%s" of non-exists',
-                        $position + 1,
+                        ++$position,
                         $param->getName(),
                         $err->getName()
                     ), $err);

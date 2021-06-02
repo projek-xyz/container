@@ -1,15 +1,8 @@
 {
     "name": "projek-xyz/container",
-    "type": "library",
     "description": "Dead Simple PSR 11 Container Implementation",
-    "keywords": [
-        "psr",
-        "psr-11",
-        "container",
-        "dependency",
-        "di",
-        "ioc"
-    ],
+    "keywords": ["psr", "psr-11", "container", "dependency", "di", "ioc"],
+    "type": "library",
     "license": "MIT",
     "authors": [
         {
@@ -29,28 +22,6 @@
         "test": "kahlan --config=test/config.php",
         "lint": "phpcs --standard=PSR12 -n -p src"
     },
-    "require": {
-        "php": ">=7.2",
-        "psr/container": "^1.0|^2.0"
-    },
-    "provide": {
-        "psr/container-implementation": "1.0"
-    },
-    "require-dev": {
-        "kahlan/kahlan": "^5.0",
-        "squizlabs/php_codesniffer": "^3.5"
-    },
-    "config": {
-        "optimize-autoloader": true,
-        "preferred-install": "dist",
-        "sort-packages": true
-    },
-    "extra": {
-        "hooks": {
-            "pre-commit": "composer spec",
-            "commit-msg": "commitlint -e -V"
-        }
-    },
     "autoload": {
         "psr-4": {
             "Projek\\": "src"
@@ -60,6 +31,22 @@
         "psr-4": {
             "Stubs\\": "test/stub"
         }
+    },
+    "require": {
+        "php": ">=7.2",
+        "psr/container": "^1.0|^2.0"
+    },
+    "require-dev": {
+        "kahlan/kahlan": "^5.0",
+        "squizlabs/php_codesniffer": "^3.5"
+    },
+    "provide": {
+        "psr/container-implementation": "1.0"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
     },
     "minimum-stability": "dev",
     "prefer-stable": true

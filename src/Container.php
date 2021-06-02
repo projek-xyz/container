@@ -126,24 +126,6 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Unset instance.
-     *
-     * @link https://github.com/projek-xyz/container/wiki/remove-an-instance
-     * @param string ...$id
-     * @return void
-     */
-    public function unset(string ...$id): void
-    {
-        foreach ($id as $entry) {
-            unset($this->entries[$entry]);
-
-            if (isset($this->handledEntries[$entry])) {
-                unset($this->handledEntries[$entry]);
-            }
-        }
-    }
-
-    /**
      * Resolve an instance without adding it to the stack.
      *
      * It's possible to add 2nd parameter as an array and it will pass it to
@@ -227,8 +209,6 @@ class Container implements ContainerInterface
                 \sprintf('Argument #2 callback must be returns of type "%s"', $class)
             );
         }
-
-        $this->unset($id);
 
         return $this->entries[$id] = $extended;
     }

@@ -54,20 +54,6 @@ describe(Container::class, function () {
         ));
     });
 
-    it('should manage instance', function () {
-        $this->c->set('dummy', Stubs\Dummy::class);
-
-        expect($this->c->has('dummy'))->toBeTruthy();
-        expect($this->c->get('dummy'))->toBeAnInstanceOf(Stubs\Dummy::class);
-
-        $this->c->unset('dummy');
-        expect($this->c->has('dummy'))->toBeFalsy();
-
-        expect(function () {
-            return $this->c->get('dummy');
-        })->toThrow(new Container\NotFoundException('dummy'));
-    });
-
     it('should not overwrite existing', function () {
         $this->c->set('std', stdClass::class);
         $this->c->set('std', function () {

@@ -17,6 +17,6 @@ class Exception extends \RuntimeException implements ContainerExceptionInterface
      */
     public function __construct(string $message, ?\Throwable $prev = null)
     {
-        parent::__construct($message, 0, $prev);
+        parent::__construct($message, ($prev ? $prev->getCode() : 0), $prev);
     }
 }

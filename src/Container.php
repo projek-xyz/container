@@ -58,7 +58,7 @@ class Container implements ContainerInterface
      */
     public function __clone()
     {
-        $this->resolver = new Container\Resolver($this);
+        $this->resolver = clone $this->resolver;
     }
 
     /**
@@ -185,12 +185,12 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/extending-an-instance
      * @param string $id Identifier of existing entry.
-     * @param \Closure $callable Callback to extend the functionality of the entry.
+     * @param \Closure $callback Callback to extend the functionality of the entry.
      * @return object Returns the object instance.
      * @throws Container\NotFoundException If $id is not found.
      * @throws Container\Exception If trying to extends a callable.
      */
-    public function extend(string $id, \Closure $callable): object
+    public function extend(string $id, \Closure $callback): object
     {
         $entry = $this->get($id);
 
@@ -202,7 +202,7 @@ class Container implements ContainerInterface
             );
         }
 
-        $extended = $this->make($callable, [$entry]);
+        $extended = $this->make($callback, [$entry]);
 
         if (! \is_a($extended, $class = \get_class($entry))) {
             throw new Container\Exception(

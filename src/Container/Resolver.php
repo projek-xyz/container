@@ -72,6 +72,7 @@ final class Resolver extends AbstractContainerAware
      * @return mixed
      * @throws \Projek\Container\Exception
      * @throws \Projek\Container\InvalidArgumentException
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function handle($entry, array $args = [])
     {

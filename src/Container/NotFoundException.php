@@ -6,6 +6,9 @@ namespace Projek\Container;
 
 use Psr\Container\NotFoundExceptionInterface;
 
+/**
+ * @package Projek\Container
+ */
 class NotFoundException extends \InvalidArgumentException implements NotFoundExceptionInterface
 {
     /**
@@ -24,11 +27,11 @@ class NotFoundException extends \InvalidArgumentException implements NotFoundExc
     }
 
     /**
-     * Retrieve container name.
+     * Retrieve entry name.
      *
      * @return string
      */
-    public function getName(): string
+    final public function getName(): string
     {
         return $this->name;
     }

@@ -7,6 +7,11 @@ namespace Projek;
 use Closure;
 use Psr\Container\ContainerInterface;
 
+/**
+ * PSR-11 Container impementation class.
+ *
+ * @package Projek\Container
+ */
 class Container implements ContainerInterface
 {
     /**
@@ -57,7 +62,13 @@ class Container implements ContainerInterface
     }
 
     /**
-     * {@inheritDoc}
+     * Retrieve the registered **entry** by $id.
+     *
+     * @see ContainerInterface::get()
+     * @param string $id The **entry** identifier.
+     * @return mixed Entry
+     * @throws Container\NotFoundException
+     * @throws Container\Exception
      */
     public function get(string $id)
     {
@@ -79,7 +90,12 @@ class Container implements ContainerInterface
     }
 
     /**
-     * {@inheritDoc}
+     * Determine whether the **entry** is registered.
+     *
+     * {@inheritdoc}
+     * @see ContainerInterface::has()
+     * @param string $id The **entry** identifier.
+     * @return bool
      */
     public function has(string $id): bool
     {
@@ -87,20 +103,20 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Add new instance.
+     * Registering an **entry** to the container.
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance
-     * @param string $id
-     * @param mixed $entry
+     * @param string $id The **entry** identifier.
+     * @param callable $factory
      * @return static
      */
-    public function set(string $id, $entry)
+    public function set(string $id, $factory): self
     {
         if ($this->has($id)) {
             return $this;
         }
 
-        $this->entries[$id] = $this->resolver->resolve($entry);
+        $this->entries[$id] = $this->resolver->resolve($factory);
 
         if (isset($this->handledEntries[$id])) {
             unset($this->handledEntries[$id]);

@@ -6,6 +6,9 @@ namespace Projek\Container;
 
 use Psr\Container\ContainerExceptionInterface;
 
+/**
+ * @package Projek\Container
+ */
 class InvalidArgumentException extends \InvalidArgumentException implements ContainerExceptionInterface
 {
     // .

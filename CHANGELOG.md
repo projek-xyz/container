@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.7.0](https://github.com/projek-xyz/container/compare/v0.6.0...v0.7.0) (2021-06-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* apply changes of 993ce5a and e11b338
+* move all exceptions to root namespace
+* remove unused classes as stated in a74109b
+
+### Features
+
+* add ability to pass arguments to the constructor ([9f5548f](https://github.com/projek-xyz/container/commit/9f5548f3c05bfdb3f47a7b30fbe81cf83936b0ba))
+
+
+* apply changes of 993ce5a and e11b338 ([eb791c3](https://github.com/projek-xyz/container/commit/eb791c3536c870bdbebf849d4f99d04b77f86861))
+* move all exceptions to root namespace ([e11b338](https://github.com/projek-xyz/container/commit/e11b338ace66ab009d37905249365f4641334685))
+* remove unused classes as stated in a74109b ([993ce5a](https://github.com/projek-xyz/container/commit/993ce5a796c1bc3f30a21a954f26d48590ad1387))
+
 ## [0.6.0](https://github.com/projek-xyz/container/compare/v0.5.0...v0.6.0) (2021-05-26)
 
 

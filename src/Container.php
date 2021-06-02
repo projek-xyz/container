@@ -103,7 +103,7 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Registering an **entry** to the container.
+     * Registering an **entry** to the container stack.
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance
      * @param string $id The **entry** identifier.
@@ -189,7 +189,7 @@ class Container implements ContainerInterface
             ));
         }
 
-        $instance = $this->resolver->resolve($instance);
+        $instance = $this->resolver->resolve($instance, $args);
 
         if ($callback) {
             $instance = $callback($instance) ?: $instance;

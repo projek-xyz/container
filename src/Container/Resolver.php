@@ -32,15 +32,16 @@ final class Resolver extends AbstractContainerAware
      * Ensure the given argument is a callable.
      *
      * @param string|object|callable|\Closure $entry
+     * @param array $args
      * @return object|callable
      * @throws \Projek\Container\InvalidArgumentException
      * @throws \Projek\Container\Exception
      */
-    public function resolve($entry)
+    public function resolve($entry, array $args = [])
     {
         if (\is_string($entry) && ! \function_exists($entry)) {
             $entry = false === \strpos($entry, '::')
-                ? $this->createInstance($entry)
+                ? $this->createInstance($entry, $args)
                 : \explode('::', $entry);
         }
 
@@ -110,7 +111,7 @@ final class Resolver extends AbstractContainerAware
      * @throws \Projek\Container\Exception
      *  When $className is not instantiable or its constructor depends on non-exists container entry.
      */
-    private function createInstance(string $className)
+    private function createInstance(string $className, array $args = [])
     {
         if ($this->getContainer()->has($className)) {
             return $this->getContainer($className);
@@ -124,9 +125,15 @@ final class Resolver extends AbstractContainerAware
 
         try {
             $ref = new \ReflectionClass($className);
-            $args = ($constructor = $ref->getConstructor()) ? $this->resolveArgs($constructor) : [];
+            $constructor = $ref->getConstructor();
 
-            return $ref->newInstanceArgs($args);
+            if (! $constructor) {
+                return $ref->newInstance();
+            }
+
+            return $ref->newInstanceArgs(
+                $this->resolveArgs($constructor, $ref->hasMethod('__invoke') ? [] : $args)
+            );
         } catch (Exception $err) {
             throw new Exception($className . '::__construct(): ' . $err->getMessage(), $err->getPrevious());
         } catch (\Throwable $err) {

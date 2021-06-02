@@ -1,15 +1,8 @@
-[![Version](https://img.shields.io/packagist/v/projek-xyz/container?style=flat-square)](https://packagist.org/packages/projek-xyz/container)
-[![Lisence](https://img.shields.io/packagist/l/projek-xyz/container?style=flat-square)](https://github.com/projek-xyz/slim-plates/blob/master/LICENSE.md)
-[![Actions Status](https://img.shields.io/github/workflow/status/projek-xyz/container/Tests/master?style=flat-square)](https://github.com/projek-xyz/container/actions)
-[![Coverage Status](https://img.shields.io/coveralls/github/projek-xyz/container/master?style=flat-square)](https://coveralls.io/github/projek-xyz/container)
-[![Coverage Status](https://img.shields.io/codeclimate/coverage/projek-xyz/container?style=flat-square)](https://codeclimate.com/github/projek-xyz/container)
-[![Maintainability](https://img.shields.io/codeclimate/coverage-letter/projek-xyz/container?label=maintainability&style=flat-square)](https://codeclimate.com/github/projek-xyz/container/maintainability)
-
 This tiny library aims to provide dead simple PSR-11 implementation with flexible service registration.
 
 ## Requirements
 
-- PHP 7.2+ and tested up-to PHP 8.0
+- PHP 7.2+ and tested up-to PHP 8.1
 
 ## Installation
 
@@ -21,10 +14,9 @@ $ composer require projek-xyz/container --prefer-dist
 
 ## API
 
-- [`Container::set()`](Registering-an-instance) to Registering an instance
-- [`Container::unset()`](Remove-an-instance) to Remove an instance
-- [`Container::make()`](Create-an-instance) to Create an instance
-- [`Container::extend()`](Extending-an-instance) to Extending an instance
+- [`Container::set()`](registering-an-instance) to Registering an instance
+- [`Container::make()`](create-an-instance) to Create an instance
+- [`Container::extend()`](extending-an-instance) to Extending an instance
 
 ## Basic Usage
 
@@ -88,35 +80,3 @@ $container->get('db'); // etc
 ### PSR-11 Compliant
 
 Means it has `get($id)` and `has($id)` method as required by [PSR-11 Standard](https://www.php-fig.org/psr/psr-11/)
-
-## Extra Flexibilities
-
-In-case you'd like to accessing a service instance using array, yes you can by registering `ArrayContainer` as a service
-
-```php
-use Projek\Container\ArrayContainer;
-
-$container->set(ArrayContainer::class, ArrayContainer::class);
-
-$container->set('myService', function (ArrayContainer $container) {
-    return new MyService(
-        $container['db'],
-        $container[Psr\Log\LoggerInterface::class]
-    );
-});
-```
-
-Same thing when you want access it as a property:
-
-```php
-use Projek\Container\PropertyContainer;
-
-$container->set(PropertyContainer::class, PropertyContainer::class);
-
-$container->set('myService', function (PropertyContainer $container) {
-    return new MyService(
-        $container->db,
-        $container->{Psr\Log\LoggerInterface::class} // Not convenient indeed, but yes you could 😅
-    );
-});
-```

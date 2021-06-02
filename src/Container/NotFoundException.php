@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Projek\Container\Exception;
+namespace Projek\Container;
 
 use Psr\Container\NotFoundExceptionInterface;
 
+/**
+ * @package Projek\Container
+ */
 class NotFoundException extends \InvalidArgumentException implements NotFoundExceptionInterface
 {
     /**
@@ -20,15 +23,15 @@ class NotFoundException extends \InvalidArgumentException implements NotFoundExc
     public function __construct(string $name, ?\Throwable $prev = null)
     {
         $this->name = $name;
-        parent::__construct(\sprintf('Container "%s" not found.', $name), 0, $prev);
+        parent::__construct(\sprintf('Container entry "%s" not found.', $name), 0, $prev);
     }
 
     /**
-     * Retrieve container name.
+     * Retrieve entry name.
      *
      * @return string
      */
-    public function getName(): string
+    final public function getName(): string
     {
         return $this->name;
     }

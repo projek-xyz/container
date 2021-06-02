@@ -6,6 +6,14 @@ namespace Projek\Container;
 
 use Projek\Container;
 
+/**
+ * Container factory resolver class.
+ *
+ * An internal class mainly used for resolving and handling container factories.
+ *
+ * @package Projek\Container
+ * @internal
+ */
 final class Resolver extends AbstractContainerAware
 {
     /**
@@ -19,69 +27,81 @@ final class Resolver extends AbstractContainerAware
     }
 
     /**
-     * Handle callable.
+     * Entry resolver.
      *
-     * @param callable $instance
+     * Ensure the given argument is a callable.
+     *
+     * @param string|object|callable|\Closure $entry
      * @param array $args
-     * @return mixed
+     * @return object|callable
+     * @throws \Projek\Container\Exception
+     * @throws \Projek\Container\InvalidArgumentException
      */
-    public function handle($instance, array $args = [])
+    public function resolve($entry, array $args = [])
     {
-        if (! $this->assertCallable($instance) && \is_object($instance)) {
-            // Returns the object if it was non-callable instance.
-            return $instance;
+        if (\is_string($entry) && ! \function_exists($entry)) {
+            $entry = false === \strpos($entry, '::')
+                ? $this->createInstance($entry, $args)
+                : \explode('::', $entry);
         }
 
-        $params = [];
-        $ref = $this->createReflection($instance);
+        if (\is_object($entry)) {
+            if ($entry instanceof ContainerAware && null === $entry->getContainer()) {
+                $entry->setContainer($this->getContainer());
+            }
 
-        if ($isMethod = ($ref instanceof \ReflectionMethod)) {
-            $params[] = $ref->isStatic() && ! \is_object($instance[0]) ? null : $instance[0];
+            return $entry;
         }
 
-        // If it was internal method resolve its params as a closure.
-        // @link https://bugs.php.net/bug.php?id=50798
-        $toResolve = $isMethod && $ref->getName() === '__invoke'
-            ? new \ReflectionFunction($ref->getClosure($instance[0]))
-            : $ref;
+        if (\is_array($entry) && \is_string($entry[0])) {
+            $entry[0] = $this->resolve($entry[0], $args);
+        }
 
-        $params[] = $this->resolveArgs($toResolve, $args);
+        if (\is_callable($entry)) {
+            return $entry;
+        }
 
-        return $ref->invokeArgs(...$params);
+        throw new InvalidArgumentException(\sprintf('Cannot resolve invalid entry of %s', \gettype($entry)));
     }
 
     /**
-     * Instance resolver.
+     * Handle callable.
      *
-     * @param string|object|callable|\Closure $toResolve
-     * @return object|callable
-     * @throws Exception\UnresolvableException
+     * @param callable $entry
+     * @param array $args
+     * @return mixed
+     * @throws \Projek\Container\Exception
+     * @throws \Projek\Container\InvalidArgumentException
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
-    public function resolve($toResolve)
+    public function handle($entry, array $args = [])
     {
-        if (\is_string($toResolve) && ! \function_exists($toResolve)) {
-            $toResolve = false === \strpos($toResolve, '::')
-                ? $this->createInstance($toResolve)
-                : \explode('::', $toResolve);
-        }
-
-        if (\is_object($toResolve)) {
-            if ($toResolve instanceof ContainerAware && null === $toResolve->getContainer()) {
-                $toResolve->setContainer($this->getContainer());
+        if (\is_object($entry)) {
+            // Returns the object if it was non-callable instance.
+            if (! \is_callable($entry)) {
+                return $entry;
             }
 
-            return $toResolve;
+            // Otherwise convert it to closure.
+            $entry = \Closure::fromCallable($entry);
         }
 
-        if (\is_array($toResolve)) {
-            $toResolve[0] = $this->resolve($toResolve[0]);
+        $ref = $this->createCallableReflection($entry);
+        $caller = $ref->getName();
+        $params = [];
+
+        if ($ref instanceof \ReflectionMethod) {
+            $caller = $ref->getDeclaringClass()->getName() . '::' . $ref->getName();
+            $params[] = $ref->isStatic() && ! \is_object($entry[0]) ? null : $entry[0];
         }
 
-        if ($this->assertCallable($toResolve)) {
-            return $toResolve;
-        }
+        try {
+            $params[] = $this->resolveArgs($ref, $args);
 
-        throw new Exception\UnresolvableException($toResolve);
+            return $ref->invokeArgs(...$params);
+        } catch (Exception $err) {
+            throw new Exception($caller . '(): ' . $err->getMessage(), $err->getPrevious());
+        }
     }
 
     /**
@@ -89,23 +109,39 @@ final class Resolver extends AbstractContainerAware
      *
      * @param string $className
      * @return object
-     * @throws Exception When $className is not instantiable.
+     * @throws \Projek\Container\Exception
+     *  When $className is not instantiable or its constructor depends on non-exists container entry.
      */
-    private function createInstance(string $className)
+    private function createInstance(string $className, array $args = [])
     {
         if ($this->getContainer()->has($className)) {
             return $this->getContainer($className);
         }
 
-        try {
-            $ref = new \ReflectionClass($className);
-            $args = ($constructor = $ref->getConstructor()) ? $this->resolveArgs($constructor) : [];
+        if (! \class_exists($className)) {
+            throw new Exception(
+                \sprintf('Cannot resolve an entry or class named "%s" of non-exists', $className)
+            );
+        }
 
-            return $ref->newInstanceArgs($args);
-        } catch (Exception\UnresolvableException $err) {
-            throw $err;
-        } catch (\Throwable $err) {
-            throw new Exception\UnresolvableException($err);
+        $ref = new \ReflectionClass($className);
+
+        if (! $ref->isInstantiable()) {
+            throw new Exception(
+                \sprintf('Cannot instantiate class named "%s"', $className)
+            );
+        }
+
+        try {
+            if ($constructor = $ref->getConstructor()) {
+                return $ref->newInstanceArgs(
+                    $this->resolveArgs($constructor, $ref->hasMethod('__invoke') ? [] : $args)
+                );
+            }
+
+            return $ref->newInstance();
+        } catch (Exception $err) {
+            throw new Exception($className . '::__construct(): ' . $err->getMessage(), $err->getPrevious());
         }
     }
 
@@ -114,42 +150,45 @@ final class Resolver extends AbstractContainerAware
      *
      * @param callable $callable
      * @return \ReflectionMethod|\ReflectionFunction|null
-     * @throws Exception\UnresolvableException
+     * @throws \Projek\Container\Exception
+     * @throws \Projek\Container\InvalidArgumentException
      */
-    private function createReflection($callable)
+    private function createCallableReflection($callable)
     {
-        if (\is_string($callable)) {
-            if (false === \strpos($callable, '::')) {
-                return new \ReflectionFunction($callable);
-            }
-
+        if (\is_string($callable) && false !== \strpos($callable, '::')) {
             $callable = \explode('::', $callable);
         }
 
-        $ref = new \ReflectionMethod($callable[0], $callable[1]);
+        if (! \is_array($callable)) {
+            return new \ReflectionFunction($callable);
+        }
+
+        try {
+            $ref = new \ReflectionMethod($callable[0], $callable[1]);
+        } catch (\ReflectionException $err) {
+            throw new InvalidArgumentException($err->getMessage(), $err->getCode(), $err);
+        }
 
         // If trying to statically call a non-static method (at least on PHP 7.x)
         if (! $ref->isStatic() && \is_string($callable[0])) {
-            throw new Exception(\sprintf(
-                'Non-static method %s should not be called statically',
-                \join('::', $callable)
-            ));
+            throw new Exception(
+                \sprintf('Non-static method %s should not be called statically', \join('::', $callable))
+            );
         }
 
         return $ref;
     }
 
     /**
-     * Callable argumetns resolver.
+     * Callable arguments resolver.
      *
      * @param \ReflectionFunctionAbstract $reflection
      * @param array<mixed> $args
      * @return array
+     * @throws \Projek\Container\Exception
      */
     private function resolveArgs($reflection, array $args = []): array
     {
-        $container = $this->getContainer();
-
         foreach ($reflection->getParameters() as $param) {
             // Just skip if parameter already provided.
             if (\array_key_exists($position = $param->getPosition(), $args)) {
@@ -157,13 +196,19 @@ final class Resolver extends AbstractContainerAware
             }
 
             $type = $param->getType();
-            $dependency = ($type && ! $type->isBuiltin() ? $type : $param)->getName();
 
             try {
-                $args[$position] = $container->get($dependency);
-            } catch (Exception\NotFoundException $err) {
+                $args[$position] = $this->getContainer(
+                    ($type && ! $type->isBuiltin() ? $type : $param)->getName()
+                );
+            } catch (NotFoundException $err) {
                 if (! $param->isOptional()) {
-                    throw new Exception\UnresolvableException($err);
+                    throw new Exception(\sprintf(
+                        'Argument #%d ($%s) depends on entry "%s" of non-exists',
+                        ++$position,
+                        $param->getName(),
+                        $err->getName()
+                    ), $err);
                 }
 
                 $args[$position] = $param->getDefaultValue();
@@ -171,26 +216,5 @@ final class Resolver extends AbstractContainerAware
         }
 
         return $args;
-    }
-
-    /**
-     * Assert callable $instance.
-     *
-     * @param callable $instance
-     * @return bool
-     * @throws Exception\UnresolvableException When $instance is an array but the callable
-     *                                         method not exists.
-     */
-    private function assertCallable(&$instance): bool
-    {
-        if (\is_object($instance) && \method_exists($instance, '__invoke')) {
-            $instance = [$instance, '__invoke'];
-        }
-
-        if (\is_array($instance) && ! \method_exists(...$instance)) {
-            throw new Exception\UnresolvableException($instance);
-        }
-
-        return \is_callable($instance);
     }
 }

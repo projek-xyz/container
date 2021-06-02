@@ -10,7 +10,7 @@ namespace Projek\Container;
  * Any class implements this interface could have instance of ContainerInterface
  * injected automtically.
  *
- * @see Resolver::injectContainer()
+ * @package Projek\Container
  */
 interface ContainerAware
 {

@@ -63,7 +63,8 @@ $container->set('myService', SomeFactoryClass::class);
 
 ### 3. Use existing entry (as an alias)
 
-you can use name of the registered service as the `$concrete` parameter.
+You can use name of the registered service as the `$entry` parameter.
+
 ```php
 // Based on example above
 $container->set(CertainInterface::class, function () {

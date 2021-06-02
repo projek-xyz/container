@@ -188,11 +188,11 @@ describe(Container::class, function () {
         it('should throw exception when setting incorrect param', function () {
             expect(function () {
                 $this->c->make(Stubs\AbstractFoo::class);
-            })->toThrow(new Container\Exception('Cannot instantiate abstract class Stubs\AbstractFoo'));
+            })->toThrow(new Container\Exception('Cannot instantiate class named "Stubs\AbstractFoo"'));
 
             expect(function () {
                 $this->c->set('foo', Stubs\AbstractFoo::class);
-            })->toThrow(new Container\Exception('Cannot instantiate abstract class Stubs\AbstractFoo'));
+            })->toThrow(new Container\Exception('Cannot instantiate class named "Stubs\AbstractFoo"'));
 
             expect(function () {
                 $this->c->set('foo', 'NotExistsClass');
@@ -345,7 +345,7 @@ describe(Container::class, function () {
 
                     return null;
                 });
-            })->toThrow(new Container\InvalidArgumentException('Method Stubs\SomeClass::notExists() is not exists'));
+            })->toThrow(new Container\InvalidArgumentException('Method Stubs\SomeClass::notExists() does not exist'));
         });
 
         it('should pass second parameter as argument for the handler', function () {

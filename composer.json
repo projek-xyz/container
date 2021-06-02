@@ -14,6 +14,12 @@
         "issues": "https://github.com/projek-xyz/container/issues",
         "source": "https://github.com/projek-xyz/container"
     },
+    "funding": [
+        {
+            "type": "ko-fi",
+            "url": "https://ko-fi.com/feryardiant"
+        }
+    ],
     "scripts": {
         "spec": [
             "@lint",

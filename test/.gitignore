@@ -1,5 +1,6 @@
 # Test Report Files
 # --------------------------
+*.local.php
 benchmark.php
 codeclimate.*.json
 codeclimate.json

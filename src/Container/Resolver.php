@@ -6,6 +6,14 @@ namespace Projek\Container;
 
 use Projek\Container;
 
+/**
+ * Container factory resolver class.
+ *
+ * An internal class mainly used for resolving and handling container factories.
+ *
+ * @package Projek\Container
+ * @internal
+ */
 final class Resolver extends AbstractContainerAware
 {
     /**
@@ -16,6 +24,43 @@ final class Resolver extends AbstractContainerAware
     public function __construct(Container $container)
     {
         $this->setContainer($container);
+    }
+
+    /**
+     * Entry resolver.
+     *
+     * Ensure the given argument is a callable.
+     *
+     * @param string|object|callable|\Closure $entry
+     * @return object|callable
+     * @throws \Projek\Container\InvalidArgumentException
+     * @throws \Projek\Container\Exception
+     */
+    public function resolve($entry)
+    {
+        if (\is_string($entry) && ! \function_exists($entry)) {
+            $entry = false === \strpos($entry, '::')
+                ? $this->createInstance($entry)
+                : \explode('::', $entry);
+        }
+
+        if (\is_object($entry)) {
+            if ($entry instanceof ContainerAware && null === $entry->getContainer()) {
+                $entry->setContainer($this->getContainer());
+            }
+
+            return $entry;
+        }
+
+        if (\is_array($entry)) {
+            $entry[0] = $this->resolve($entry[0]);
+        }
+
+        if ($this->assertCallable($entry)) {
+            return $entry;
+        }
+
+        throw new InvalidArgumentException(\sprintf('Cannot resolve invalid entry of %s', \gettype($entry)));
     }
 
     /**
@@ -58,40 +103,6 @@ final class Resolver extends AbstractContainerAware
     }
 
     /**
-     * Instance resolver.
-     *
-     * @param string|object|callable|\Closure $entry
-     * @return object|callable
-     * @throws \Projek\Container\InvalidArgumentException
-     */
-    public function resolve($entry)
-    {
-        if (\is_string($entry) && ! \function_exists($entry)) {
-            $entry = false === \strpos($entry, '::')
-                ? $this->createInstance($entry)
-                : \explode('::', $entry);
-        }
-
-        if (\is_object($entry)) {
-            if ($entry instanceof ContainerAware && null === $entry->getContainer()) {
-                $entry->setContainer($this->getContainer());
-            }
-
-            return $entry;
-        }
-
-        if (\is_array($entry)) {
-            $entry[0] = $this->resolve($entry[0]);
-        }
-
-        if ($this->assertCallable($entry)) {
-            return $entry;
-        }
-
-        throw new InvalidArgumentException(\sprintf('Cannot resolve invalid entry of %s', \gettype($entry)));
-    }
-
-    /**
      * Create an instance of $className.
      *
      * @param string $className
@@ -105,7 +116,7 @@ final class Resolver extends AbstractContainerAware
             return $this->getContainer($className);
         }
 
-        if (! class_exists($className)) {
+        if (! \class_exists($className)) {
             throw new Exception(
                 \sprintf('Cannot resolve an entry or class named "%s" of non-exists', $className)
             );
@@ -154,7 +165,7 @@ final class Resolver extends AbstractContainerAware
     }
 
     /**
-     * Callable argumetns resolver.
+     * Callable arguments resolver.
      *
      * @param \ReflectionFunctionAbstract $reflection
      * @param array<mixed> $args
@@ -178,7 +189,7 @@ final class Resolver extends AbstractContainerAware
             } catch (NotFoundException $err) {
                 if (! $param->isOptional()) {
                     throw new Exception(\sprintf(
-                        'Argument #%d %s depends on entry "%s" of non-exists',
+                        'Argument #%d ($%s) depends on entry "%s" of non-exists',
                         ++$position,
                         $param->getName(),
                         $err->getName()

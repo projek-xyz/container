@@ -38,19 +38,19 @@ describe(Container::class, function () {
         expect($this->c->get('a'))->toEqual('lorem');
     });
 
-    it('should throw an UnresolvableException if dependency not exists', function () {
+    it('should throw an Exception if dependency not exists', function () {
         $this->c->set('a', [Stubs\SomeClass::class, 'handle']);
 
         expect(function () {
             $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
         })->toThrow(new Container\Exception(
-            'Stubs\ConcreteBar::__construct(): Argument #1 dummy depends on entry "dummy" of non-exists'
+            'Stubs\ConcreteBar::__construct(): Argument #1 ($dummy) depends on entry "dummy" of non-exists'
         ));
 
         expect(function () {
             return $this->c->get('a');
         })->toThrow(new Container\Exception(
-            'Stubs\SomeClass::handle(): Argument #1 dummy depends on entry "Stubs\AbstractFoo" of non-exists'
+            'Stubs\SomeClass::handle(): Argument #1 ($dummy) depends on entry "Stubs\AbstractFoo" of non-exists'
         ));
     });
 
@@ -75,13 +75,6 @@ describe(Container::class, function () {
         });
 
         expect($this->c->get('std'))->toBeAnInstanceOf(stdClass::class);
-
-        $this->c->set('stds', function ($foo) {
-            return $foo;
-        });
-        expect(function () {
-            return $this->c->get('stds');
-        })->toThrow(new Container\Exception('Closure::__invoke(): Argument #1 foo depends on entry "foo" of non-exists'));
     });
 
     it('should cache resolved instances', function () {
@@ -127,7 +120,7 @@ describe(Container::class, function () {
         expect($c->has('dummy'))->toBeTruthy();
     });
 
-    context(Container::class.'::set', function () {
+    context('::set', function () {
         beforeEach(function () {
             $this->c->set('dummy', Stubs\Dummy::class);
         });
@@ -233,7 +226,7 @@ describe(Container::class, function () {
         });
     });
 
-    context(Container::class.'::get', function () {
+    context('::get', function () {
         it('should have same instance everywhere', function () {
             $this->c->set('foo', function () {
                 return new class {
@@ -264,7 +257,7 @@ describe(Container::class, function () {
         });
     });
 
-    context(Container::class.'::make', function () {
+    context('::make', function () {
         beforeEach(function () {
             // Dependencies.
             $this->c->set('dummy', Stubs\Dummy::class);
@@ -410,7 +403,7 @@ describe(Container::class, function () {
         });
     });
 
-    context(Container::class.'::extend', function () {
+    context('::extend', function () {
         beforeEach(function () {
             $this->c->set('dummy', Stubs\Dummy::class);
             $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);

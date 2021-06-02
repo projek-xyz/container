@@ -7,6 +7,8 @@ namespace Projek\Container;
 /**
  * A trait to help injecting ContainerInterface to the class that implements
  * ContainerAware interface.
+ *
+ * @package Projek\Container
  */
 trait HasContainer
 {

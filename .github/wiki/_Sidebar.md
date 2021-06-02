@@ -6,6 +6,5 @@
 ## API
 
 - [Registering an instance](registering-an-instance)
-- [Remove an instance](remove-an-instance)
 - [Create an instance](create-an-instance)
 - [Extending an instance](extending-an-instance)

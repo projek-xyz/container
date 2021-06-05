@@ -6,8 +6,3 @@ updates:
     interval: weekly
     time: "22:00"
   open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: kahlan/kahlan
-    versions:
-    - 5.0.6
-    - 5.0.9

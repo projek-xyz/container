@@ -15,23 +15,17 @@ use Psr\Container\ContainerInterface;
 class Container implements ContainerInterface
 {
     /**
-     * List of instances that been initiated.
-     *
-     * @var array<string, mixed>
+     * @var array<string, mixed> List of instances that been initiated.
      */
     private $entries = [];
 
     /**
-     * List of instances that been handled.
-     *
-     * @var array<string, mixed>
+     * @var array<string, mixed> List of instances that been handled.
      */
     private $handledEntries = [];
 
     /**
-     * Service container resolver.
-     *
-     * @var Container\Resolver
+     * @var Container\Resolver Service container resolver.
      */
     private $resolver;
 
@@ -150,8 +144,8 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/create-an-instance
      * @param string|callable $instance String of class name or callable
-     * @param array|\Closure ...$args
-     * @param null|\Closure ...$callback
+     * @param list<mixed>|\Closure $args
+     * @param null|\Closure $callback
      * @return mixed
      * @throws Container\InvalidArgumentException
      * @throws Container\Exception

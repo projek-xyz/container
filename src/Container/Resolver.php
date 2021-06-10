@@ -32,7 +32,7 @@ final class Resolver extends AbstractContainerAware
      * Ensure the given argument is a callable.
      *
      * @param string|object|callable|\Closure $entry
-     * @param array $args
+     * @param list<mixed> $args
      * @return object|callable
      * @throws \Projek\Container\Exception
      * @throws \Projek\Container\InvalidArgumentException
@@ -68,7 +68,7 @@ final class Resolver extends AbstractContainerAware
      * Handle callable.
      *
      * @param callable $entry
-     * @param array $args
+     * @param list<mixed> $args
      * @return mixed
      * @throws \Projek\Container\Exception
      * @throws \Projek\Container\InvalidArgumentException
@@ -108,14 +108,15 @@ final class Resolver extends AbstractContainerAware
      * Create an instance of $className.
      *
      * @param string $className
+     * @param list<mixed> $args
      * @return object
      * @throws \Projek\Container\Exception
      *  When $className is not instantiable or its constructor depends on non-exists container entry.
      */
-    private function createInstance(string $className, array $args = [])
+    private function createInstance(string $className, array $args = []): object
     {
-        if ($this->getContainer()->has($className)) {
-            return $this->getContainer($className);
+        if ($this->container->has($className)) {
+            return $this->container->get($className);
         }
 
         if (! \class_exists($className)) {
@@ -133,13 +134,11 @@ final class Resolver extends AbstractContainerAware
         }
 
         try {
-            if ($constructor = $ref->getConstructor()) {
-                return $ref->newInstanceArgs(
-                    $this->resolveArgs($constructor, $ref->hasMethod('__invoke') ? [] : $args)
-                );
-            }
+            $args = ($constructor = $ref->getConstructor())
+                ? $this->resolveArgs($constructor, $ref->hasMethod('__invoke') ? [] : $args)
+                : [];
 
-            return $ref->newInstance();
+            return $ref->newInstanceArgs($args);
         } catch (Exception $err) {
             throw new Exception($className . '::__construct(): ' . $err->getMessage(), $err->getPrevious());
         }
@@ -149,7 +148,7 @@ final class Resolver extends AbstractContainerAware
      * Instance resolver.
      *
      * @param callable $callable
-     * @return \ReflectionMethod|\ReflectionFunction|null
+     * @return \ReflectionMethod|\ReflectionFunction
      * @throws \Projek\Container\Exception
      * @throws \Projek\Container\InvalidArgumentException
      */
@@ -183,11 +182,11 @@ final class Resolver extends AbstractContainerAware
      * Callable arguments resolver.
      *
      * @param \ReflectionFunctionAbstract $reflection
-     * @param array<mixed> $args
-     * @return array
+     * @param list<mixed> $args
+     * @return list<mixed>
      * @throws \Projek\Container\Exception
      */
-    private function resolveArgs($reflection, array $args = []): array
+    private function resolveArgs(\ReflectionFunctionAbstract $reflection, array $args = []): array
     {
         foreach ($reflection->getParameters() as $param) {
             // Just skip if parameter already provided.
@@ -195,12 +194,8 @@ final class Resolver extends AbstractContainerAware
                 continue;
             }
 
-            $type = $param->getType();
-
             try {
-                $args[$position] = $this->getContainer(
-                    ($type && ! $type->isBuiltin() ? $type : $param)->getName()
-                );
+                $args[$position] = $this->container->get($this->getTypeName($param));
             } catch (NotFoundException $err) {
                 if (! $param->isOptional()) {
                     throw new Exception(\sprintf(
@@ -216,5 +211,20 @@ final class Resolver extends AbstractContainerAware
         }
 
         return $args;
+    }
+
+    /**
+     * @param \ReflectionParameter $param
+     * @return string
+     */
+    private function getTypeName(\ReflectionParameter $param): string
+    {
+        $type = $param->getType();
+
+        if ($type instanceof \ReflectionNamedType && ! $type->isBuiltin()) {
+            return $type->getName();
+        }
+
+        return $param->getName();
     }
 }

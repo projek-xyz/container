@@ -1,4 +1,4 @@
-name: Tests
+name: Codes Quality
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
     branches:
       - master
     paths:
-      - .github/workflows/test.yml
+      - .github/workflows/codes.yml
       - src/*
       - test/*
 
@@ -99,7 +99,6 @@ jobs:
     - name: Set ENV for CodeClimate (pull_request)
       if: github.event_name == 'pull_request'
       run: echo "GIT_BRANCH=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
-      # echo "GIT_BRANCH=$(echo ${GIT_BRANCH##*/} | tr / -)" >> $GITHUB_ENV
 
     - name: Spec
       run: composer spec

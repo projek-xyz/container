@@ -18,9 +18,32 @@ env:
   CC_TEST_REPORTER_URL: https://codeclimate.com/downloads/test-reporter/test-reporter-0.7.0-linux-amd64
 
 jobs:
-  test:
-    name: Runs on PHP ${{ matrix.php-version }}
+  analyze:
+    name: Analyze on PHP ${{ matrix.php-version }}
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1']
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        coverage: none
+        tools: phpstan, cs2pr
+
+    - name: Static Analysis
+      run: phpstan analyse src --level 6 --error-format=checkstyle | cs2pr
+
+  test:
+    name: Test on PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-20.04
+    needs: analyze
     env:
       GIT_COMMIT_SHA: ${{ github.sha }}
       GIT_BRANCH: ${{ github.ref }}

@@ -37,6 +37,22 @@ jobs:
         coverage: none
         tools: phpstan, cs2pr
 
+    - name: Get Composer cache directory
+      id: composer-cache
+      run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+    - name: Cache Composer dependencies
+      uses: actions/cache@v1
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: php-${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: php-${{ matrix.php-version }}-composer-
+
+    - name: Install dependencies
+      env:
+        phpVersion: ${{ matrix.php-version }}
+      run: composer install --prefer-dist --no-progress --no-suggest
+
     - name: Static Analysis
       run: phpstan analyse src --level 6 --error-format=checkstyle | cs2pr
 

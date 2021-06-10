@@ -19,7 +19,7 @@ env:
 
 jobs:
   test:
-    name: Runs on PHP ${{ matrix.php-versions }}
+    name: Runs on PHP ${{ matrix.php-version }}
     runs-on: ubuntu-20.04
     env:
       GIT_COMMIT_SHA: ${{ github.sha }}
@@ -27,16 +27,16 @@ jobs:
 
     strategy:
       matrix:
-        php-versions: ['7.2', '7.3', '7.4', '8.0', '8.1']
+        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1']
 
     steps:
     - name: Checkout
       uses: actions/checkout@master
 
     - name: Set up PHP
-      uses: shivammathur/setup-php@master
+      uses: shivammathur/setup-php@v2
       with:
-        php-version: ${{ matrix.php-versions }}
+        php-version: ${{ matrix.php-version }}
         coverage: xdebug
 
     - name: Get Composer cache directory
@@ -49,15 +49,13 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ${{ steps.composer-cache.outputs.dir }}
-        key: php-${{ matrix.php-versions }}-composer-${{ hashFiles('**/composer.lock') }}
-        restore-keys: php-${{ matrix.php-versions }}-composer-
+        key: php-${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: php-${{ matrix.php-version }}-composer-
 
     - name: Install dependencies
       env:
-        phpVersion: ${{ matrix.php-versions }}
-      run: |
-        if [[ $phpVersion = "7.1" ]]; then rm composer.lock; fi
-        composer install --prefer-dist --no-progress --no-suggest
+        phpVersion: ${{ matrix.php-version }}
+      run: composer install --prefer-dist --no-progress --no-suggest
 
     # https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
     # https://github.com/deivid-rodriguez/pry-byebug/blob/377e5b7d229a157bb896f21d776f71fc389a5c00/.github/workflows/ubuntu.yml#L46-L57
@@ -71,7 +69,7 @@ jobs:
     - name: CodeClimate
       env:
         LCOV_REPORT: ${{ github.workspace }}/test/lcov.info
-        CODECLIMATE_REPORT: ${{ github.workspace }}/test/codeclimate.${{ matrix.php-versions }}.json
+        CODECLIMATE_REPORT: ${{ github.workspace }}/test/codeclimate.${{ matrix.php-version }}.json
       run: |
         curl -LSs $CC_TEST_REPORTER_URL > ./cc-test-reporter && chmod +x ./cc-test-reporter
         ./cc-test-reporter format-coverage -t lcov -o $CODECLIMATE_REPORT $LCOV_REPORT

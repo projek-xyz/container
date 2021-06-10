@@ -19,12 +19,8 @@ env:
 
 jobs:
   analyze:
-    name: Analyze on PHP ${{ matrix.php-version }}
+    name: Static Analysis
     runs-on: ubuntu-20.04
-
-    strategy:
-      matrix:
-        php-version: ['7.2', '7.3', '7.4', '8.0', '8.1']
 
     steps:
     - name: Checkout
@@ -33,31 +29,25 @@ jobs:
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: ${{ matrix.php-version }}
-        coverage: none
+        php-version: '8.0'
         tools: phpstan, cs2pr
+        coverage: none
 
-    - name: Get Composer cache directory
-      id: composer-cache
-      run: echo "::set-output name=dir::$(composer config cache-files-dir)"
-
-    - name: Cache Composer dependencies
-      uses: actions/cache@v1
+    - name: Cache dependencies
+      uses: actions/cache@v2
       with:
-        path: ${{ steps.composer-cache.outputs.dir }}
-        key: php-${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
-        restore-keys: php-${{ matrix.php-version }}-composer-
+        path: ~/.composer/cache
+        key: php-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: php-composer-
 
     - name: Install dependencies
-      env:
-        phpVersion: ${{ matrix.php-version }}
       run: composer install --prefer-dist --no-progress --no-suggest
 
     - name: Static Analysis
       run: phpstan analyse src --level 6 --no-progress --error-format=checkstyle | cs2pr
 
-  test:
-    name: Test on PHP ${{ matrix.php-version }}
+  tests:
+    name: Test - PHP ${{ matrix.php-version }}
     runs-on: ubuntu-20.04
     needs: analyze
     env:
@@ -77,21 +67,16 @@ jobs:
       with:
         php-version: ${{ matrix.php-version }}
         coverage: xdebug
-
-    - name: Get Composer cache directory
-      id: composer-cache
-      run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+        tools: composer
 
     - name: Cache Composer dependencies
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
-        path: ${{ steps.composer-cache.outputs.dir }}
+        path: ~/.composer/cache
         key: php-${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
         restore-keys: php-${{ matrix.php-version }}-composer-
 
     - name: Install dependencies
-      env:
-        phpVersion: ${{ matrix.php-version }}
       run: composer install --prefer-dist --no-progress --no-suggest
 
     # https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
@@ -126,7 +111,7 @@ jobs:
 
   reports:
     name: Reports
-    needs: test
+    needs: tests
     runs-on: ubuntu-20.04
 
     steps:

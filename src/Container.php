@@ -52,7 +52,7 @@ class Container implements ContainerInterface
      */
     public function __clone()
     {
-        $this->resolver = clone $this->resolver;
+        $this->resolver = new Container\Resolver($this);
     }
 
     /**

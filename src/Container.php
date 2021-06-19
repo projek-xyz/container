@@ -115,9 +115,10 @@ class Container implements ContainerInterface
             return $this;
         }
 
-        $this->entries[$id] = $this->resolver->resolve(
-            $this->factories[$id] = $factory
-        );
+        $this->entries[$id] = $this->resolver->resolve($factory);
+        $this->factories[$id] = \is_object($factory) && ! ($factory instanceof \Closure)
+            ? \get_class($factory)
+            : $factory;
 
         if (isset($this->handledEntries[$id])) {
             unset($this->handledEntries[$id]);

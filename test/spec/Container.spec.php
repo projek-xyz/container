@@ -262,21 +262,29 @@ describe(Container::class, function () {
             });
         }
 
-        it('should make an instance using class name', function () {
+        it('should make a new instance using class name', function () {
             expect(
-                $this->c->make(Stubs\SomeClass::class)
+                $one = $this->c->make(Stubs\SomeClass::class)
             )->toBeAnInstanceOf(Stubs\CertainInterface::class);
 
             // Returns class instance because it's not a callable
             expect(
-                $this->c->make(Stubs\SomeClass::class, function () {
+                $two = $this->c->make(Stubs\SomeClass::class, function () {
                     return false;
                 })
             )->toBeAnInstanceOf(Stubs\CertainInterface::class);
+
+            expect($one)->not->toBe($two);
         });
 
-        it('should make a container name', function () {
-            expect($this->c->make('dummy'))->toBeAnInstanceOf(Stubs\Dummy::class);
+        it('should make a new instance of existing container entry', function () {
+            $get = $this->c->get('dummy');
+
+            expect(
+                $make = $this->c->make('dummy')
+            )->toBeAnInstanceOf(Stubs\Dummy::class);
+
+            expect($get)->not->toBe($make);
         });
 
         it('shoud able to make void method', function () {

@@ -20,6 +20,11 @@ class Container implements ContainerInterface
     private $entries = [];
 
     /**
+     * @var array<string, callable> List of instance's factory to be initiate.
+     */
+    private $factories = [];
+
+    /**
      * @var array<string, mixed> List of instances that been handled.
      */
     private $handledEntries = [];
@@ -110,7 +115,9 @@ class Container implements ContainerInterface
             return $this;
         }
 
-        $this->entries[$id] = $this->resolver->resolve($factory);
+        $this->entries[$id] = $this->resolver->resolve(
+            $this->factories[$id] = $factory
+        );
 
         if (isset($this->handledEntries[$id])) {
             unset($this->handledEntries[$id]);
@@ -165,7 +172,12 @@ class Container implements ContainerInterface
             ));
         }
 
-        $instance = $this->resolver->resolve($instance, $args);
+        $instance = $this->resolver->resolve(
+            \is_string($instance) && isset($this->factories[$instance])
+                ? $this->factories[$instance]
+                : $instance,
+            $args
+        );
 
         if ($callback) {
             $instance = $callback($instance) ?: $instance;

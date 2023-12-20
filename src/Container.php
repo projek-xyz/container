@@ -121,9 +121,7 @@ class Container implements ContainerInterface
 
         $entry = $this->resolver->resolve($this->factories[$id]);
 
-        if (\is_object($entry) &&
-            ($entry instanceof Container\ContainerAware && null === $entry->getContainer())
-        ) {
+        if (\is_object($entry) && $this->insatnceOfContainerAware($entry)) {
             $entry->setContainer($this);
         }
 
@@ -227,5 +225,10 @@ class Container implements ContainerInterface
         }
 
         return $this->entries[$id] = $extended;
+    }
+
+    private function insatnceOfContainerAware(object $class): bool
+    {
+        return $class instanceof Container\ContainerAware && null === $class->getContainer();
     }
 }

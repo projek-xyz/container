@@ -16,8 +16,8 @@
     },
     "funding": [
         {
-            "type": "ko-fi",
-            "url": "https://ko-fi.com/feryardiant"
+            "type": "github",
+            "url": "https://github.com/sponsors/feryardiant"
         }
     ],
     "scripts": {
@@ -43,7 +43,7 @@
         "psr/container": "^1.0 || ^2.0"
     },
     "require-dev": {
-        "kahlan/kahlan": "^5.0",
+        "kahlan/kahlan": "^5.2",
         "squizlabs/php_codesniffer": "^3.5"
     },
     "provide": {

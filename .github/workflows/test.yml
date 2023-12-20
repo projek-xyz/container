@@ -60,7 +60,7 @@ jobs:
           restore-keys: ${{ runner.os }}-${{ matrix.php }}-composer-
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
+        run: composer update --prefer-dist --no-progress --no-suggest
 
       - name: Spec
         run: composer spec

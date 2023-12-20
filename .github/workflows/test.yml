@@ -1,0 +1,120 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/test.yml
+      - composer.*
+      - src/*
+      - tests/*
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+
+    outputs:
+      composer-cache: ${{ steps.composer-cache.outputs.dir }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+  test:
+    name: Runs on PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    needs: prepare
+    env:
+      GIT_COMMIT_SHA: ${{ github.sha }}
+      GIT_BRANCH: ${{ github.ref_name }}
+
+    strategy:
+      matrix:
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ needs.prepare.outputs.composer-cache }}
+          key: ${{ runner.os }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-${{ matrix.php }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Spec
+        run: composer spec
+
+      - name: Generate reports for CodeClimate
+        if: github.actor != 'dependabot[bot]'
+        env:
+          CODECLIMATE_REPORT: tests/codeclimate.${{ matrix.php }}.json
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+          CC_TEST_REPORTER_URL: ${{ vars.CC_TEST_REPORTER_URL }}
+        run: |
+          curl -LSs $CC_TEST_REPORTER_URL > ./cc-test-reporter && chmod +x ./cc-test-reporter
+          ./cc-test-reporter format-coverage -t lcov -o $CODECLIMATE_REPORT tests/lcov.info
+
+      - name: Generate reports for Coveralls
+        if: github.actor != 'dependabot[bot]'
+        uses: coverallsapp/github-action@v2
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          flag-name: php-${{ matrix.php }}
+          file: tests/lcov.info
+          parallel: true
+
+      - name: Save Coverage Reports
+        if: github.actor != 'dependabot[bot]'
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-reports
+          path: tests/codeclimate.*.json
+
+  reports:
+    name: Reports
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Download Reports
+        uses: actions/download-artifact@v3
+        with:
+          name: test-reports
+
+      - name: Coveralls Report
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel-finished: true
+
+      - name: CodeClimate Report
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+          CC_TEST_REPORTER_URL: ${{ vars.CC_TEST_REPORTER_URL }}
+        run: |
+          curl -LSs $CC_TEST_REPORTER_URL > ./cc-test-reporter && chmod +x ./cc-test-reporter
+          ./cc-test-reporter sum-coverage -o - codeclimate.*.json | ./cc-test-reporter upload-coverage --input -

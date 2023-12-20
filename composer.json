@@ -25,7 +25,7 @@
             "@lint",
             "@test"
         ],
-        "test": "kahlan --config=test/config.php",
+        "test": "kahlan --config=tests/config.php",
         "lint": "phpcs --standard=PSR12 -n -p src"
     },
     "autoload": {
@@ -35,7 +35,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Stubs\\": "test/stub"
+            "Stubs\\": "tests/stub"
         }
     },
     "require": {

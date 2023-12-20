@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Projek\Container;
 
 use Projek\Container;
+use Psr\Container\ContainerInterface;
 
 /**
  * Container factory resolver class.
@@ -14,16 +15,21 @@ use Projek\Container;
  * @package Projek\Container
  * @internal
  */
-final class Resolver extends AbstractContainerAware
+final class Resolver
 {
+    /**
+     * @var ContainerInterface Container instance.
+     */
+    private $container;
+
     /**
      * Create instance.
      *
      * @param Container $container
      */
-    public function __construct(Container $container)
+    public function __construct(ContainerInterface $container)
     {
-        $this->setContainer($container);
+        $this->container = $container;
     }
 
     /**
@@ -45,23 +51,17 @@ final class Resolver extends AbstractContainerAware
                 : \explode('::', $entry);
         }
 
-        if (\is_object($entry)) {
-            if ($entry instanceof ContainerAware && null === $entry->getContainer()) {
-                $entry->setContainer($this->getContainer());
-            }
-
-            return $entry;
-        }
-
         if (\is_array($entry) && \is_string($entry[0])) {
             $entry[0] = $this->resolve($entry[0], $args);
         }
 
-        if (\is_callable($entry)) {
+        if (\is_object($entry) || \is_callable($entry)) {
             return $entry;
         }
 
-        throw new InvalidArgumentException(\sprintf('Cannot resolve invalid entry of %s', \gettype($entry)));
+        throw new InvalidArgumentException(
+            \sprintf('Cannot resolve invalid entry of "%s"', \gettype($entry))
+        );
     }
 
     /**
@@ -155,6 +155,7 @@ final class Resolver extends AbstractContainerAware
     private function createCallableReflection($callable)
     {
         if (\is_string($callable) && false !== \strpos($callable, '::')) {
+            /** @var array<string> */
             $callable = \explode('::', $callable);
         }
 

@@ -115,10 +115,19 @@ class Container implements ContainerInterface
             return $this;
         }
 
-        $this->entries[$id] = $this->resolver->resolve($factory);
         $this->factories[$id] = \is_object($factory) && ! ($factory instanceof \Closure)
             ? \get_class($factory)
             : $factory;
+
+        $entry = $this->resolver->resolve($this->factories[$id]);
+
+        if (\is_object($entry) &&
+            ($entry instanceof Container\ContainerAware && null === $entry->getContainer())
+        ) {
+            $entry->setContainer($this);
+        }
+
+        $this->entries[$id] = $entry;
 
         if (isset($this->handledEntries[$id])) {
             unset($this->handledEntries[$id]);
@@ -201,8 +210,8 @@ class Container implements ContainerInterface
     {
         $entry = $this->get($id);
 
-        // We tread any callable like a factory which could returns different instance
-        // when it invoked. So we should only extend object instance.
+        // We treat any callable as a factory function which is might be returns
+        // a different instance when it get invoked. So we should only extend an object.
         if (! \is_object($entry) || \method_exists($entry, '__invoke')) {
             throw new Container\Exception(
                 \sprintf('Cannot extending a non-object or a callable entry of "%s"', $id)

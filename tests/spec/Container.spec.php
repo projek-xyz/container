@@ -159,6 +159,16 @@ describe(Container::class, function () {
             expect($this->c->get('void'))->toBeEmpty();
         });
 
+        it('shoud able to auto-inject container', function () {
+            $this->c->set('injectable', Stubs\HasContainerClass::class);
+
+            /** @var Stubs\HasContainerClass */
+            $injected = $this->c->get('injectable');
+
+            expect($injected)->toBeAnInstanceOf(Container\ContainerAware::class);
+            expect($injected->getContainer())->toBe($this->c);
+        });
+
         it('shoud able to register callable service', function () {
             // dependency of Stubs\CallableClass::__invoke method
             $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
@@ -208,7 +218,7 @@ describe(Container::class, function () {
 
             expect(function () {
                 $this->c->set('foo', null);
-            })->toThrow(new Container\InvalidArgumentException('Cannot resolve invalid entry of NULL'));
+            })->toThrow(new Container\InvalidArgumentException('Cannot resolve invalid entry of "NULL"'));
         });
     });
 

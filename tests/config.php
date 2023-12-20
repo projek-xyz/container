@@ -9,8 +9,8 @@ use Kahlan\Reporter\Coverage\Exporter;
 /** @var Kahlan\Cli\CommandLine $cli */
 $cli = $this->commandLine();
 $cli->option('coverage', 'default', 3);
-$cli->option('spec', 'default', ['test/spec']);
-$cli->option('lcov', 'default', 'test/lcov.info');
+$cli->option('spec', 'default', ['tests/spec']);
+$cli->option('lcov', 'default', 'tests/lcov.info');
 
 Filters::apply($this, 'reporting', function ($next) {
     if (! $reporter = $this->reporters()->get('coverage')) {

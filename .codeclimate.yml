@@ -15,7 +15,7 @@ plugins:
   phpmd:
     enabled: true
     config:
-      rulesets: "test/phpmd.xml"
+      rulesets: "tests/phpmd.xml"
 
 ratings:
   paths:

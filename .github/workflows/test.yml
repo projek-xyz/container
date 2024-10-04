@@ -89,26 +89,9 @@ jobs:
   reports:
     name: Reports
     if: needs.tests.outputs.has-reports == '1'
-    runs-on: ubuntu-latest
+    uses: projek-xyz/actions/.github/workflows/report.yml@main
+    secrets: inherit
     needs: tests
-
-    steps:
-      - name: Download Reports
-        uses: actions/download-artifact@v4
-        with:
-          pattern: test-reports-*
-          merge-multiple: true
-
-      - name: Coveralls Report
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.github_token }}
-          parallel-finished: true
-
-      - name: CodeClimate Report
-        env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
-          CC_TEST_REPORTER_URL: ${{ vars.CC_TEST_REPORTER_URL }}
-        run: |
-          curl -LSs $CC_TEST_REPORTER_URL > ./cc-test-reporter && chmod +x ./cc-test-reporter
-          ./cc-test-reporter sum-coverage -o - codeclimate.*.json | ./cc-test-reporter upload-coverage --input -
+    with:
+      has-coveralls: true
+      has-codeclimate: true

@@ -15,36 +15,8 @@ on:
 jobs:
   prepare:
     name: Prepare
-    runs-on: ubuntu-latest
-
-    outputs:
-      composer-cache: ${{ steps.composer-cache.outputs.dir }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: 8.3
-
-      - name: Get Composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache Composer dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-8.2-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-8.2-composer-
-
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
-
-      - name: Lint code
-        run: composer lint
+    uses: projek-xyz/actions/.github/workflows/configure.yml@main
+    secrets: inherit
 
   tests:
     name: Runs on PHP ${{ matrix.php }}
@@ -52,7 +24,9 @@ jobs:
     needs: prepare
     env:
       GIT_COMMIT_SHA: ${{ github.sha }}
-      GIT_BRANCH: ${{ github.ref_name }}
+      GIT_BRANCH: ${{ needs.prepare.outputs.target-branch }}
+    outputs:
+      has-reports: ${{ steps.reports.outputs.has-reports }}
 
     strategy:
       fail-fast: false
@@ -83,7 +57,8 @@ jobs:
         run: composer test
 
       - name: Generate reports for CodeClimate
-        if: github.actor != 'dependabot[bot]'
+        id: reports
+        if: github.actor != 'dependabot[bot]' || needs.prepare.outputs.should-reports == '1'
         env:
           CODECLIMATE_REPORT: tests/codeclimate.${{ matrix.php }}.json
           CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
@@ -91,9 +66,10 @@ jobs:
         run: |
           curl -LSs $CC_TEST_REPORTER_URL > ./cc-test-reporter && chmod +x ./cc-test-reporter
           ./cc-test-reporter format-coverage -t lcov -o $CODECLIMATE_REPORT tests/lcov.info
+          echo "has-reports=1" >> $GITHUB_OUTPUT
 
       - name: Generate reports for Coveralls
-        if: github.actor != 'dependabot[bot]'
+        if: steps.reports.outputs.has-reports == '1'
         uses: coverallsapp/github-action@v2
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
@@ -104,7 +80,7 @@ jobs:
           parallel: true
 
       - name: Save Coverage Reports
-        if: github.actor != 'dependabot[bot]'
+        if: steps.reports.outputs.has-reports == '1'
         uses: actions/upload-artifact@v4
         with:
           name: test-reports-${{ matrix.php }}
@@ -112,7 +88,7 @@ jobs:
 
   reports:
     name: Reports
-    if: github.actor != 'dependabot[bot]'
+    if: needs.tests.outputs.has-reports == '1'
     runs-on: ubuntu-latest
     needs: tests
 

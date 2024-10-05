@@ -61,7 +61,7 @@ jobs:
 
       - name: Generate reports for CodeClimate
         id: reports
-        if: github.actor != 'dependabot[bot]' || needs.prepare.outputs.should-reports == '1'
+        if: github.actor != 'dependabot[bot]' && needs.prepare.outputs.should-reports == '1'
         env:
           CODECLIMATE_REPORT: tests/codeclimate.${{ matrix.php }}.json
           CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}

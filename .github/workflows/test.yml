@@ -12,10 +12,13 @@ on:
       - src/*
       - tests/*
 
+env:
+  CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+
 jobs:
   prepare:
     name: Prepare
-    uses: projek-xyz/actions/.github/workflows/configure.yml@main
+    uses: feryardiant/actions/.github/workflows/configure.yml@main
     secrets: inherit
 
   tests:
@@ -58,7 +61,7 @@ jobs:
 
       - name: Generate reports for CodeClimate
         id: reports
-        if: github.actor != 'dependabot[bot]' || needs.prepare.outputs.should-reports == '1'
+        if: github.actor != 'dependabot[bot]' && needs.prepare.outputs.should-reports == '1'
         env:
           CODECLIMATE_REPORT: tests/codeclimate.${{ matrix.php }}.json
           CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
@@ -89,7 +92,7 @@ jobs:
   reports:
     name: Reports
     if: needs.tests.outputs.has-reports == '1'
-    uses: projek-xyz/actions/.github/workflows/report.yml@main
+    uses: feryardiant/actions/.github/workflows/report.yml@main
     secrets: inherit
     needs: tests
     with:

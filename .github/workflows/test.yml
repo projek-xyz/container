@@ -12,10 +12,13 @@ on:
       - src/*
       - tests/*
 
+env:
+  CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+
 jobs:
   prepare:
     name: Prepare
-    uses: projek-xyz/actions/.github/workflows/configure.yml@main
+    uses: feryardiant/actions/.github/workflows/configure.yml@main
     secrets: inherit
 
   tests:
@@ -89,7 +92,7 @@ jobs:
   reports:
     name: Reports
     if: needs.tests.outputs.has-reports == '1'
-    uses: projek-xyz/actions/.github/workflows/report.yml@main
+    uses: feryardiant/actions/.github/workflows/report.yml@main
     secrets: inherit
     needs: tests
     with:

@@ -11,6 +11,9 @@ on:
 env:
   CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
 
+permissions:
+  contents: read
+
 jobs:
   prepare:
     name: Prepare

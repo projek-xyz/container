@@ -11,15 +11,14 @@ on:
 env:
   CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   prepare:
     name: Prepare
     uses: feryardiant/actions/.github/workflows/configure.yml@main
     secrets: inherit
+    permissions:
+      contents: read
+      pull-requests: write
 
   tests:
     name: Runs on PHP ${{ matrix.php }}
@@ -98,3 +97,6 @@ jobs:
     with:
       has-coveralls: true
       has-codeclimate: true
+    permissions:
+      contents: write
+      pull-requests: read

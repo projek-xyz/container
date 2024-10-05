@@ -12,7 +12,9 @@ jobs:
   prepare:
     name: Prepare
     uses: feryardiant/actions/.github/workflows/configure.yml@main
-    secrets: inherit
+    secrets:
+      CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+      COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 
   tests:
     name: Runs on PHP ${{ matrix.php }}
@@ -83,10 +85,11 @@ jobs:
 
   reports:
     name: Reports
+    needs: [prepare, tests]
     if: needs.prepare.outputs.should-reports == '1'
     uses: feryardiant/actions/.github/workflows/report.yml@main
-    secrets: inherit
-    needs: [prepare, tests]
+    secrets:
+      CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
     with:
       has-coveralls: ${{ needs.prepare.outputs.has-coveralls }}
       has-codeclimate: ${{ needs.prepare.outputs.has-codeclimate }}

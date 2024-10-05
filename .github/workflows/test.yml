@@ -23,8 +23,6 @@ jobs:
     env:
       GIT_COMMIT_SHA: ${{ github.sha }}
       GIT_BRANCH: ${{ needs.prepare.outputs.target-branch }}
-    outputs:
-      has-reports: ${{ steps.reports.outputs.has-reports }}
 
     strategy:
       fail-fast: false

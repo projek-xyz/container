@@ -4,6 +4,7 @@
 [![Coverage Status](https://img.shields.io/coveralls/github/projek-xyz/container/main?style=flat-square&logo=coveralls)](https://coveralls.io/github/projek-xyz/container)
 [![Coverage Status](https://img.shields.io/codeclimate/coverage/projek-xyz/container?style=flat-square&logo=code-climate)](https://codeclimate.com/github/projek-xyz/container)
 [![Maintainability](https://img.shields.io/codeclimate/maintainability/projek-xyz/container?style=flat-square&logo=code-climate)](https://codeclimate.com/github/projek-xyz/container/maintainability)
+[![SymfonyInsight Grade](https://img.shields.io/symfony/i/grade/d611f9c0-e2c9-4850-8831-4e55e8e04d94?style=flat-square&logo=symfony)](https://insight.symfony.com/projects/d611f9c0-e2c9-4850-8831-4e55e8e04d94)
 
 # Simple yet Flexible PSR-11 Container Implementation
 

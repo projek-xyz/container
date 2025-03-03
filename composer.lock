@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9f6f28d62c713a884159b83821a6ff8e",
+    "content-hash": "8ac4c96ed020493ea44a432398537ef4",
     "packages": [
         {
             "name": "psr/container",
@@ -63,24 +63,24 @@
     "packages-dev": [
         {
             "name": "kahlan/kahlan",
-            "version": "5.2.7",
+            "version": "6.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kahlan/kahlan.git",
-                "reference": "72e043f95ee253f54dfcbd5cd646dc3fe0738835"
+                "reference": "2cb353e5faa505328bef00abcc1eb5f82790ff20"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kahlan/kahlan/zipball/72e043f95ee253f54dfcbd5cd646dc3fe0738835",
-                "reference": "72e043f95ee253f54dfcbd5cd646dc3fe0738835",
+                "url": "https://api.github.com/repos/kahlan/kahlan/zipball/2cb353e5faa505328bef00abcc1eb5f82790ff20",
+                "reference": "2cb353e5faa505328bef00abcc1eb5f82790ff20",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.2"
+                "php": ">=7.4"
             },
             "require-dev": {
-                "rector/rector": "^1.0.5",
-                "squizlabs/php_codesniffer": "3.7.2"
+                "rector/rector": "^2.0",
+                "squizlabs/php_codesniffer": "^3.10.1"
             },
             "bin": [
                 "bin/kahlan"
@@ -116,22 +116,22 @@
             ],
             "support": {
                 "issues": "https://github.com/kahlan/kahlan/issues",
-                "source": "https://github.com/kahlan/kahlan/tree/5.2.7"
+                "source": "https://github.com/kahlan/kahlan/tree/6.0.2"
             },
-            "time": "2024-06-15T11:51:00+00:00"
+            "time": "2025-02-22T16:04:53+00:00"
         },
         {
             "name": "squizlabs/php_codesniffer",
-            "version": "3.10.3",
+            "version": "3.11.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/PHP_CodeSniffer.git",
-                "reference": "62d32998e820bddc40f99f8251958aed187a5c9c"
+                "reference": "ba05f990e79cbe69b9f35c8c1ac8dca7eecc3a10"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/PHP_CodeSniffer/zipball/62d32998e820bddc40f99f8251958aed187a5c9c",
-                "reference": "62d32998e820bddc40f99f8251958aed187a5c9c",
+                "url": "https://api.github.com/repos/PHPCSStandards/PHP_CodeSniffer/zipball/ba05f990e79cbe69b9f35c8c1ac8dca7eecc3a10",
+                "reference": "ba05f990e79cbe69b9f35c8c1ac8dca7eecc3a10",
                 "shasum": ""
             },
             "require": {
@@ -196,9 +196,13 @@
                 {
                     "url": "https://opencollective.com/php_codesniffer",
                     "type": "open_collective"
+                },
+                {
+                    "url": "https://thanks.dev/phpcsstandards",
+                    "type": "thanks_dev"
                 }
             ],
-            "time": "2024-09-18T10:38:58+00:00"
+            "time": "2025-01-23T17:04:15+00:00"
         }
     ],
     "aliases": [],

@@ -121,7 +121,7 @@ class Container implements ContainerInterface
 
         $entry = $this->resolver->resolve($this->factories[$id]);
 
-        if (\is_object($entry) && $this->insatnceOfContainerAware($entry)) {
+        if (\is_object($entry) && $this->isInjectable($entry)) {
             $entry->setContainer($this);
         }
 
@@ -227,7 +227,7 @@ class Container implements ContainerInterface
         return $this->entries[$id] = $extended;
     }
 
-    private function insatnceOfContainerAware(object $class): bool
+    private function isInjectable(object $class): bool
     {
         return $class instanceof Container\ContainerAware && null === $class->getContainer();
     }

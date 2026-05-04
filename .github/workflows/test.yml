@@ -15,7 +15,6 @@ jobs:
     with:
       php-version: 8.2
     secrets:
-      CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
       COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 
   tests:
@@ -65,31 +64,10 @@ jobs:
           file: tests/lcov.info
           parallel: true
 
-      - name: Generate reports for CodeClimate
-        if: needs.prepare.outputs.has-codeclimate == '1'
-        id: reports
-        env:
-          CODECLIMATE_REPORT: tests/codeclimate.${{ matrix.php }}.json
-          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
-          CC_TEST_REPORTER_URL: ${{ vars.CC_TEST_REPORTER_URL }}
-        run: |
-          curl -LSs $CC_TEST_REPORTER_URL > ./cc-test-reporter && chmod +x ./cc-test-reporter
-          ./cc-test-reporter format-coverage -t lcov -o $CODECLIMATE_REPORT tests/lcov.info
-
-      - name: Save Coverage Reports
-        if: needs.prepare.outputs.has-codeclimate == '1'
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-reports-${{ matrix.php }}
-          path: tests/codeclimate.*.json
-
   reports:
     name: Reports
     needs: [prepare, tests]
     if: needs.prepare.outputs.should-reports == '1'
     uses: projek-xyz/actions/.github/workflows/report.yml@main
-    secrets:
-      CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
     with:
       has-coveralls: ${{ needs.prepare.outputs.has-coveralls == '1' }}
-      has-codeclimate: ${{ needs.prepare.outputs.has-codeclimate == '1' }}

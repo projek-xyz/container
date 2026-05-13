@@ -6,6 +6,7 @@ namespace Projek\Container;
 
 use Psr\Container\ContainerExceptionInterface;
 use ReflectionFunction;
+use ReflectionFunctionAbstract;
 use ReflectionMethod;
 
 /**
@@ -26,7 +27,7 @@ class UnresolvableArgumentException extends \RuntimeException implements Contain
         int $position,
         string $name,
         string $entry,
-        ReflectionFunction|ReflectionMethod $ref,
+        ReflectionFunctionAbstract $ref,
         ?\Throwable $prev = null,
     ) {
         $this->caller = $ref instanceof ReflectionMethod

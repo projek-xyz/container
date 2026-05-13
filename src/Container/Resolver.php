@@ -14,6 +14,9 @@ use Psr\Container\ContainerInterface;
  *
  * @package Projek\Container
  * @internal
+ *
+ * @template TCallable of callable|string|array{object|class-string, string}
+ * @template TArgs of list<mixed>
  */
 final class Resolver
 {
@@ -67,34 +70,34 @@ final class Resolver
     /**
      * Handle callable.
      *
-     * @param callable|mixed $entry
-     * @param list<mixed> $args
+     * @param TCallable $callable
+     * @param TArgs $args
      * @return mixed
      * @throws \Projek\Container\Exception
      * @throws \Projek\Container\InvalidArgumentException
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
-    public function handle($entry, array $args = [])
+    public function handle($callable, array $args = [])
     {
-        if (\is_object($entry)) {
+        if (\is_object($callable)) {
             // Returns the object if it was non-callable instance.
-            if (! \is_callable($entry)) {
-                return $entry;
+            if (! \is_callable($callable)) {
+                return $callable;
             }
 
             // Otherwise convert it to closure.
-            $entry = \Closure::fromCallable($entry);
+            $callable = \Closure::fromCallable($callable);
         }
 
-        $ref = $this->createCallableReflection($entry);
+        $ref = $this->createCallableReflection($callable);
         $caller = $ref->getName();
 
-        /** @var list<object|string|null> */
+        /** @var array{object|null, TArgs} */
         $params = [];
 
         if ($ref instanceof \ReflectionMethod) {
             $caller = $ref->getDeclaringClass()->getName() . '::' . $ref->getName();
-            $params[] = $ref->isStatic() && ! \is_object($entry[0]) ? null : $entry[0];
+            $params[] = $ref->isStatic() && ! \is_object($callable[0]) ? null : $callable[0];
         }
 
         try {
@@ -110,7 +113,7 @@ final class Resolver
      * Create an instance of $className.
      *
      * @param string $className
-     * @param list<mixed> $args
+     * @param TArgs $args
      * @return object
      * @throws \Projek\Container\Exception
      *  When $className is not instantiable or its constructor depends on non-exists container entry.
@@ -149,7 +152,7 @@ final class Resolver
     /**
      * Instance resolver.
      *
-     * @param callable $callable
+     * @param TCallable $callable
      * @return \ReflectionMethod|\ReflectionFunction
      * @throws \Projek\Container\Exception
      * @throws \Projek\Container\InvalidArgumentException
@@ -157,7 +160,7 @@ final class Resolver
     private function createCallableReflection($callable)
     {
         if (\is_string($callable) && \str_contains($callable, '::')) {
-            /** @var array<string> */
+            /** @var array{class-string, string} */
             $callable = \explode('::', $callable);
         }
 
@@ -185,8 +188,8 @@ final class Resolver
      * Callable arguments resolver.
      *
      * @param \ReflectionFunctionAbstract $reflection
-     * @param list<mixed> $args
-     * @return list<mixed>
+     * @param TArgs $args
+     * @return TArgs
      * @throws \Projek\Container\Exception
      */
     private function resolveArgs(\ReflectionFunctionAbstract $reflection, array $args = []): array
@@ -197,8 +200,13 @@ final class Resolver
                 continue;
             }
 
+            $type = $param->getType();
+            $typeName = ($type instanceof \ReflectionNamedType && ! $type->isBuiltin())
+                ? $type->getName()
+                : $param->getName();
+
             try {
-                $args[$position] = $this->container->get($this->getTypeName($param));
+                $args[$position] = $this->container->get($typeName);
             } catch (NotFoundException $err) {
                 if (! $param->isOptional()) {
                     throw new Exception(\sprintf(
@@ -214,20 +222,5 @@ final class Resolver
         }
 
         return $args;
-    }
-
-    /**
-     * @param \ReflectionParameter $param
-     * @return string
-     */
-    private function getTypeName(\ReflectionParameter $param): string
-    {
-        $type = $param->getType();
-
-        if ($type instanceof \ReflectionNamedType && ! $type->isBuiltin()) {
-            return $type->getName();
-        }
-
-        return $param->getName();
     }
 }

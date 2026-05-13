@@ -41,7 +41,7 @@ final class Resolver
      * Ensure the given argument is a callable.
      *
      * @param string|object|callable|\Closure $entry
-     * @param list<mixed> $args
+     * @param TArgs $args
      * @return object|callable
      * @throws \Projek\Container\Exception
      * @throws \Projek\Container\InvalidArgumentException
@@ -187,7 +187,7 @@ final class Resolver
      * Callable arguments resolver.
      *
      * @param \ReflectionFunctionAbstract $reflection
-     * @param TArgs $args
+     * @param array<int, mixed> $args
      * @return TArgs
      * @throws \Projek\Container\Exception
      */

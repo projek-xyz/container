@@ -158,11 +158,11 @@ class Container implements ContainerInterface
      * @param Closure|callable $instance String of class name or callable
      * @param TArgs|Closure(TObj):?TObj $args
      * @param null|Closure(TObj):?TObj $condition
-     * @return object
+     * @return mixed
      * @throws Container\InvalidArgumentException
      * @throws Container\Exception
      */
-    public function make($instance, $args = [], ?Closure $condition = null)
+    public function make($instance, $args = [], ?Closure $condition = null): mixed
     {
         if (null === $condition && $args instanceof Closure) {
             $condition = $args;

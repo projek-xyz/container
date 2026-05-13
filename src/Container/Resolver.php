@@ -44,13 +44,13 @@ final class Resolver
      *
      * Ensure the given argument is a callable.
      *
-     * @param array|callable|object|string $entry
+     * @param array{class-string<object>,string}|callable|object|string $entry
      * @param array<int, mixed> $args
-     * @return callable
+     * @return callable|object
      * @throws Exception
      * @throws InvalidArgumentException
      */
-    public function resolve(array|callable|object|string $entry, array $args = [])
+    public function resolve(array|callable|object|string $entry, array $args = []): callable|object
     {
         if (\is_string($entry) && ! \function_exists($entry)) {
             $entry = \str_contains($entry, '::')

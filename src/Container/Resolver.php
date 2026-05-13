@@ -76,7 +76,7 @@ final class Resolver
      *
      * @template TArgs of array<int, mixed>
      *
-     * @param Closure|string|array{class-string|string, string} $callable
+     * @param Closure|object|string|array{string, string} $callable
      * @param TArgs $args
      * @return mixed
      * @throws Exception

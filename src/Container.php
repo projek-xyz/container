@@ -157,12 +157,12 @@ class Container implements ContainerInterface
      * })
      * ```
      *
-     * @template T of Closure|string|array{class-string|string, string}
+     * @template T of Closure|object|string|array{string, string}
      *
      * @link https://github.com/projek-xyz/container/wiki/create-an-instance
      * @param T $instance String of class name or callable
-     * @param list<mixed>|Closure(T):bool $args
-     * @param null|Closure(T):bool $condition
+     * @param list<mixed>|Closure(T):?T $args
+     * @param null|Closure(T):?T $condition
      * @return object
      * @throws Container\InvalidArgumentException
      * @throws Container\Exception

@@ -15,7 +15,7 @@ use Psr\Container\ContainerInterface;
 class Container implements ContainerInterface
 {
     /**
-     * @var array<string, mixed> List of instances that been initiated.
+     * @var array<string, object|callable> List of instances that been initiated.
      */
     private $entries = [];
 
@@ -61,13 +61,7 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Retrieve the registered **entry** by $id.
-     *
-     * @see ContainerInterface::get()
-     * @param string $id The **entry** identifier.
-     * @return mixed Entry
-     * @throws Container\NotFoundException
-     * @throws Container\Exception
+     * {@inheritdoc}
      */
     public function get(string $id)
     {

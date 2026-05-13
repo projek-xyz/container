@@ -152,10 +152,11 @@ class Container implements ContainerInterface
      * ```
      *
      * @template TObj of object
+     * @template TArgs of array<int, mixed>
      *
      * @link https://github.com/projek-xyz/container/wiki/create-an-instance
-     * @param Closure|TObj|string|array{class-string<TObj>|string, string} $instance String of class name or callable
-     * @param list<mixed>|Closure(TObj):?TObj $args
+     * @param Closure|callable $instance String of class name or callable
+     * @param TArgs|Closure(TObj):?TObj $args
      * @param null|Closure(TObj):?TObj $condition
      * @return object
      * @throws Container\InvalidArgumentException

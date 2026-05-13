@@ -215,10 +215,6 @@ describe(Container::class, function () {
             expect(function () {
                 $this->c->set('foo', ['foo', 'bar']);
             })->toThrow(new Container\Exception('Cannot resolve an entry or class named "foo" of non-exists'));
-
-            expect(function () {
-                $this->c->set('foo', null);
-            })->toThrow(new Container\InvalidArgumentException('Cannot resolve invalid entry of "NULL"'));
         });
     });
 

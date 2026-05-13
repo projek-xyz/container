@@ -21,6 +21,7 @@
         }
     ],
     "scripts": {
+        "format": "phpcbf --standard=PSR12",
         "spec": [
             "@lint",
             "@test"

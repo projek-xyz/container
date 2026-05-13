@@ -46,9 +46,9 @@ final class Resolver
     public function resolve($entry, array $args = [])
     {
         if (\is_string($entry) && ! \function_exists($entry)) {
-            $entry = false === \strpos($entry, '::')
-                ? $this->createInstance($entry, $args)
-                : \explode('::', $entry);
+            $entry = \str_contains($entry, '::')
+                ? \explode('::', $entry)
+                : $this->createInstance($entry, $args);
         }
 
         if (\is_array($entry) && \is_string($entry[0])) {
@@ -154,7 +154,7 @@ final class Resolver
      */
     private function createCallableReflection($callable)
     {
-        if (\is_string($callable) && false !== \strpos($callable, '::')) {
+        if (\is_string($callable) && \str_contains($callable, '::')) {
             /** @var array<string> */
             $callable = \explode('::', $callable);
         }

@@ -161,12 +161,12 @@ final class Resolver
     /**
      * Instance resolver.
      *
-     * @param Closure|string|array{class-string|string, string} $callable
+     * @param array{class-string<object>,string}|callable|object|string $callable
      * @return ReflectionMethod|ReflectionFunction
      * @throws Exception
      * @throws InvalidArgumentException
      */
-    private function createCallableReflection($callable)
+    private function createCallableReflection(array|callable|object|string $callable): ReflectionMethod|ReflectionFunction
     {
         if (\is_string($callable) && \str_contains($callable, '::')) {
             $callable = \explode('::', $callable);

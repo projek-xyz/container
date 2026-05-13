@@ -19,13 +19,14 @@ class UnresolvableArgumentException extends \RuntimeException implements Contain
      * @param int $position
      * @param string $name
      * @param string $entry
+     * @param ReflectionFunction|ReflectionMethod $ref
      * @param \Throwable|null $prev
      */
     public function __construct(
-        private int $position,
-        private string $name,
-        private string $entry,
-        private ReflectionFunction|ReflectionMethod $ref,
+        int $position,
+        string $name,
+        string $entry,
+        ReflectionFunction|ReflectionMethod $ref,
         ?\Throwable $prev = null,
     ) {
         $this->caller = $ref instanceof ReflectionMethod

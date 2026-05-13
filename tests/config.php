@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://kahlan.github.io/docs/config-file.html
  */

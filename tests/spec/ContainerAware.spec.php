@@ -8,7 +8,7 @@ use Psr\Container\ContainerInterface;
 
 describe(ContainerAware::class, function () {
     given('container', function () {
-        return new Container;
+        return new Container();
     });
 
     given('stub', function () {

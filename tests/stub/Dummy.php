@@ -20,6 +20,7 @@ class Dummy
     }
 }
 
-function dummyLorem(AbstractFoo $foo) {
+function dummyLorem(AbstractFoo $foo)
+{
     return $foo->lorem();
 }

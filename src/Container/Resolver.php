@@ -48,6 +48,7 @@ final class Resolver
      * @param array<int, mixed> $args
      * @return callable|object
      * @throws Exception
+     * @throws InvalidArgumentException
      */
     public function resolve(array|callable|object|string $entry, array $args = []): callable|object
     {
@@ -61,7 +62,13 @@ final class Resolver
             $entry[0] = $this->resolve($entry[0], $args);
         }
 
-        return $entry;
+        if (\is_object($entry) || \is_callable($entry)) {
+            return $entry;
+        }
+
+        throw new InvalidArgumentException(
+            \sprintf('Cannot resolve invalid entry of "%s"', \gettype($entry))
+        );
     }
 
     /**

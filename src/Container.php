@@ -37,7 +37,7 @@ class Container implements ContainerInterface
     /**
      * Create new instance.
      *
-     * @param array<string, mixed> $entries
+     * @param array<string, callable|mixed> $entries
      */
     public function __construct(array $entries = [])
     {
@@ -47,8 +47,8 @@ class Container implements ContainerInterface
             ContainerInterface::class => $this,
         ];
 
-        foreach ($entries as $id => $instance) {
-            $this->set($id, $instance);
+        foreach ($entries as $id => $factory) {
+            $this->set($id, $factory);
         }
     }
 
@@ -106,10 +106,10 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance
      * @param string $id The **entry** identifier.
-     * @param callable $factory
+     * @param callable|mixed $factory
      * @return static
      */
-    public function set(string $id, $factory): self
+    public function set(string $id, $factory): static
     {
         if ($this->has($id)) {
             return $this;
@@ -161,7 +161,7 @@ class Container implements ContainerInterface
      * @param string|callable $instance String of class name or callable
      * @param list<mixed>|\Closure $args
      * @param null|\Closure $callback
-     * @return mixed
+     * @return object
      * @throws Container\InvalidArgumentException
      * @throws Container\Exception
      */
@@ -227,6 +227,12 @@ class Container implements ContainerInterface
         return $this->entries[$id] = $extended;
     }
 
+    /**
+     * Determines if the given class is injectable.
+     *
+     * @param object $class
+     * @return ($class is Container\ContainerAware ? true : false)
+     */
     private function isInjectable(object $class): bool
     {
         return $class instanceof Container\ContainerAware && null === $class->getContainer();

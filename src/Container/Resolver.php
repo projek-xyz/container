@@ -67,7 +67,7 @@ final class Resolver
     /**
      * Handle callable.
      *
-     * @param callable $entry
+     * @param callable|mixed $entry
      * @param list<mixed> $args
      * @return mixed
      * @throws \Projek\Container\Exception
@@ -88,6 +88,8 @@ final class Resolver
 
         $ref = $this->createCallableReflection($entry);
         $caller = $ref->getName();
+
+        /** @var list<object|string|null> */
         $params = [];
 
         if ($ref instanceof \ReflectionMethod) {

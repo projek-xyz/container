@@ -118,7 +118,7 @@ final class Resolver
      * @throws \Projek\Container\Exception
      *  When $className is not instantiable or its constructor depends on non-exists container entry.
      */
-    private function createInstance(string $className, array $args = []): object|mixed
+    private function createInstance(string $className, array $args = [])
     {
         if ($this->container->has($className)) {
             return $this->container->get($className);

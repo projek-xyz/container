@@ -20,7 +20,7 @@ class Container implements ContainerInterface
     private $entries = [];
 
     /**
-     * @var array<string, Closure|string|array{class-string|string, string}> List of instance's factory to be initiate.
+     * @var array<string, Closure|callable> List of instance's factory to be initiate.
      */
     private $factories = [];
 
@@ -37,7 +37,7 @@ class Container implements ContainerInterface
     /**
      * Create new instance.
      *
-     * @param array<string, Closure|string|array{class-string|string, string}> $entries
+     * @param array<string, Closure|callable> $entries
      */
     public function __construct(array $entries = [])
     {
@@ -100,7 +100,7 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance
      * @param string $id The **entry** identifier.
-     * @param Closure|string|array{class-string|string, string} $factory
+     * @param Closure|callable $factory
      * @return static
      */
     public function set(string $id, $factory): static

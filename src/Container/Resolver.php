@@ -44,11 +44,9 @@ final class Resolver
      *
      * Ensure the given argument is a callable.
      *
-     * @template TObj of object
-     *
-     * @param Closure|TObj|string|array{class-string<TObj>|string, string} $entry
+     * @param Closure|callable $entry
      * @param array<int, mixed> $args
-     * @return TObj|callable
+     * @return callable
      * @throws Exception
      * @throws InvalidArgumentException
      */

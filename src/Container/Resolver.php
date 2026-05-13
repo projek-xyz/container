@@ -195,11 +195,9 @@ final class Resolver
     /**
      * Callable arguments resolver.
      *
-     * @template TArgs of array<int, mixed>
-     *
      * @param ReflectionFunctionAbstract $reflection
-     * @param TArgs $args
-     * @return TArgs
+     * @param array<int, mixed> $args
+     * @return array<int, mixed>
      * @throws Exception
      */
     private function resolveArgs(ReflectionFunctionAbstract $reflection, array $args = []): array

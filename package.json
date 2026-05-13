@@ -5,17 +5,17 @@
     "author": "Fery Wardiyanto <ferywardiyanto@gmail.com>",
     "repository": "github:projek-xyz/container",
     "scripts": {
-        "release": "standard-version -s"
+        "release": "commit-and-tag-version -s"
     },
     "devDependencies": {
-        "@commitlint/cli": "^20.2.0",
-        "@feryardiant/commitlint-config": "^0.2.1",
-        "standard-version": "^9.5.0"
+        "@commitlint/cli": "^21.0.1",
+        "@commitlint/config-conventional": "^21.0.1",
+        "commit-and-tag-version": "^12.7.3"
     },
     "commitlint": {
         "extends": [
-            "@feryardiant/commitlint-config"
+            "@commitlint/config-conventional"
         ]
     },
-    "standard-version": {}
+    "commit-and-tag-version": {}
 }

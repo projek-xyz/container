@@ -44,9 +44,11 @@ final class Resolver
      *
      * Ensure the given argument is a callable.
      *
-     * @param Closure|string|array{class-string|string, string} $entry
+     * @template TObj of object
+     *
+     * @param Closure|TObj|string|array{class-string<TObj>|string, string} $entry
      * @param array<int, mixed> $args
-     * @return object|callable
+     * @return TObj|callable
      * @throws Exception
      * @throws InvalidArgumentException
      */
@@ -76,9 +78,9 @@ final class Resolver
      *
      * @template TArgs of array<int, mixed>
      *
-     * @param Closure|object|string|array{string, string} $callable
+     * @param Closure|callable $callable
      * @param TArgs $args
-     * @return mixed
+     * @return ($callable is object ? object : mixed)
      * @throws Exception
      * @throws InvalidArgumentException
      * @SuppressWarnings(PHPMD.StaticAccess)
@@ -118,11 +120,12 @@ final class Resolver
     /**
      * Create an instance of $className.
      *
-     * @template T of object
+     * @template TObj of object
+     * @template TArgs of array<int, mixed>
      *
-     * @param class-string<T>|string $className
-     * @param array<int, mixed> $args
-     * @return ($className is class-string<T> ? T : mixed)
+     * @param class-string<TObj>|string $className
+     * @param TArgs $args
+     * @return ($className is class-string<TObj> ? TObj : mixed)
      * @throws Exception
      *  When $className is not instantiable or its constructor depends on non-exists container entry.
      */

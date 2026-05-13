@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
+use Closure;
 use Projek\Container;
 use Psr\Container\ContainerInterface;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionFunction;
+use ReflectionFunctionAbstract;
+use ReflectionMethod;
+use ReflectionNamedType;
 
 /**
  * Container factory resolver class.
@@ -14,9 +21,6 @@ use Psr\Container\ContainerInterface;
  *
  * @package Projek\Container
  * @internal
- *
- * @template TCallable of \CLosure|string|array{class-string|string, string}
- * @template TArgs of array<int, mixed>
  */
 final class Resolver
 {
@@ -40,11 +44,11 @@ final class Resolver
      *
      * Ensure the given argument is a callable.
      *
-     * @param TCallable $entry
-     * @param TArgs $args
+     * @param Closure|string|array{class-string|string, string} $entry
+     * @param array<int, mixed> $args
      * @return object|callable
-     * @throws \Projek\Container\Exception
-     * @throws \Projek\Container\InvalidArgumentException
+     * @throws Exception
+     * @throws InvalidArgumentException
      */
     public function resolve($entry, array $args = [])
     {
@@ -70,11 +74,13 @@ final class Resolver
     /**
      * Handle callable.
      *
-     * @param TCallable $callable
+     * @template TArgs of array<int, mixed>
+     *
+     * @param Closure|string|array{class-string|string, string} $callable
      * @param TArgs $args
      * @return mixed
-     * @throws \Projek\Container\Exception
-     * @throws \Projek\Container\InvalidArgumentException
+     * @throws Exception
+     * @throws InvalidArgumentException
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function handle($callable, array $args = []): mixed
@@ -86,7 +92,7 @@ final class Resolver
             }
 
             // Otherwise convert it to closure.
-            $callable = \Closure::fromCallable($callable);
+            $callable = Closure::fromCallable($callable);
         }
 
         $ref = $this->createCallableReflection($callable);
@@ -95,7 +101,7 @@ final class Resolver
         /** @var array{object|null, TArgs} */
         $params = [];
 
-        if ($ref instanceof \ReflectionMethod) {
+        if ($ref instanceof ReflectionMethod) {
             $caller = $ref->getDeclaringClass()->getName() . '::' . $ref->getName();
             $params[] = $ref->isStatic() && ! \is_object($callable[0]) ? null : $callable[0];
         }
@@ -112,10 +118,12 @@ final class Resolver
     /**
      * Create an instance of $className.
      *
-     * @param string $className
-     * @param TArgs $args
-     * @return object|mixed
-     * @throws \Projek\Container\Exception
+     * @template T of object
+     *
+     * @param class-string<T>|string $className
+     * @param array<int, mixed> $args
+     * @return ($className is class-string<T> ? T : mixed)
+     * @throws Exception
      *  When $className is not instantiable or its constructor depends on non-exists container entry.
      */
     private function createInstance(string $className, array $args = [])
@@ -130,7 +138,7 @@ final class Resolver
             );
         }
 
-        $ref = new \ReflectionClass($className);
+        $ref = new ReflectionClass($className);
 
         if (! $ref->isInstantiable()) {
             throw new Exception(
@@ -144,18 +152,18 @@ final class Resolver
                 : [];
 
             return $ref->newInstanceArgs($args);
-        } catch (Exception $err) {
-            throw new Exception($className . '::__construct(): ' . $err->getMessage(), $err->getPrevious());
+        } catch (\Throwable $err) {
+            throw new Exception($className . '::__construct(): ' . $err->getMessage(), $err);
         }
     }
 
     /**
      * Instance resolver.
      *
-     * @param TCallable $callable
-     * @return \ReflectionMethod|\ReflectionFunction
-     * @throws \Projek\Container\Exception
-     * @throws \Projek\Container\InvalidArgumentException
+     * @param Closure|string|array{class-string|string, string} $callable
+     * @return ReflectionMethod|ReflectionFunction
+     * @throws Exception
+     * @throws InvalidArgumentException
      */
     private function createCallableReflection($callable)
     {
@@ -164,12 +172,12 @@ final class Resolver
         }
 
         if (! \is_array($callable)) {
-            return new \ReflectionFunction($callable);
+            return new ReflectionFunction($callable);
         }
 
         try {
-            $ref = new \ReflectionMethod($callable[0], $callable[1]);
-        } catch (\ReflectionException $err) {
+            $ref = new ReflectionMethod($callable[0], $callable[1]);
+        } catch (ReflectionException $err) {
             throw new InvalidArgumentException($err->getMessage(), $err->getCode(), $err);
         }
 
@@ -186,12 +194,14 @@ final class Resolver
     /**
      * Callable arguments resolver.
      *
-     * @param \ReflectionFunctionAbstract $reflection
-     * @param array<int, mixed> $args
+     * @template TArgs of array<int, mixed>
+     *
+     * @param ReflectionFunctionAbstract $reflection
+     * @param TArgs $args
      * @return TArgs
-     * @throws \Projek\Container\Exception
+     * @throws Exception
      */
-    private function resolveArgs(\ReflectionFunctionAbstract $reflection, array $args = []): array
+    private function resolveArgs(ReflectionFunctionAbstract $reflection, array $args = []): array
     {
         foreach ($reflection->getParameters() as $param) {
             // Just skip if parameter already provided.
@@ -200,7 +210,7 @@ final class Resolver
             }
 
             $type = $param->getType();
-            $typeName = ($type instanceof \ReflectionNamedType && ! $type->isBuiltin())
+            $typeName = ($type instanceof ReflectionNamedType && ! $type->isBuiltin())
                 ? $type->getName()
                 : $param->getName();
 

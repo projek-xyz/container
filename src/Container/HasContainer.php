@@ -20,7 +20,7 @@ trait HasContainer
     /**
      * @see ContainerAware::setContainer()
      */
-    public function setContainer(\Projek\Container $container): ContainerAware
+    public function setContainer(\Projek\Container $container): static
     {
         $this->container = $container;
 

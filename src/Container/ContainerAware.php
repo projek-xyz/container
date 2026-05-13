@@ -20,7 +20,7 @@ interface ContainerAware
      * @param \Projek\Container $container
      * @return static
      */
-    public function setContainer(\Projek\Container $container): ContainerAware;
+    public function setContainer(\Projek\Container $container): static;
 
     /**
      * Retrieve container instance or the instance of registered service.

@@ -11,8 +11,6 @@ use Psr\Container\ContainerInterface;
  * PSR-11 Container impementation class.
  *
  * @package Projek\Container
- *
- * @template TCallable of \CLosure|string|array{class-string|string, string}
  */
 class Container implements ContainerInterface
 {
@@ -22,7 +20,7 @@ class Container implements ContainerInterface
     private $entries = [];
 
     /**
-     * @var array<string, TCallable> List of instance's factory to be initiate.
+     * @var array<string, Closure|string|array{class-string|string, string}> List of instance's factory to be initiate.
      */
     private $factories = [];
 
@@ -39,7 +37,7 @@ class Container implements ContainerInterface
     /**
      * Create new instance.
      *
-     * @param array<string, TCallable> $entries
+     * @param array<string, Closure|string|array{class-string|string, string}> $entries
      */
     public function __construct(array $entries = [])
     {
@@ -108,7 +106,7 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance
      * @param string $id The **entry** identifier.
-     * @param TCallable $factory
+     * @param Closure|string|array{class-string|string, string} $factory
      * @return static
      */
     public function set(string $id, $factory): static
@@ -117,7 +115,7 @@ class Container implements ContainerInterface
             return $this;
         }
 
-        $this->factories[$id] = \is_object($factory) && ! ($factory instanceof \Closure)
+        $this->factories[$id] = \is_object($factory) && ! ($factory instanceof Closure)
             ? \get_class($factory)
             : $factory;
 
@@ -159,25 +157,27 @@ class Container implements ContainerInterface
      * })
      * ```
      *
+     * @template T of Closure|string|array{class-string|string, string}
+     *
      * @link https://github.com/projek-xyz/container/wiki/create-an-instance
-     * @param TCallable $instance String of class name or callable
-     * @param list<mixed>|\Closure $args
-     * @param null|\Closure $callback
+     * @param T $instance String of class name or callable
+     * @param list<mixed>|Closure(T):bool $args
+     * @param null|Closure(T):bool $condition
      * @return object
      * @throws Container\InvalidArgumentException
      * @throws Container\Exception
      */
-    public function make($instance, $args = [], ?\Closure $callback = null)
+    public function make($instance, $args = [], ?Closure $condition = null)
     {
-        if (null === $callback && $args instanceof \Closure) {
-            $callback = $args;
+        if (null === $condition && $args instanceof Closure) {
+            $condition = $args;
             $args = [];
         }
 
         if (! is_array($args)) {
             throw new Container\InvalidArgumentException(\sprintf(
                 'Argument #2 must be an %s, %s given',
-                (null === $callback ? 'array or instance of closure' : 'array'),
+                (null === $condition ? 'array or instance of closure' : 'array'),
                 \gettype($args)
             ));
         }
@@ -189,8 +189,8 @@ class Container implements ContainerInterface
             $args
         );
 
-        if ($callback) {
-            $instance = $callback($instance) ?: $instance;
+        if ($condition) {
+            $instance = $condition($instance) ?: $instance;
         }
 
         return $this->resolver->handle($instance, $args);
@@ -201,12 +201,12 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/extending-an-instance
      * @param string $id Identifier of existing entry.
-     * @param \Closure $callback Callback to extend the functionality of the entry.
+     * @param Closure $callback Callback to extend the functionality of the entry.
      * @return object Returns the object instance.
      * @throws Container\NotFoundException If $id is not found.
      * @throws Container\Exception If trying to extends a callable.
      */
-    public function extend(string $id, \Closure $callback): object
+    public function extend(string $id, Closure $callback): object
     {
         $entry = $this->get($id);
 

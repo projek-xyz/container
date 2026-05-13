@@ -12,7 +12,7 @@ use Psr\Container\ContainerInterface;
  *
  * @package Projek\Container
  *
- * @template TCallable of \CLosure|string|array{object|class-string|string, string}
+ * @template TCallable of \CLosure|string|array{class-string|string, string}
  */
 class Container implements ContainerInterface
 {

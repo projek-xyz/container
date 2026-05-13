@@ -15,7 +15,7 @@ use Psr\Container\ContainerInterface;
  * @package Projek\Container
  * @internal
  *
- * @template TCallable of \CLosure|string|array{object|class-string|string, string}
+ * @template TCallable of \CLosure|string|array{class-string|string, string}
  * @template TArgs of array<int, mixed>
  */
 final class Resolver

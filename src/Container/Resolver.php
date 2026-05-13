@@ -96,22 +96,20 @@ final class Resolver
         }
 
         $ref = $this->createCallableReflection($callable);
-        $caller = $ref->getName();
-
-        /** @var array{object|null, TArgs} */
-        $params = [];
-
-        if ($ref instanceof ReflectionMethod) {
-            $caller = $ref->getDeclaringClass()->getName() . '::' . $ref->getName();
-            $params[] = $ref->isStatic() && ! \is_object($callable[0]) ? null : $callable[0];
-        }
 
         try {
-            $params[] = $this->resolveArgs($ref, $args);
+            if ($ref instanceof ReflectionFunction) {
+                return $ref->invokeArgs(
+                    $this->resolveArgs($ref, $args)
+                );
+            }
 
-            return $ref->invokeArgs(...$params);
-        } catch (Exception $err) {
-            throw new Exception($caller . '(): ' . $err->getMessage(), $err->getPrevious());
+            return $ref->invokeArgs(
+                $ref->isStatic() && ! \is_object($callable[0]) ? null : $callable[0],
+                $this->resolveArgs($ref, $args)
+            );
+        } catch (UnresolvableArgumentException $err) {
+            throw new Exception($err->getCaller() . '(): ' . $err->getMessage(), $err->getPrevious());
         }
     }
 
@@ -195,14 +193,14 @@ final class Resolver
     /**
      * Callable arguments resolver.
      *
-     * @param ReflectionFunctionAbstract $reflection
+     * @param ReflectionFunctionAbstract $ref
      * @param array<int, mixed> $args
      * @return array<int, mixed>
      * @throws Exception
      */
-    private function resolveArgs(ReflectionFunctionAbstract $reflection, array $args = []): array
+    private function resolveArgs(ReflectionFunctionAbstract $ref, array $args = []): array
     {
-        foreach ($reflection->getParameters() as $param) {
+        foreach ($ref->getParameters() as $param) {
             // Just skip if parameter already provided.
             if (\array_key_exists($position = $param->getPosition(), $args)) {
                 continue;
@@ -217,12 +215,13 @@ final class Resolver
                 $args[$position] = $this->container->get($typeName);
             } catch (NotFoundException $err) {
                 if (! $param->isOptional()) {
-                    throw new Exception(\sprintf(
-                        'Argument #%d ($%s) depends on entry "%s" of non-exists',
+                    throw new UnresolvableArgumentException(
                         ++$position,
                         $param->getName(),
-                        $err->getName()
-                    ), $err);
+                        $err->getName(),
+                        $ref,
+                        $err
+                    );
                 }
 
                 $args[$position] = $param->getDefaultValue();

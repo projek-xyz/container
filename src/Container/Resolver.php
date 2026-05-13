@@ -58,7 +58,7 @@ final class Resolver
                 : $this->createInstance($entry, $args);
         }
 
-        if (\is_array($entry) && \is_string($entry[0])) {
+        if (\is_array($entry) && \is_string($entry[0] ?? null)) {
             $entry[0] = $this->resolve($entry[0], $args);
         }
 

@@ -15,8 +15,8 @@ use Psr\Container\ContainerInterface;
  * @package Projek\Container
  * @internal
  *
- * @template TCallable of callable|string|array{object|class-string, string}
- * @template TArgs of list<mixed>
+ * @template TCallable of \CLosure|string|array{object|class-string|string, string}
+ * @template TArgs of array<int, mixed>
  */
 final class Resolver
 {
@@ -77,7 +77,7 @@ final class Resolver
      * @throws \Projek\Container\InvalidArgumentException
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
-    public function handle($callable, array $args = [])
+    public function handle($callable, array $args = []): mixed
     {
         if (\is_object($callable)) {
             // Returns the object if it was non-callable instance.
@@ -114,11 +114,11 @@ final class Resolver
      *
      * @param string $className
      * @param TArgs $args
-     * @return object
+     * @return object|mixed
      * @throws \Projek\Container\Exception
      *  When $className is not instantiable or its constructor depends on non-exists container entry.
      */
-    private function createInstance(string $className, array $args = []): object
+    private function createInstance(string $className, array $args = []): object|mixed
     {
         if ($this->container->has($className)) {
             return $this->container->get($className);
@@ -160,7 +160,6 @@ final class Resolver
     private function createCallableReflection($callable)
     {
         if (\is_string($callable) && \str_contains($callable, '::')) {
-            /** @var array{class-string, string} */
             $callable = \explode('::', $callable);
         }
 

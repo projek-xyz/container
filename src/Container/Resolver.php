@@ -159,7 +159,7 @@ final class Resolver
     /**
      * Instance resolver.
      *
-     * @param array{class-string<object>,string}|callable|object|string $callable
+     * @param Closure|array{string,string}|callable|string $callable
      * @return ReflectionMethod|ReflectionFunction
      * @throws Exception
      * @throws InvalidArgumentException

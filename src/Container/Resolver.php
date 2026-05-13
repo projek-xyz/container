@@ -40,7 +40,7 @@ final class Resolver
      *
      * Ensure the given argument is a callable.
      *
-     * @param string|object|callable|\Closure $entry
+     * @param TCallable $entry
      * @param TArgs $args
      * @return object|callable
      * @throws \Projek\Container\Exception

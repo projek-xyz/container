@@ -11,6 +11,8 @@ use Psr\Container\ContainerInterface;
  * PSR-11 Container impementation class.
  *
  * @package Projek\Container
+ *
+ * @template TCallable of \CLosure|string|array{object|class-string|string, string}
  */
 class Container implements ContainerInterface
 {
@@ -20,7 +22,7 @@ class Container implements ContainerInterface
     private $entries = [];
 
     /**
-     * @var array<string, callable> List of instance's factory to be initiate.
+     * @var array<string, TCallable> List of instance's factory to be initiate.
      */
     private $factories = [];
 
@@ -37,7 +39,7 @@ class Container implements ContainerInterface
     /**
      * Create new instance.
      *
-     * @param array<string, callable|mixed> $entries
+     * @param array<string, TCallable> $entries
      */
     public function __construct(array $entries = [])
     {
@@ -106,7 +108,7 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance
      * @param string $id The **entry** identifier.
-     * @param callable|mixed $factory
+     * @param TCallable $factory
      * @return static
      */
     public function set(string $id, $factory): static
@@ -158,7 +160,7 @@ class Container implements ContainerInterface
      * ```
      *
      * @link https://github.com/projek-xyz/container/wiki/create-an-instance
-     * @param string|callable $instance String of class name or callable
+     * @param TCallable $instance String of class name or callable
      * @param list<mixed>|\Closure $args
      * @param null|\Closure $callback
      * @return object

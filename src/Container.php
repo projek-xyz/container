@@ -59,6 +59,7 @@ class Container implements ContainerInterface
     public function __clone()
     {
         $this->resolver = new Container\Resolver($this);
+        $this->entries = new Container\EntryCollector($this->entries);
     }
 
     /**
@@ -218,16 +219,5 @@ class Container implements ContainerInterface
         }
 
         return $this->entries[$id] = $extended;
-    }
-
-    /**
-     * Determines if the given class is injectable.
-     *
-     * @param object $class
-     * @return ($class is Container\ContainerAware ? true : false)
-     */
-    private function isInjectable(object $class): bool
-    {
-        return $class instanceof Container\ContainerAware && null === $class->getContainer();
     }
 }

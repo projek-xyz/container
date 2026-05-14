@@ -5,47 +5,53 @@ declare(strict_types=1);
 namespace Projek\Container;
 
 use ArrayAccess;
+use IteratorAggregate;
 use Psr\Container\ContainerInterface;
 
 /**
  * @package Projek\Container
  * @internal
  */
-final class EntryCollector implements ArrayAccess
+final class EntryCollector implements ArrayAccess, IteratorAggregate
 {
     /**
      * @var array<string, object|callable>
      */
     private array $entries = [];
 
-    public function __construct(array $entries = [])
+    public function __construct(iterable $entries = [])
     {
-        foreach ($entries as $offset => $value) {
-            $this->offsetSet($offset, $value);
+        foreach ($entries as $id => $entry) {
+            $this->offsetSet($id, $entry);
         }
     }
 
-    public function offsetExists(mixed $offset): bool
+    public function getIterator(): \Traversable
     {
-        return isset($this->entries[$offset]);
+        return new \ArrayIterator($this->entries);
     }
 
-    public function offsetGet(mixed $offset): mixed
+    public function offsetExists(mixed $id): bool
     {
-        return $this->entries[$offset];
+        return isset($this->entries[$id]);
     }
 
-    public function offsetSet(mixed $offset, mixed $value): void
+    public function offsetGet(mixed $id): mixed
     {
-        if (\is_object($value) && $value instanceof ContainerAware && null === $value->getContainer()) {
-            $value->setContainer($this[ContainerInterface::class]);
+        return $this->entries[$id];
+    }
+
+    public function offsetSet(mixed $id, mixed $entry): void
+    {
+        if ($entry instanceof ContainerAware && null === $entry->getContainer()) {
+            $entry->setContainer($this[ContainerInterface::class]);
         }
 
-        $this->entries[$offset] = $value;
+        $this->entries[$id] = $entry;
     }
 
-    public function offsetUnset(mixed $offset): void
+    public function offsetUnset(mixed $id): void
     {
-        unset($this->entries[$offset]);
+        unset($this->entries[$id]);
     }
 }

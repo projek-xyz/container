@@ -145,8 +145,9 @@ class Container implements ContainerInterface
      * This method resolves dependencies on-the-fly and allows passing
      * additional arguments or conditions for the resolution process.
      *
-     * Note: The `$args` provided are passed only to the callable handler
-     * (e.g. `__invoke` or a method identified by `$condition`), NOT to the class constructor.
+     * Note: The `$args` are used for constructor resolution for normal class instantiation.
+     * For invokable classes (e.g. `__invoke` or a method identified by `$condition`),
+     * constructor args are ignored and `$args` are passed to the callable handler.
      *
      * ```php
      * // Pass arguments directly

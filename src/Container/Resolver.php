@@ -95,9 +95,9 @@ final class Resolver
             $callable = Closure::fromCallable($callable);
         }
 
-        $ref = $this->createCallableReflection($callable);
-
         try {
+            $ref = $this->createCallableReflection($callable);
+
             if ($ref instanceof ReflectionFunction) {
                 return $ref->invokeArgs(
                     $this->resolveArgs($ref, $args)
@@ -108,6 +108,8 @@ final class Resolver
                 $ref->isStatic() && ! \is_object($callable[0]) ? null : $callable[0],
                 $this->resolveArgs($ref, $args)
             );
+        } catch (ReflectionException $err) {
+            throw new InvalidArgumentException($err->getMessage(), $err->getCode(), $err);
         } catch (UnresolvableArgumentException $err) {
             throw new Exception($err->getMessage(), $err->getPrevious());
         }
@@ -162,23 +164,23 @@ final class Resolver
      * @param Closure|array{string,string}|callable|string $callable
      * @return ReflectionMethod|ReflectionFunction
      * @throws Exception
-     * @throws InvalidArgumentException
+     * @throws ReflectionException
      */
     private function createCallableReflection(array|callable|object|string $callable): ReflectionMethod|ReflectionFunction
     {
+        // Split the $callable of `ClassName::method` into `[ClassName, method]`.
         if (\is_string($callable) && \str_contains($callable, '::')) {
             $callable = \explode('::', $callable);
         }
 
+        // Pass non-array $callable directly to `ReflectionFunction` that possibly
+        // a callable object including a `Closure`, or a string of function name
         if (! \is_array($callable)) {
             return new ReflectionFunction($callable);
         }
 
-        try {
-            $ref = new ReflectionMethod($callable[0], $callable[1]);
-        } catch (ReflectionException $err) {
-            throw new InvalidArgumentException($err->getMessage(), $err->getCode(), $err);
-        }
+        /** @var array{object|string,string} $callable */
+        $ref = new ReflectionMethod($callable[0], $callable[1]);
 
         // If trying to statically call a non-static method (at least on PHP 7.x)
         if (! $ref->isStatic() && \is_string($callable[0])) {

@@ -67,7 +67,7 @@ class Container implements ContainerInterface
      */
     public function get(string $id)
     {
-        if (! $this->has($id)) {
+        if (! $this->entries->offsetExists($id)) {
             throw new Container\NotFoundException($id);
         }
 

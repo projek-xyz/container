@@ -72,7 +72,11 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
 
         $entry = $this->entries[$id];
 
-        if ($entry instanceof ContainerAware && null === $entry->getContainer()) {
+        if (
+            $entry instanceof ContainerAware &&
+            $id !== ContainerInterface::class &&
+            null === $entry->getContainer()
+        ) {
             $container = $this->offsetGet(ContainerInterface::class);
 
             if ($container instanceof ContainerInterface) {

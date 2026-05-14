@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
+use Closure;
 use Projek\Container;
 use Psr\Container\ContainerInterface;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionFunction;
+use ReflectionFunctionAbstract;
+use ReflectionMethod;
+use ReflectionNamedType;
 
 /**
  * Container factory resolver class.
@@ -37,21 +44,23 @@ final class Resolver
      *
      * Ensure the given argument is a callable.
      *
-     * @param string|object|callable|\Closure $entry
-     * @param list<mixed> $args
-     * @return object|callable
-     * @throws \Projek\Container\Exception
-     * @throws \Projek\Container\InvalidArgumentException
+     * @param array{class-string<object>,string}|callable|object|string $entry
+     * @param array<int, mixed> $args
+     * @return callable|object
+     * @throws Exception
+     * @throws InvalidArgumentException
      */
-    public function resolve($entry, array $args = [])
-    {
+    public function resolve(
+        array|callable|object|string $entry,
+        array $args = []
+    ): callable|object {
         if (\is_string($entry) && ! \function_exists($entry)) {
-            $entry = false === \strpos($entry, '::')
-                ? $this->createInstance($entry, $args)
-                : \explode('::', $entry);
+            $entry = \str_contains($entry, '::')
+                ? \explode('::', $entry)
+                : $this->createInstance($entry, $args);
         }
 
-        if (\is_array($entry) && \is_string($entry[0])) {
+        if (\is_array($entry) && \is_string($entry[0] ?? null)) {
             $entry[0] = $this->resolve($entry[0], $args);
         }
 
@@ -67,53 +76,61 @@ final class Resolver
     /**
      * Handle callable.
      *
-     * @param callable $entry
-     * @param list<mixed> $args
-     * @return mixed
-     * @throws \Projek\Container\Exception
-     * @throws \Projek\Container\InvalidArgumentException
+     * @template TArgs of array<int, mixed>
+     *
+     * @param array{object|string,string}|callable|object|string $callable
+     * @param TArgs $args
+     * @return ($callable is object ? object : mixed)
+     * @throws Exception
+     * @throws InvalidArgumentException
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
-    public function handle($entry, array $args = [])
+    public function handle($callable, array $args = []): mixed
     {
-        if (\is_object($entry)) {
+        if (\is_object($callable)) {
             // Returns the object if it was non-callable instance.
-            if (! \is_callable($entry)) {
-                return $entry;
+            if (! \is_callable($callable)) {
+                return $callable;
             }
 
             // Otherwise convert it to closure.
-            $entry = \Closure::fromCallable($entry);
-        }
-
-        $ref = $this->createCallableReflection($entry);
-        $caller = $ref->getName();
-        $params = [];
-
-        if ($ref instanceof \ReflectionMethod) {
-            $caller = $ref->getDeclaringClass()->getName() . '::' . $ref->getName();
-            $params[] = $ref->isStatic() && ! \is_object($entry[0]) ? null : $entry[0];
+            $callable = Closure::fromCallable($callable);
         }
 
         try {
-            $params[] = $this->resolveArgs($ref, $args);
+            $ref = $this->createCallableReflection($callable);
 
-            return $ref->invokeArgs(...$params);
-        } catch (Exception $err) {
-            throw new Exception($caller . '(): ' . $err->getMessage(), $err->getPrevious());
+            if ($ref instanceof ReflectionFunction) {
+                return $ref->invokeArgs(
+                    $this->resolveArgs($ref, $args)
+                );
+            }
+
+            /** @var array{object|string,string} $callable */
+            return $ref->invokeArgs(
+                \is_object($callable[0]) ? $callable[0] : null,
+                $this->resolveArgs($ref, $args)
+            );
+        } catch (ReflectionException $err) {
+            throw new InvalidArgumentException($err->getMessage(), $err->getCode(), $err);
+        } catch (UnresolvableArgumentException $err) {
+            throw new Exception($err->getMessage(), $err->getPrevious());
         }
     }
 
     /**
      * Create an instance of $className.
      *
-     * @param string $className
-     * @param list<mixed> $args
-     * @return object
-     * @throws \Projek\Container\Exception
+     * @template TObj of object
+     * @template TArgs of array<int, mixed>
+     *
+     * @param class-string<TObj>|string $className
+     * @param TArgs $args
+     * @return ($className is class-string<TObj> ? TObj : mixed)
+     * @throws Exception
      *  When $className is not instantiable or its constructor depends on non-exists container entry.
      */
-    private function createInstance(string $className, array $args = []): object
+    private function createInstance(string $className, array $args = [])
     {
         if ($this->container->has($className)) {
             return $this->container->get($className);
@@ -125,7 +142,7 @@ final class Resolver
             );
         }
 
-        $ref = new \ReflectionClass($className);
+        $ref = new ReflectionClass($className);
 
         if (! $ref->isInstantiable()) {
             throw new Exception(
@@ -139,41 +156,43 @@ final class Resolver
                 : [];
 
             return $ref->newInstanceArgs($args);
-        } catch (Exception $err) {
-            throw new Exception($className . '::__construct(): ' . $err->getMessage(), $err->getPrevious());
+        } catch (UnresolvableArgumentException $err) {
+            throw new Exception($err->getMessage(), $err->getPrevious());
         }
     }
 
     /**
      * Instance resolver.
      *
-     * @param callable $callable
-     * @return \ReflectionMethod|\ReflectionFunction
-     * @throws \Projek\Container\Exception
-     * @throws \Projek\Container\InvalidArgumentException
+     * @param array{object|string,string}|callable|object|string $callable
+     * @return ReflectionMethod|ReflectionFunction
+     * @throws Exception
+     * @throws ReflectionException
      */
-    private function createCallableReflection($callable)
-    {
-        if (\is_string($callable) && false !== \strpos($callable, '::')) {
-            /** @var array<string> */
+    private function createCallableReflection(
+        array|callable|object|string $callable
+    ): ReflectionMethod|ReflectionFunction {
+        // Split the $callable of `ClassName::method` into `[ClassName, method]`.
+        if (\is_string($callable) && \str_contains($callable, '::')) {
             $callable = \explode('::', $callable);
         }
 
+        // Pass non-array $callable directly to `ReflectionFunction` that possibly
+        // a callable object including a `Closure`, or a string of function name
         if (! \is_array($callable)) {
-            return new \ReflectionFunction($callable);
+            /** @var Closure|string $callable */
+            return new ReflectionFunction($callable);
         }
 
-        try {
-            $ref = new \ReflectionMethod($callable[0], $callable[1]);
-        } catch (\ReflectionException $err) {
-            throw new InvalidArgumentException($err->getMessage(), $err->getCode(), $err);
-        }
+        /** @var array{object|string,string} $callable */
+        $ref = new ReflectionMethod($callable[0], $callable[1]);
 
         // If trying to statically call a non-static method (at least on PHP 7.x)
         if (! $ref->isStatic() && \is_string($callable[0])) {
-            throw new Exception(
-                \sprintf('Non-static method %s should not be called statically', \join('::', $callable))
-            );
+            throw new Exception(\sprintf(
+                'Non-static method %s should not be called statically',
+                \join('::', $callable)
+            ));
         }
 
         return $ref;
@@ -182,29 +201,29 @@ final class Resolver
     /**
      * Callable arguments resolver.
      *
-     * @param \ReflectionFunctionAbstract $reflection
-     * @param list<mixed> $args
-     * @return list<mixed>
-     * @throws \Projek\Container\Exception
+     * @param ReflectionFunctionAbstract $ref
+     * @param array<int, mixed> $args
+     * @return array<int, mixed>
+     * @throws Exception
      */
-    private function resolveArgs(\ReflectionFunctionAbstract $reflection, array $args = []): array
+    private function resolveArgs(ReflectionFunctionAbstract $ref, array $args = []): array
     {
-        foreach ($reflection->getParameters() as $param) {
+        foreach ($ref->getParameters() as $param) {
             // Just skip if parameter already provided.
             if (\array_key_exists($position = $param->getPosition(), $args)) {
                 continue;
             }
 
+            $type = $param->getType();
+            $typeName = ($type instanceof ReflectionNamedType && ! $type->isBuiltin())
+                ? $type->getName()
+                : $param->getName();
+
             try {
-                $args[$position] = $this->container->get($this->getTypeName($param));
+                $args[$position] = $this->container->get($typeName);
             } catch (NotFoundException $err) {
                 if (! $param->isOptional()) {
-                    throw new Exception(\sprintf(
-                        'Argument #%d ($%s) depends on entry "%s" of non-exists',
-                        ++$position,
-                        $param->getName(),
-                        $err->getName()
-                    ), $err);
+                    throw new UnresolvableArgumentException($err->getName(), $param, $ref, $err);
                 }
 
                 $args[$position] = $param->getDefaultValue();
@@ -212,20 +231,5 @@ final class Resolver
         }
 
         return $args;
-    }
-
-    /**
-     * @param \ReflectionParameter $param
-     * @return string
-     */
-    private function getTypeName(\ReflectionParameter $param): string
-    {
-        $type = $param->getType();
-
-        if ($type instanceof \ReflectionNamedType && ! $type->isBuiltin()) {
-            return $type->getName();
-        }
-
-        return $param->getName();
     }
 }

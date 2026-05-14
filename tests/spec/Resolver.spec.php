@@ -6,7 +6,7 @@ use Projek\Container;
 
 describe(Container\Resolver::class, function () {
     given('dummy', function () {
-        return new Stubs\Dummy;
+        return new Stubs\Dummy();
     });
 
     beforeEach(function () {
@@ -27,7 +27,7 @@ describe(Container\Resolver::class, function () {
         });
 
         it('should resolve array of class name & static method pair', function () {
-            $instance = new Stubs\SomeClass;
+            $instance = new Stubs\SomeClass();
 
             expect(
                 $this->r->resolve([$instance, 'staticMethod'])
@@ -35,7 +35,7 @@ describe(Container\Resolver::class, function () {
         });
 
         it('should resolve array of class name & non-static method pair', function () {
-            $instance = new Stubs\SomeClass;
+            $instance = new Stubs\SomeClass();
 
             expect(
                 $this->r->resolve([$instance, 'nonStaticMethod'])
@@ -45,31 +45,79 @@ describe(Container\Resolver::class, function () {
         it('should resolve array of class name & static method pair', function () {
             expect(
                 $this->r->resolve([Stubs\SomeClass::class, 'staticMethod'])
-            )->toEqual([new Stubs\SomeClass, 'staticMethod']);
+            )->toEqual([new Stubs\SomeClass(), 'staticMethod']);
         });
 
         it('should resolve array of class name & non-static method pair', function () {
             expect(
                 $this->r->resolve([Stubs\SomeClass::class, 'nonStaticMethod'])
-            )->toEqual([new Stubs\SomeClass, 'nonStaticMethod']);
+            )->toEqual([new Stubs\SomeClass(), 'nonStaticMethod']);
+        });
+
+        it('should throw error when entry is an empty array', function () {
+            expect(function () {
+                $this->r->resolve([]);
+            })->toThrow(new Container\InvalidArgumentException(
+                'Cannot resolve invalid entry of "array"'
+            ));
+        });
+
+        it('should throw error when entry is an invalid array of existing class with no method', function () {
+            expect(function () {
+                $this->r->resolve(['Stubs\SomeClass']);
+            })->toThrow(new Container\InvalidArgumentException(
+                'Cannot resolve invalid entry of "array"'
+            ));
+        });
+
+        it('should throw error when entry is an invalid array of non-existing class with no method', function () {
+            expect(function () {
+                $this->r->resolve(['ClassNotExists', 'noMethod']);
+            })->toThrow(new Container\Exception(
+                'Cannot resolve an entry or class named "ClassNotExists" of non-exists'
+            ));
         });
 
         it('should resolve string of class name & static method pair', function () {
             expect(
                 $this->r->resolve('Stubs\SomeClass::staticMethod')
-            )->toEqual([new Stubs\SomeClass, 'staticMethod']);
+            )->toEqual([new Stubs\SomeClass(), 'staticMethod']);
         });
 
         it('should resolve string of class name & non-static method pair', function () {
             expect(
                 $this->r->resolve('Stubs\SomeClass::nonStaticMethod')
-            )->toEqual([new Stubs\SomeClass, 'nonStaticMethod']);
+            )->toEqual([new Stubs\SomeClass(), 'nonStaticMethod']);
+        });
+
+        it('should throw error when entry is an invalid string of non-existing class', function () {
+            expect(function () {
+                $this->r->resolve('ClassNotExists::noMethod');
+            })->toThrow(new Container\Exception(
+                'Cannot resolve an entry or class named "ClassNotExists" of non-exists'
+            ));
+        });
+
+        it('should throw error when entry is an invalid string of existing class with no method', function () {
+            expect(function () {
+                $this->r->resolve('Stubs\SomeClass::');
+            })->toThrow(new Container\InvalidArgumentException(
+                'Cannot resolve invalid entry of "array"'
+            ));
         });
 
         it('should resolve string of function name', function () {
             expect(
                 $this->r->resolve('Stubs\dummyLorem')
             )->toBe('Stubs\dummyLorem');
+        });
+
+        it('should throw error when entry is an string of non-existing function', function () {
+            expect(function () {
+                $this->r->resolve('non_existing_func');
+            })->toThrow(new Container\Exception(
+                'Cannot resolve an entry or class named "non_existing_func" of non-exists'
+            ));
         });
 
         it('should resolve closure callable', function () {
@@ -108,13 +156,13 @@ describe(Container\Resolver::class, function () {
 
         it('should handle array of class instance & static method pair', function () {
             expect(
-                $this->r->handle([new Stubs\SomeClass, 'staticMethod'])
+                $this->r->handle([new Stubs\SomeClass(), 'staticMethod'])
             )->toBe('value from static method');
         });
 
         it('should handle array of class instance & non-static method pair', function () {
             expect(
-                $this->r->handle([new Stubs\SomeClass, 'nonStaticMethod'])
+                $this->r->handle([new Stubs\SomeClass(), 'nonStaticMethod'])
             )->toBe('value from non-static method');
         });
 

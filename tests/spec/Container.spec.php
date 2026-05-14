@@ -7,7 +7,7 @@ use Psr\Container\ContainerInterface;
 
 describe(Container::class, function () {
     beforeEach(function () {
-        $this->c = new Container;
+        $this->c = new Container();
     });
 
     it('should resolve it-self', function () {
@@ -130,14 +130,16 @@ describe(Container::class, function () {
             expect($this->c->get('bar'))->toBe($concrete);
         });
 
-        foreach ([
+        foreach (
+            [
             'nonStaticMethod' => 'value from non-static method',
             'staticMethod' => 'value from static method',
-        ] as $method => $value) {
+            ] as $method => $value
+        ) {
             it('should set a class-method pair regardless is static or non-static', function () use ($method, $value) {
-                $this->c->set('a', 'Stubs\SomeClass::'.$method);
+                $this->c->set('a', 'Stubs\SomeClass::' . $method);
                 $this->c->set('b', [Stubs\SomeClass::class, $method]);
-                $this->c->set('c', [new Stubs\SomeClass, $method]);
+                $this->c->set('c', [new Stubs\SomeClass(), $method]);
 
                 expect($this->c->get('a'))->toBe($value);
                 expect($this->c->get('b'))->toBe($value);
@@ -145,7 +147,7 @@ describe(Container::class, function () {
             });
 
             it('should set a entry-method pair the same way as class-method pair', function () use ($method, $value) {
-                $this->c->set('a', 'dummy::'.$method);
+                $this->c->set('a', 'dummy::' . $method);
                 $this->c->set('b', ['dummy', $method]);
 
                 expect($this->c->get('a'))->toBe($value);
@@ -192,7 +194,7 @@ describe(Container::class, function () {
 
             expect(function () {
                 $this->c->get('foobar');
-            })->toThrow(new TypeError);
+            })->toThrow(new TypeError());
         });
 
         it('should throw exception when setting incorrect param', function () {
@@ -215,10 +217,6 @@ describe(Container::class, function () {
             expect(function () {
                 $this->c->set('foo', ['foo', 'bar']);
             })->toThrow(new Container\Exception('Cannot resolve an entry or class named "foo" of non-exists'));
-
-            expect(function () {
-                $this->c->set('foo', null);
-            })->toThrow(new Container\InvalidArgumentException('Cannot resolve invalid entry of "NULL"'));
         });
     });
 
@@ -227,10 +225,12 @@ describe(Container::class, function () {
             $this->c->set('foo', function () {
                 return new class {
                     protected $items = [];
-                    public function set($item, $value) {
+                    public function set($item, $value)
+                    {
                         $this->items[$item] = $value;
                     }
-                    public function get($item) {
+                    public function get($item)
+                    {
                         return $this->items[$item] ?? null;
                     }
                 };
@@ -260,11 +260,13 @@ describe(Container::class, function () {
             $this->c->set(Stubs\AbstractFoo::class, Stubs\ConcreteBar::class);
         });
 
-        foreach ([
+        foreach (
+            [
             Stubs\CallableClass::class => Stubs\AbstractFoo::class,
             Stubs\InstantiableClass::class => Stubs\InstantiableClass::class,
             Stubs\SomeClass::class => Stubs\SomeClass::class,
-        ] as $concrete => $instance) {
+            ] as $concrete => $instance
+        ) {
             it('should make an instance without adding to the stack', function () use ($concrete, $instance) {
                 expect($this->c->has($concrete))->toBeFalsy();
                 expect($this->c->make($concrete))->toBeAnInstanceOf($instance);
@@ -302,7 +304,8 @@ describe(Container::class, function () {
         });
 
         it('should make a function name', function () {
-            function func() {
+            function func()
+            {
                 return 'value';
             }
 
@@ -318,7 +321,7 @@ describe(Container::class, function () {
             // Parameters in second argument will be passed to the handler
             // Since it's being modified from the third argument
             expect($this->c->make(function () {
-                return new Stubs\SomeClass;
+                return new Stubs\SomeClass();
             }, ['value'], function ($closure) {
                 $instance = $closure();
 
@@ -329,10 +332,10 @@ describe(Container::class, function () {
         });
 
         foreach (['nonStaticMethod', 'staticMethod'] as $method) {
-            it('should make an '.$method, function () use ($method) {
-                expect($this->c->make('Stubs\SomeClass::'.$method, ['value']))->toEqual('value');
+            it('should make an ' . $method, function () use ($method) {
+                expect($this->c->make('Stubs\SomeClass::' . $method, ['value']))->toEqual('value');
                 expect($this->c->make(['Stubs\SomeClass', $method], ['value']))->toEqual('value');
-                expect($this->c->make([new Stubs\SomeClass, $method], ['value']))->toEqual('value');
+                expect($this->c->make([new Stubs\SomeClass(), $method], ['value']))->toEqual('value');
             });
         }
 
@@ -466,7 +469,7 @@ describe(Container::class, function () {
                 expect($entry->dummy)->toBe($dummy);
 
                 // Assume this as extending some functionalities of the current instance
-                $entry->dummy = new Stubs\Dummy;
+                $entry->dummy = new Stubs\Dummy();
 
                 // Returns the new entry
                 return $entry;

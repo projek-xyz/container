@@ -12,17 +12,13 @@ use Psr\Container\NotFoundExceptionInterface;
 class NotFoundException extends \InvalidArgumentException implements NotFoundExceptionInterface
 {
     /**
-     * @var string
-     */
-    private $name;
-
-    /**
      * @param string $name
      * @param \Throwable|null $prev
      */
-    public function __construct(string $name, ?\Throwable $prev = null)
-    {
-        $this->name = $name;
+    public function __construct(
+        private string $name,
+        ?\Throwable $prev = null,
+    ) {
         parent::__construct(\sprintf('Container entry "%s" not found.', $name), 0, $prev);
     }
 

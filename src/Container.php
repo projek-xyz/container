@@ -15,12 +15,12 @@ use Psr\Container\ContainerInterface;
 class Container implements ContainerInterface
 {
     /**
-     * @var array<string, mixed> List of instances that been initiated.
+     * @var array<string, object|callable> List of instances that been initiated.
      */
     private $entries = [];
 
     /**
-     * @var array<string, callable> List of instance's factory to be initiate.
+     * @var array<string, Closure|callable> List of instance's factory to be initiate.
      */
     private $factories = [];
 
@@ -37,7 +37,7 @@ class Container implements ContainerInterface
     /**
      * Create new instance.
      *
-     * @param array<string, mixed> $entries
+     * @param array<string, Closure|callable> $entries
      */
     public function __construct(array $entries = [])
     {
@@ -47,8 +47,8 @@ class Container implements ContainerInterface
             ContainerInterface::class => $this,
         ];
 
-        foreach ($entries as $id => $instance) {
-            $this->set($id, $instance);
+        foreach ($entries as $id => $factory) {
+            $this->set($id, $factory);
         }
     }
 
@@ -61,13 +61,7 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Retrieve the registered **entry** by $id.
-     *
-     * @see ContainerInterface::get()
-     * @param string $id The **entry** identifier.
-     * @return mixed Entry
-     * @throws Container\NotFoundException
-     * @throws Container\Exception
+     * {@inheritdoc}
      */
     public function get(string $id)
     {
@@ -106,16 +100,16 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance
      * @param string $id The **entry** identifier.
-     * @param callable $factory
+     * @param Closure|callable $factory
      * @return static
      */
-    public function set(string $id, $factory): self
+    public function set(string $id, $factory): static
     {
         if ($this->has($id)) {
             return $this;
         }
 
-        $this->factories[$id] = \is_object($factory) && ! ($factory instanceof \Closure)
+        $this->factories[$id] = \is_object($factory) && ! ($factory instanceof Closure)
             ? \get_class($factory)
             : $factory;
 
@@ -157,25 +151,28 @@ class Container implements ContainerInterface
      * })
      * ```
      *
+     * @template TObj of object
+     * @template TArgs of array<int, mixed>
+     *
      * @link https://github.com/projek-xyz/container/wiki/create-an-instance
-     * @param string|callable $instance String of class name or callable
-     * @param list<mixed>|\Closure $args
-     * @param null|\Closure $callback
+     * @param Closure|callable $instance String of class name or callable
+     * @param TArgs|Closure(TObj):?TObj $args
+     * @param null|Closure(TObj):?TObj $condition
      * @return mixed
      * @throws Container\InvalidArgumentException
      * @throws Container\Exception
      */
-    public function make($instance, $args = [], ?\Closure $callback = null)
+    public function make($instance, $args = [], ?Closure $condition = null): mixed
     {
-        if (null === $callback && $args instanceof \Closure) {
-            $callback = $args;
+        if (null === $condition && $args instanceof Closure) {
+            $condition = $args;
             $args = [];
         }
 
         if (! is_array($args)) {
             throw new Container\InvalidArgumentException(\sprintf(
                 'Argument #2 must be an %s, %s given',
-                (null === $callback ? 'array or instance of closure' : 'array'),
+                (null === $condition ? 'array or instance of closure' : 'array'),
                 \gettype($args)
             ));
         }
@@ -187,8 +184,8 @@ class Container implements ContainerInterface
             $args
         );
 
-        if ($callback) {
-            $instance = $callback($instance) ?: $instance;
+        if ($condition) {
+            $instance = $condition($instance) ?: $instance;
         }
 
         return $this->resolver->handle($instance, $args);
@@ -199,12 +196,12 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/extending-an-instance
      * @param string $id Identifier of existing entry.
-     * @param \Closure $callback Callback to extend the functionality of the entry.
+     * @param Closure $callback Callback to extend the functionality of the entry.
      * @return object Returns the object instance.
      * @throws Container\NotFoundException If $id is not found.
      * @throws Container\Exception If trying to extends a callable.
      */
-    public function extend(string $id, \Closure $callback): object
+    public function extend(string $id, Closure $callback): object
     {
         $entry = $this->get($id);
 
@@ -217,8 +214,9 @@ class Container implements ContainerInterface
         }
 
         $extended = $this->make($callback, [$entry]);
+        $class = \get_class($entry);
 
-        if (! \is_a($extended, $class = \get_class($entry))) {
+        if (! \is_object($extended) || ! \is_a($extended, $class)) {
             throw new Container\Exception(
                 \sprintf('Argument #2 callback must be returns of type "%s"', $class)
             );
@@ -227,6 +225,12 @@ class Container implements ContainerInterface
         return $this->entries[$id] = $extended;
     }
 
+    /**
+     * Determines if the given class is injectable.
+     *
+     * @param object $class
+     * @return ($class is Container\ContainerAware ? true : false)
+     */
     private function isInjectable(object $class): bool
     {
         return $class instanceof Container\ContainerAware && null === $class->getContainer();

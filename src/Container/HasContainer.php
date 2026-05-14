@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
+use Psr\Container\ContainerInterface;
+
 /**
  * A trait to help injecting ContainerInterface to the class that implements
  * ContainerAware interface.
@@ -13,14 +15,15 @@ namespace Projek\Container;
 trait HasContainer
 {
     /**
-     * @var \Projek\Container|null
+     * @var ContainerInterface|null
      */
-    protected $container = null;
+    protected ?ContainerInterface $container = null;
 
     /**
+    * {@inheritdoc}
      * @see ContainerAware::setContainer()
      */
-    public function setContainer(\Projek\Container $container): ContainerAware
+    public function setContainer(ContainerInterface $container): static
     {
         $this->container = $container;
 
@@ -28,6 +31,7 @@ trait HasContainer
     }
 
     /**
+     * {@inheritdoc}
      * @see ContainerAware::getContainer()
      */
     public function getContainer(?string $name = null)

@@ -54,6 +54,8 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
 
     public function offsetUnset(mixed $id): void
     {
-        unset($this->entries[$id]);
+        throw new Exception(
+            \sprintf('Removing registered entry "%s" is not supported.', $id)
+        );
     }
 }

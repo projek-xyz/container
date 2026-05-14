@@ -161,7 +161,7 @@ final class Resolver
     /**
      * Instance resolver.
      *
-     * @param Closure|array{string,string}|callable|string $callable
+     * @param array{object|string,string}|callable|object|string $callable
      * @return ReflectionMethod|ReflectionFunction
      * @throws Exception
      * @throws ReflectionException

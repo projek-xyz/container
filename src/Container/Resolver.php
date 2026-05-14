@@ -104,6 +104,7 @@ final class Resolver
                 );
             }
 
+            /** @var array{object|string,string} $callable */
             return $ref->invokeArgs(
                 $ref->isStatic() && ! \is_object($callable[0]) ? null : $callable[0],
                 $this->resolveArgs($ref, $args)

@@ -81,6 +81,7 @@ class Container implements ContainerInterface
             return $entry;
         }
 
+        /** @var array{object|string,string}|callable|object|string $entry */
         return $this->handledEntries[$id] = $this->resolver->handle($entry);
     }
 

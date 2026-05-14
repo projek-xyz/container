@@ -7,44 +7,35 @@ namespace Projek\Container;
 use Psr\Container\ContainerInterface;
 
 /**
- * Container Aware Interface.
+ * Interface for services that are container-aware.
  *
- * Any class implements this interface could have instance of ContainerInterface
- * injected automtically.
+ * Classes implementing this interface will have the container instance
+ * automatically injected when resolved by the EntryCollector.
  *
  * @package Projek\Container
  */
 interface ContainerAware
 {
     /**
-     * Assign a container to the instance.
+     * Inject the container instance.
      *
-     * @param ContainerInterface $container
+     * @param ContainerInterface $container The container instance.
      * @return static
      */
     public function setContainer(ContainerInterface $container): static;
 
     /**
-     * Retrieve container instance or the instance of registered service.
+     * Retrieve the container or a specific service from it.
      *
-     * If no parameter given, this method should returns instance of
-     * `Psr\Container\ContainerInterface`
-     *
-     * ```php
-     * $instance->getContainer(); // \Psr\Container\ContainerInterface
-     * ```
-     *
-     * But if a string given, this method should returns instance of registered
-     * Container with the given name
+     * If no parameter is provided, it returns the `ContainerInterface` instance.
+     * If a name is provided, it returns the resolved service from the container.
      *
      * ```php
-     * $container->set(SomeClass::class, function () { ... });
-     *
-     * // equivalent to `$container->get(SomeClass::class)`
-     * $instance->getContainer(SomeClass::class); // instance of SomeClass
+     * $instance->getContainer(); // Returns Psr\Container\ContainerInterface
+     * $instance->getContainer(SomeClass::class); // Returns the SomeClass instance
      * ```
      *
-     * @param null|string $name Optionally pass a container name, if needed.
+     * @param string|null $name Optional service name to resolve.
      * @return ($name is null ? ContainerInterface : mixed)
      */
     public function getContainer(?string $name = null);

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Projek\Container;
 
 use Closure;
-use Projek\Container;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
 use ReflectionException;
@@ -15,24 +14,25 @@ use ReflectionMethod;
 use ReflectionNamedType;
 
 /**
- * Container factory resolver class.
+ * Internal service for resolving dependencies and instantiating classes.
  *
- * An internal class mainly used for resolving and handling container factories.
+ * This class uses reflection to autowire dependencies and execute
+ * various types of factories (closures, callables, etc.).
  *
  * @package Projek\Container
- * @internal
+ * @internal This class is for internal use by the Container.
  */
 final class Resolver
 {
     /**
-     * @var ContainerInterface Container instance.
+     * @var ContainerInterface The container instance used for dependency lookups.
      */
     private $container;
 
     /**
-     * Create instance.
+     * Create a new Resolver instance.
      *
-     * @param Container $container
+     * @param ContainerInterface $container The parent container.
      */
     public function __construct(ContainerInterface $container)
     {
@@ -40,15 +40,16 @@ final class Resolver
     }
 
     /**
-     * Entry factory resolver.
+     * Convert various factory formats into executable callables or objects.
      *
-     * Ensure the given argument is a callable.
+     * This method ensures that class names are instantiated and class-method
+     * strings are converted into valid callables.
      *
-     * @param array{class-string<object>,string}|callable|object|string $factory
-     * @param array<int, mixed> $args
+     * @param array{class-string<object>|string,string}|callable|object|string $factory
+     * @param array<int, mixed> $args Optional constructor arguments.
      * @return callable|object
-     * @throws Exception
-     * @throws InvalidArgumentException
+     * @throws Exception If the factory cannot be resolved.
+     * @throws InvalidArgumentException If the factory format is invalid.
      */
     public function resolve(
         array|callable|object|string $factory,
@@ -74,15 +75,18 @@ final class Resolver
     }
 
     /**
-     * Handle callable.
+     * Execute a callable or return a non-callable object.
+     *
+     * This method handles the actual execution of factory functions and
+     * autowires any parameters that are not explicitly provided.
      *
      * @template TArgs of array<int, mixed>
      *
      * @param array{object|string,string}|callable|object|string $callable
-     * @param TArgs $args
+     * @param TArgs $args Explicit arguments to pass to the callable.
      * @return ($callable is object ? object : mixed)
-     * @throws Exception
-     * @throws InvalidArgumentException
+     * @throws Exception If an argument cannot be resolved.
+     * @throws InvalidArgumentException If reflection fails.
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function handle($callable, array $args = []): mixed
@@ -119,16 +123,15 @@ final class Resolver
     }
 
     /**
-     * Create an instance of $className.
+     * Instantiate a new class instance.
      *
      * @template TObj of object
      * @template TArgs of array<int, mixed>
      *
-     * @param class-string<TObj>|string $className
-     * @param TArgs $args
+     * @param class-string<TObj>|string $className The class name to instantiate.
+     * @param TArgs $args Optional constructor arguments.
      * @return ($className is class-string<TObj> ? TObj : mixed)
-     * @throws Exception
-     *  When $className is not instantiable or its constructor depends on non-exists container entry.
+     * @throws Exception If the class is not found or not instantiable.
      */
     private function createInstance(string $className, array $args = [])
     {
@@ -162,12 +165,12 @@ final class Resolver
     }
 
     /**
-     * Instance resolver.
+     * Create a reflection instance for the given callable.
      *
      * @param array{object|string,string}|callable|object|string $callable
      * @return ReflectionMethod|ReflectionFunction
-     * @throws Exception
-     * @throws ReflectionException
+     * @throws Exception If a non-static method is called statically.
+     * @throws ReflectionException If reflection fails.
      */
     private function createCallableReflection(
         array|callable|object|string $callable
@@ -199,12 +202,12 @@ final class Resolver
     }
 
     /**
-     * Callable arguments resolver.
+     * Resolve arguments for a function or method using autowiring.
      *
-     * @param ReflectionFunctionAbstract $ref
-     * @param array<int, mixed> $args
-     * @return array<int, mixed>
-     * @throws Exception
+     * @param ReflectionFunctionAbstract $ref The reflection instance.
+     * @param array<int, mixed> $args Already provided arguments.
+     * @return array<int, mixed> The resolved arguments.
+     * @throws Exception If a required argument cannot be resolved.
      */
     private function resolveArgs(ReflectionFunctionAbstract $ref, array $args = []): array
     {

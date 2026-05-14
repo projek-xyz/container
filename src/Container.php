@@ -8,36 +8,39 @@ use Closure;
 use Psr\Container\ContainerInterface;
 
 /**
- * PSR-11 Container impementation class.
+ * PSR-11 Dependency Injection Container implementation.
+ *
+ * This class handles service registration, resolution, and autowiring
+ * of dependencies using reflection.
  *
  * @package Projek\Container
  */
 class Container implements ContainerInterface
 {
     /**
-     * @var Container\EntryCollector List of instances that been initiated.
+     * @var Container\EntryCollector Internal storage for registered and resolved entries.
      */
     private Container\EntryCollector $entries;
 
     /**
-     * @var array<string, Closure|callable> List of instance's factory to be initiate.
+     * @var array<string, Closure|callable|string> Registry of service factories or class names.
      */
     private $factories = [];
 
     /**
-     * @var array<string, mixed> List of instances that been handled.
+     * @var array<string, mixed> Cache of resolved singleton instances.
      */
     private $handledEntries = [];
 
     /**
-     * @var Container\Resolver Service container resolver.
+     * @var Container\Resolver Service resolver for autowiring and factory execution.
      */
     private Container\Resolver $resolver;
 
     /**
-     * Create new instance.
+     * Create a new Container instance.
      *
-     * @param array<string, Closure|callable> $entries
+     * @param array<string, Closure|callable|string> $entries Initial service entries.
      */
     public function __construct(array $entries = [])
     {
@@ -54,7 +57,10 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Create new resolver instance when get cloned.
+     * Clone the container with a new resolver instance.
+     *
+     * Ensures that cloned containers have their own isolated state
+     * while sharing the same initial entries.
      */
     public function __clone()
     {
@@ -64,6 +70,12 @@ class Container implements ContainerInterface
 
     /**
      * {@inheritdoc}
+     *
+     * Note: If the resolved entry is a callable object (has an `__invoke` method),
+     * this method will return the result of the invocation rather than the object itself.
+     *
+     * @throws Container\NotFoundException If the entry is not found.
+     * @throws Container\Exception If the entry cannot be resolved.
      */
     public function get(string $id)
     {
@@ -82,11 +94,11 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Determine whether the **entry** is registered.
+     * Check if an entry is registered in the container.
      *
      * {@inheritdoc}
      * @see ContainerInterface::has()
-     * @param string $id The **entry** identifier.
+     * @param string $id The entry identifier.
      * @return bool
      */
     public function has(string $id): bool
@@ -95,11 +107,17 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Registering an **entry** to the container stack.
+     * Register a new service factory or class in the container.
      *
-     * @link https://github.com/projek-xyz/container/wiki/registering-an-instance
-     * @param string $id The **entry** identifier.
-     * @param Closure|callable $factory
+     * If the ID is already registered, the new factory will be ignored.
+     * Use the `extend()` method to modify existing services.
+     *
+     * Note: If a class name or object is provided that has an `__invoke` method,
+     * it will be treated as a factory, and `get()` will return the result of that invocation.
+     *
+     * @link https://github.com/projek-xyz/container/wiki/registering-an-instance Registering an Instance Wiki
+     * @param string $id The entry identifier.
+     * @param Closure|callable|string|object $factory A factory closure, callable, class name, or object instance.
      * @return static
      */
     public function set(string $id, $factory): static
@@ -122,38 +140,35 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Resolve an instance without adding it to the stack.
+     * Create a new instance without registering it as a singleton.
      *
-     * It's possible to add 2nd parameter as an array and it will pass it to
-     * `Resolver::handle($instance, $args)`. While if it was a Closure, it will
-     * treaten as condition.
+     * This method resolves dependencies on-the-fly and allows passing
+     * additional arguments or conditions for the resolution process.
+     *
+     * Note: The `$args` are used for constructor resolution for normal class instantiation.
+     * For invokable classes (e.g. `__invoke` or a method identified by `$condition`),
+     * constructor args are ignored and `$args` are passed to the callable handler.
      *
      * ```php
-     * // Treat 2nd parameter as arguments
+     * // Pass arguments directly
      * $container->make(SomeClass::class, ['a value'])
      *
-     * // Treat 2nd parameter as condition
+     * // Use a condition to determine the method to call
      * $container->make(SomeClass::class, function ($instance) {
-     *     // Accepts falsy or $instance of the class
      *     return $instance instanceof CertainInterface ? [$instance, 'theMethod'] : null;
-     * })
-     *
-     * // Treat 2nd parameter as arguments and 3rd as condition
-     * $container->make(SomeClass::class, ['a value'], function ($instance) {
-     *     // a condition
      * })
      * ```
      *
      * @template TObj of object
      * @template TArgs of array<int, mixed>
      *
-     * @link https://github.com/projek-xyz/container/wiki/create-an-instance
-     * @param Closure|callable $instance String of class name or callable
-     * @param TArgs|Closure(TObj):?TObj $args
-     * @param null|Closure(TObj):?TObj $condition
+     * @link https://github.com/projek-xyz/container/wiki/create-an-instance Creating an Instance Wiki
+     * @param Closure|callable|string|object $instance Class name, factory, or object instance.
+     * @param TArgs|Closure(TObj):?TObj $args Optional arguments or a condition closure.
+     * @param null|Closure(TObj):?TObj $condition Optional condition closure if $args is an array.
      * @return mixed
-     * @throws Container\InvalidArgumentException
-     * @throws Container\Exception
+     * @throws Container\InvalidArgumentException If arguments are invalid.
+     * @throws Container\Exception If resolution fails.
      */
     public function make($instance, $args = [], ?Closure $condition = null): mixed
     {
@@ -185,14 +200,20 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Extending an entry.
+     * Extend an existing service with additional functionality.
      *
-     * @link https://github.com/projek-xyz/container/wiki/extending-an-instance
-     * @param string $id Identifier of existing entry.
-     * @param Closure $callback Callback to extend the functionality of the entry.
-     * @return object Returns the object instance.
-     * @throws Container\NotFoundException If $id is not found.
-     * @throws Container\Exception If trying to extends a callable.
+     * This method retrieves an existing entry and passes it to the provided
+     * callback. The callback must return the modified or wrapped instance.
+     *
+     * Note: The callback must return an object instance that is of the same
+     * type or a subclass of the original service.
+     *
+     * @link https://github.com/projek-xyz/container/wiki/extending-an-instance Extending an Instance Wiki
+     * @param string $id Identifier of the existing entry.
+     * @param Closure(object):object $callback Callback to extend the service.
+     * @return object Returns the extended object instance.
+     * @throws Container\NotFoundException If the entry ID is not found.
+     * @throws Container\Exception If trying to extend a non-object or callable.
      */
     public function extend(string $id, Closure $callback): object
     {

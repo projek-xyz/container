@@ -40,36 +40,36 @@ final class Resolver
     }
 
     /**
-     * Entry resolver.
+     * Entry factory resolver.
      *
      * Ensure the given argument is a callable.
      *
-     * @param array{class-string<object>,string}|callable|object|string $entry
+     * @param array{class-string<object>,string}|callable|object|string $factory
      * @param array<int, mixed> $args
      * @return callable|object
      * @throws Exception
      * @throws InvalidArgumentException
      */
     public function resolve(
-        array|callable|object|string $entry,
+        array|callable|object|string $factory,
         array $args = []
     ): callable|object {
-        if (\is_string($entry) && ! \function_exists($entry)) {
-            $entry = \str_contains($entry, '::')
-                ? \explode('::', $entry)
-                : $this->createInstance($entry, $args);
+        if (\is_string($factory) && ! \function_exists($factory)) {
+            $factory = \str_contains($factory, '::')
+                ? \explode('::', $factory)
+                : $this->createInstance($factory, $args);
         }
 
-        if (\is_array($entry) && \is_string($entry[0] ?? null)) {
-            $entry[0] = $this->resolve($entry[0], $args);
+        if (\is_array($factory) && \is_string($factory[0] ?? null)) {
+            $factory[0] = $this->resolve($factory[0], $args);
         }
 
-        if (\is_object($entry) || \is_callable($entry)) {
-            return $entry;
+        if (\is_object($factory) || \is_callable($factory)) {
+            return $factory;
         }
 
         throw new InvalidArgumentException(
-            \sprintf('Cannot resolve invalid entry of "%s"', \gettype($entry))
+            \sprintf('Cannot resolve invalid entry of "%s"', \gettype($factory))
         );
     }
 

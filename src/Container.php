@@ -32,7 +32,7 @@ class Container implements ContainerInterface
     /**
      * @var Container\Resolver Service container resolver.
      */
-    private $resolver;
+    private Container\Resolver $resolver;
 
     /**
      * Create new instance.

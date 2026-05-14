@@ -15,9 +15,9 @@ use Psr\Container\ContainerInterface;
 class Container implements ContainerInterface
 {
     /**
-     * @var array<string, object|callable> List of instances that been initiated.
+     * @var Container\EntryCollector List of instances that been initiated.
      */
-    private $entries = [];
+    private Container\EntryCollector $entries;
 
     /**
      * @var array<string, Closure|callable> List of instance's factory to be initiate.
@@ -32,7 +32,7 @@ class Container implements ContainerInterface
     /**
      * @var Container\Resolver Service container resolver.
      */
-    private $resolver;
+    private Container\Resolver $resolver;
 
     /**
      * Create new instance.
@@ -42,10 +42,11 @@ class Container implements ContainerInterface
     public function __construct(array $entries = [])
     {
         $this->resolver = new Container\Resolver($this);
-        $this->entries = [
+
+        $this->entries = new Container\EntryCollector([
             self::class => $this,
             ContainerInterface::class => $this,
-        ];
+        ]);
 
         foreach ($entries as $id => $factory) {
             $this->set($id, $factory);
@@ -58,6 +59,7 @@ class Container implements ContainerInterface
     public function __clone()
     {
         $this->resolver = new Container\Resolver($this);
+        $this->entries = new Container\EntryCollector($this->entries);
     }
 
     /**
@@ -65,10 +67,6 @@ class Container implements ContainerInterface
      */
     public function get(string $id)
     {
-        if (! $this->has($id)) {
-            throw new Container\NotFoundException($id);
-        }
-
         if (isset($this->handledEntries[$id])) {
             return $this->handledEntries[$id];
         }
@@ -79,6 +77,7 @@ class Container implements ContainerInterface
             return $entry;
         }
 
+        /** @var array{object|string,string}|callable|object|string $entry */
         return $this->handledEntries[$id] = $this->resolver->handle($entry);
     }
 
@@ -92,7 +91,7 @@ class Container implements ContainerInterface
      */
     public function has(string $id): bool
     {
-        return \array_key_exists($id, $this->entries);
+        return $this->entries->offsetExists($id);
     }
 
     /**
@@ -105,7 +104,7 @@ class Container implements ContainerInterface
      */
     public function set(string $id, $factory): static
     {
-        if ($this->has($id)) {
+        if ($this->entries->offsetExists($id)) {
             return $this;
         }
 
@@ -113,13 +112,7 @@ class Container implements ContainerInterface
             ? \get_class($factory)
             : $factory;
 
-        $entry = $this->resolver->resolve($this->factories[$id]);
-
-        if (\is_object($entry) && $this->isInjectable($entry)) {
-            $entry->setContainer($this);
-        }
-
-        $this->entries[$id] = $entry;
+        $this->entries[$id] = $this->resolver->resolve($this->factories[$id]);
 
         if (isset($this->handledEntries[$id])) {
             unset($this->handledEntries[$id]);
@@ -223,16 +216,5 @@ class Container implements ContainerInterface
         }
 
         return $this->entries[$id] = $extended;
-    }
-
-    /**
-     * Determines if the given class is injectable.
-     *
-     * @param object $class
-     * @return ($class is Container\ContainerAware ? true : false)
-     */
-    private function isInjectable(object $class): bool
-    {
-        return $class instanceof Container\ContainerAware && null === $class->getContainer();
     }
 }

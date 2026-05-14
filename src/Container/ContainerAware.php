@@ -27,10 +27,11 @@ interface ContainerAware
     /**
      * Retrieve container instance or the instance of registered service.
      *
-     * If no parameter given, this method should returns instance of `Projek\Container`
+     * If no parameter given, this method should returns instance of
+     * `Psr\Container\ContainerInterface`
      *
      * ```php
-     * $instance->getContainer(); // \Projek\Container
+     * $instance->getContainer(); // \Psr\Container\ContainerInterface
      * ```
      *
      * But if a string given, this method should returns instance of registered

@@ -176,6 +176,7 @@ final class Resolver
         // Pass non-array $callable directly to `ReflectionFunction` that possibly
         // a callable object including a `Closure`, or a string of function name
         if (! \is_array($callable)) {
+            /** @var Closure|string $callable */
             return new ReflectionFunction($callable);
         }
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
+use Psr\Container\ContainerInterface;
+
 /**
  * Container Aware Interface.
  *
@@ -17,10 +19,10 @@ interface ContainerAware
     /**
      * Assign a container to the instance.
      *
-     * @param \Projek\Container $container
+     * @param ContainerInterface $container
      * @return static
      */
-    public function setContainer(\Projek\Container $container): static;
+    public function setContainer(ContainerInterface $container): static;
 
     /**
      * Retrieve container instance or the instance of registered service.
@@ -42,7 +44,7 @@ interface ContainerAware
      * ```
      *
      * @param null|string $name Optionally pass a container name, if needed.
-     * @return \Projek\Container|mixed
+     * @return ($name is null ? ContainerInterface : mixed)
      */
     public function getContainer(?string $name = null);
 }

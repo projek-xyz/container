@@ -6,7 +6,17 @@
 
 # Simple yet Flexible PSR-11 Container Implementation
 
-This tiny library aims to provide dead simple PSR-11 implementation with flexible service registration.
+This tiny library aims to provide a dead-simple PSR-11 implementation with flexible service registration.
+
+## Features
+
+- **PSR-11 Compliant**: Fully implements the PSR-11 `ContainerInterface`.
+- **Autowiring**: Automatically resolves dependencies for constructors and callables using type-hints or parameter names.
+- **Flexible Registration**: Register services using closures, class names, instances, or even class-method pairs.
+- **Service Extension**: Easily modify or wrap existing services using the `extend()` method.
+- **On-the-fly Resolution**: Create instances without adding them to the container stack using `make()`.
+- **Container Awareness**: Automatically inject the container into services that implement `ContainerAware`.
+- **Lightweight**: Zero dependencies (other than PSR-11 interface) and a small footprint.
 
 ## Installation
 

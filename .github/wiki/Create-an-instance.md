@@ -1,8 +1,10 @@
-# Create an instance of class without register it to the container stack.
+# Create an instance of a class without registering it to the container stack.
 
 ```php
 $container->make($callable[, $arguments|$condition[, $condition]]) mixed
 ```
+
+Unlike `get()`, the `make()` method will **not** store the resolved instance in the container. Every time you call `make()`, it will return a new instance (unless the callable itself returns a shared instance).
 
 | Parameters | Type | Description |
 | --- | --- | --- |
@@ -12,13 +14,13 @@ $container->make($callable[, $arguments|$condition[, $condition]]) mixed
 
 ## Usage
 
-This method will always asumed that the first argument is a callable, which means the returns value of this method is the returns value of the callable. 
+This method will always assume that the first argument is a callable, which means the return value of this method is the return value of the callable. 
 
 ```php
 $container->make(SomeClass::class);
 ```
 
-So, if the `SomeClass` has `__invoke()` method it will returns value from `__invoke()` instead. Otherwise, it will returns the class instance. Also, any arguments required for the `__construct()` and the `__invoke()` method will automatically injected if they're available in the container.
+So, if `SomeClass` has an `__invoke()` method, it will return the value from `__invoke()` instead. Otherwise, it will return the class instance. Also, any arguments required for the `__construct()` and the `__invoke()` methods will be automatically injected if they're available in the container.
 
 ```php
 class SomeClass {
@@ -36,7 +38,7 @@ class SomeClass {
 $container->make(SomeClass::class);
 ```
 
-The 1st argument of `make()` would behave exactly the same as [2nd argument of the `set()` method](Registering-an-instance#1-use-callable-string-or-array), means you can have the following:
+The 1st argument of `make()` behaves exactly the same as the [2nd argument of the `set()` method](Registering-an-instance#1-use-callable-string-or-array), which means you can do the following:
 
 ```php
 class SomeClass {
@@ -50,16 +52,16 @@ class SomeClass {
 }
 
 // Class name
-$container->make(SomeClass::class); // returns instance or the return value of `__invoke`.
+$container->make(SomeClass::class); // returns instance or the return value of `__invoke()`.
 // Method
-$container->make('SomeClass::otherMethod'); // returns the value from `otherMethod
-$container->make(['SomeClass', 'otherMethod']); // returns the value from `otherMethod
-$container->make([new SomeClass, 'otherMethod']); // returns the value from `otherMethod
+$container->make('SomeClass::otherMethod'); // returns the value from `otherMethod`
+$container->make(['SomeClass', 'otherMethod']); // returns the value from `otherMethod`
+$container->make([new SomeClass, 'otherMethod']); // returns the value from `otherMethod`
 ```
 
-### 1. Second argument an array of the callable arguments
+### 1. Second argument is an array of the callable's arguments
 
-Let say, we have something like this.
+Let's say we have something like this:
 
 ```php
 class SomeClass {
@@ -68,14 +70,14 @@ class SomeClass {
     }
 }
 
-$foo = $container->make(SomeClass::class, ['the value']); // return 'the value'
+$foo = $container->make(SomeClass::class, ['the value']); // returns 'the value'
 ```
-**NOTE :**
-- The second argument will only be passed to the callback, not the class constructor.
+> [!NOTE]
+> The second argument will only be passed to the callback, not the class constructor.
 
-### 2. Passing a closure as condition
+### 2. Passing a closure as a condition
 
-By default it will try to call `__invoke()` method if available, but in some cases if we need to perform some checks and call another method if it meet certain condition, we could do by the following.
+By default, it will try to call the `__invoke()` method if available. However, in cases where we need to perform checks and call another method if a certain condition is met, we can do the following:
 
 ```php
 use Psr\Http\Server\RequestHandlerInterface;
@@ -85,17 +87,17 @@ $container->make(SomeClass::class, function ($instance) {
         return [$instance, 'handle'];
     }
 
-    return null; // Accepts falsy or $instance of the class
+    return null; // Accepts a falsy value or the $instance of the class
 });
 ```
-By returning an array of class-method pair means the returns value of `make()` will be the returns value of defined method.
+Returning an array as a class-method pair means the return value of `make()` will be the return value of the defined method.
 
-**NOTE :**
-- The `Closure` on the last argument will only works if the first argument is a string class name or an object.
+> [!NOTE]
+> The `Closure` on the last argument will only work if the first argument is a string class name or an object.
 
-### 3. Combine the two options
+### 3. Combining the two options
 
-In case we need to change default callback and passing the arguments, we could do by the following.
+In case we need to change the default callback and pass arguments, we can do the following:
 
 ```php
 $container->make(SomeClass::class, ['the value'], function ($instance) {

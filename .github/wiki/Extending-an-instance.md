@@ -11,7 +11,7 @@ $container->extend(string $id, Closure $callback): object
 
 ## Usage
 
-This handy method will allow you to extend the functionality of existing entry.
+This handy method allows you to extend the functionality of an existing entry.
 
 ```php
 $container->set('db', function (Config $config) {
@@ -28,8 +28,7 @@ $container->extend('db', function (Database $db, SomeDriver $driver): Database {
     return $db;
 });
 ```
-**NOTE :**
-
-- This method should only works if the returns type of the entry (`$id`) is an object, otherwise it will throw an error.
-- The 1st argument of the callback is always the instance of the entry (`$id`), and the other arguments is the value from another entries.
-- The callback should returns the same instance as the 1st argument of the callback.
+> [!NOTE]
+> - This method only works if the return type of the entry (`$id`) is an object; otherwise, it will throw an error.
+> - The 1st argument of the callback is always the instance of the entry (`$id`), and the other arguments are the values from other entries.
+> - The callback should return the same instance as the 1st argument of the callback.

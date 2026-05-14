@@ -66,6 +66,10 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
      */
     public function offsetGet(mixed $id): mixed
     {
+        if (! isset($this->entries[$id])) {
+            throw new NotFoundException($id);
+        }
+
         $entry = $this->entries[$id];
 
         if ($entry instanceof ContainerAware && null === $entry->getContainer()) {

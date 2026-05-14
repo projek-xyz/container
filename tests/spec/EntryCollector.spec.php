@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use Projek\Container;
 use Projek\Container\ContainerAware;
 use Projek\Container\EntryCollector;
 use Projek\Container\Exception;
 use Projek\Container\HasContainer;
+use Projek\Container\NotFoundException;
 use Psr\Container\ContainerInterface;
 
 describe(EntryCollector::class, function () {
@@ -36,8 +38,16 @@ describe(EntryCollector::class, function () {
         expect($result)->toBe($entries);
     });
 
+    it('should throw NotFoundException for missing entries', function () {
+        expect(
+            fn () => $this->collector['not-exists']
+        )->toThrow(
+            new NotFoundException('not-exists')
+        );
+    });
+
     it('should inject container to ContainerAware entries', function () {
-        $container = new Projek\Container();
+        $container = new Container();
         $this->collector[ContainerInterface::class] = $container;
 
         $stub = new class implements ContainerAware {
@@ -52,6 +62,20 @@ describe(EntryCollector::class, function () {
 
         expect($entry)->toBe($stub);
         expect($entry->getContainer())->toBe($container);
+    });
+
+    it('should not recurse infinitely if ContainerInterface itself is ContainerAware', function () {
+        $stub = new class implements ContainerAware {
+            use HasContainer;
+        };
+
+        $this->collector[ContainerInterface::class] = $stub;
+
+        // This should not trigger infinite recursion
+        $entry = $this->collector[ContainerInterface::class];
+
+        expect($entry)->toBe($stub);
+        expect($entry->getContainer())->toBeNull();
     });
 
     it('should not allow entry removal', function () {

@@ -2,7 +2,7 @@ This tiny library aims to provide dead simple PSR-11 implementation with flexibl
 
 ## Requirements
 
-- PHP 7.2+ and tested up-to PHP 8.1
+- PHP 8.0+ and tested up-to PHP 8.5
 
 ## Installation
 

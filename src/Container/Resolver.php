@@ -50,8 +50,10 @@ final class Resolver
      * @throws Exception
      * @throws InvalidArgumentException
      */
-    public function resolve(array|callable|object|string $entry, array $args = []): callable|object
-    {
+    public function resolve(
+        array|callable|object|string $entry,
+        array $args = []
+    ): callable|object {
         if (\is_string($entry) && ! \function_exists($entry)) {
             $entry = \str_contains($entry, '::')
                 ? \explode('::', $entry)
@@ -167,8 +169,9 @@ final class Resolver
      * @throws Exception
      * @throws ReflectionException
      */
-    private function createCallableReflection(array|callable|object|string $callable): ReflectionMethod|ReflectionFunction
-    {
+    private function createCallableReflection(
+        array|callable|object|string $callable
+    ): ReflectionMethod|ReflectionFunction {
         // Split the $callable of `ClassName::method` into `[ClassName, method]`.
         if (\is_string($callable) && \str_contains($callable, '::')) {
             $callable = \explode('::', $callable);
@@ -186,9 +189,10 @@ final class Resolver
 
         // If trying to statically call a non-static method (at least on PHP 7.x)
         if (! $ref->isStatic() && \is_string($callable[0])) {
-            throw new Exception(
-                \sprintf('Non-static method %s should not be called statically', \join('::', $callable))
-            );
+            throw new Exception(\sprintf(
+                'Non-static method %s should not be called statically',
+                \join('::', $callable)
+            ));
         }
 
         return $ref;

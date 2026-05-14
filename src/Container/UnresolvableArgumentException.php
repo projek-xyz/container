@@ -5,47 +5,74 @@ declare(strict_types=1);
 namespace Projek\Container;
 
 use Psr\Container\ContainerExceptionInterface;
-use ReflectionFunction;
 use ReflectionFunctionAbstract;
 use ReflectionMethod;
+use ReflectionParameter;
 
 /**
  * @package Projek\Container
  */
-class UnresolvableArgumentException extends \RuntimeException implements ContainerExceptionInterface
+final class UnresolvableArgumentException extends \RuntimeException implements ContainerExceptionInterface
 {
-    private string $caller;
+    private ?string $caller = null;
+
+    private ?string $className = null;
+
+    private string $methodName;
+
+    private int $position;
 
     /**
-     * @param int $position
-     * @param string $name
      * @param string $entry
-     * @param ReflectionFunction|ReflectionMethod $ref
+     * @param ReflectionParameter $param
+     * @param ReflectionFunctionAbstract $ref
      * @param \Throwable|null $prev
      */
     public function __construct(
-        int $position,
-        string $name,
         string $entry,
+        ReflectionParameter $param,
         ReflectionFunctionAbstract $ref,
         ?\Throwable $prev = null,
     ) {
-        $this->caller = $ref instanceof ReflectionMethod
-            ? $ref->getDeclaringClass()->getName() . '::' . $ref->getName()
-            : $ref->getName();
+        if ($ref instanceof ReflectionMethod) {
+            $this->className = $ref->getDeclaringClass()->getName();
+        }
+
+        $this->methodName = $ref->getName();
+
+        $this->position = $param->getPosition() + 1;
 
         $message = \sprintf(
-            'Argument #%d ($%s) depends on entry "%s" of non-exists',
-            $position,
-            $name,
+            '%s(): Argument #%d ($%s) depends on entry "%s" of non-exists',
+            $this->getCaller(),
+            $this->getPosition(),
+            $param->getName(),
             $entry,
         );
 
         parent::__construct($message, 0, $prev);
     }
 
+    public function getClassName(): ?string
+    {
+        return $this->className;
+    }
+
+    public function getMethodName(): string
+    {
+        return $this->methodName;
+    }
+
+    public function getPosition(): int
+    {
+        return $this->position;
+    }
+
     final public function getCaller(): string
     {
-        return $this->caller;
+        return $this->caller ??= implode('::', array_filter([
+            $this->getClassName(),
+            $this->getMethodName(),
+        ]));
     }
 }

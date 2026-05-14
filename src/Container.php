@@ -214,8 +214,9 @@ class Container implements ContainerInterface
         }
 
         $extended = $this->make($callback, [$entry]);
+        $class = \get_class($entry);
 
-        if (\is_object($extended) && ! \is_a($extended, $class = \get_class($entry))) {
+        if (! \is_object($extended) || ! \is_a($extended, $class)) {
             throw new Container\Exception(
                 \sprintf('Argument #2 callback must be returns of type "%s"', $class)
             );

@@ -76,7 +76,7 @@ final class Resolver
      *
      * @template TArgs of array<int, mixed>
      *
-     * @param Closure|callable $callable
+     * @param array{object|string,string}|callable|object|string $callable
      * @param TArgs $args
      * @return ($callable is object ? object : mixed)
      * @throws Exception
@@ -109,7 +109,7 @@ final class Resolver
                 $this->resolveArgs($ref, $args)
             );
         } catch (UnresolvableArgumentException $err) {
-            throw new Exception($err->getCaller() . '(): ' . $err->getMessage(), $err->getPrevious());
+            throw new Exception($err->getMessage(), $err->getPrevious());
         }
     }
 
@@ -151,8 +151,8 @@ final class Resolver
                 : [];
 
             return $ref->newInstanceArgs($args);
-        } catch (\Throwable $err) {
-            throw new Exception($className . '::__construct(): ' . $err->getMessage(), $err);
+        } catch (UnresolvableArgumentException $err) {
+            throw new Exception($err->getMessage(), $err->getPrevious());
         }
     }
 
@@ -215,13 +215,7 @@ final class Resolver
                 $args[$position] = $this->container->get($typeName);
             } catch (NotFoundException $err) {
                 if (! $param->isOptional()) {
-                    throw new UnresolvableArgumentException(
-                        ++$position,
-                        $param->getName(),
-                        $err->getName(),
-                        $ref,
-                        $err
-                    );
+                    throw new UnresolvableArgumentException($err->getName(), $param, $ref, $err);
                 }
 
                 $args[$position] = $param->getDefaultValue();

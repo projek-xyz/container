@@ -69,7 +69,11 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
         $entry = $this->entries[$id];
 
         if ($entry instanceof ContainerAware && null === $entry->getContainer()) {
-            $entry->setContainer($this[ContainerInterface::class]);
+            $container = $this->offsetGet(ContainerInterface::class);
+
+            if ($container instanceof ContainerInterface) {
+                $entry->setContainer($container);
+            }
         }
 
         return $entry;
@@ -95,7 +99,7 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     public function offsetUnset(mixed $id): void
     {
         throw new Exception(
-            \sprintf('Removing registered entry "%s" is not supported.', $id)
+            \sprintf('Removing registered entry "%s" is not supported.', (string) $id)
         );
     }
 }

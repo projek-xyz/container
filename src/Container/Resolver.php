@@ -106,7 +106,7 @@ final class Resolver
 
             /** @var array{object|string,string} $callable */
             return $ref->invokeArgs(
-                $ref->isStatic() && ! \is_object($callable[0]) ? null : $callable[0],
+                \is_object($callable[0]) ? $callable[0] : null,
                 $this->resolveArgs($ref, $args)
             );
         } catch (ReflectionException $err) {

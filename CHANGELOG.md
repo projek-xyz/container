@@ -1,6 +1,38 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
+
+## [1.0.0](https://github.com/projek-xyz/container/compare/v0.7.0...v1.0.0) (2026-05-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* Raised minimum PHP requirement to 8.0
+
+* to fix symfony-insight issues ([#81](https://github.com/projek-xyz/container/issues/81)) ([3517823](https://github.com/projek-xyz/container/commit/35178235c5542e424fe6b7c5ba67c3193acafbda))
+
+
+### Features
+
+* add `prepare` workflow to run on PR ([2b4a6d3](https://github.com/projek-xyz/container/commit/2b4a6d31bfe39f351ead4b82e8be3647ee571ec8))
+* add php 8.3 test ([#62](https://github.com/projek-xyz/container/issues/62)) ([823a0ed](https://github.com/projek-xyz/container/commit/823a0ed4b201cd4775d6db5db787346441de0548))
+* bump minimum php version to `7.4` ([e9e8714](https://github.com/projek-xyz/container/commit/e9e8714f75c76fd944eaf444f05cdc3bf6ce71d3))
+* **ci:** add read contents permission on github actions ([9e4ad95](https://github.com/projek-xyz/container/commit/9e4ad95ca72188ed27db66129b4068669abf835f))
+* **ci:** add static analysis job ([ea27827](https://github.com/projek-xyz/container/commit/ea27827b7f44451b7e97ffdb7c78c6a4137d5e55))
+* **ci:** add weekly test schedule on github actions ([1e193f1](https://github.com/projek-xyz/container/commit/1e193f1d072b05a5d9744bd66f5f8537e018203e))
+* **ci:** add write pull-request permission on github actions ([3c97cb7](https://github.com/projek-xyz/container/commit/3c97cb7055a099718e2eac91ee86fffeb7557233))
+* **ci:** messing around with specific job permissions ([d2be246](https://github.com/projek-xyz/container/commit/d2be246f2dc5457fa4e6df24aa4d29f8235f2507))
+* switch back to `projek-xyz/actions` workflows ([#64](https://github.com/projek-xyz/container/issues/64)) ([0a92a6f](https://github.com/projek-xyz/container/commit/0a92a6f99383fbe2fb3fc823d7faa68159d13094)), closes [projek-xyz/actions#1](https://github.com/projek-xyz/actions/issues/1)
+* use composable release workflow ([f137d19](https://github.com/projek-xyz/container/commit/f137d19bdf2e1fae0a3b7d6e9e57f9ab79d03dc0))
+
+
+### Bug Fixes
+
+* **ci:** fix missing cache-dir ([#79](https://github.com/projek-xyz/container/issues/79)) ([f379dc9](https://github.com/projek-xyz/container/commit/f379dc9d1b48944f70cd18c35068d7e1f7a5bc9d))
+* fix codeclimate config for phpmd ([cc7a65f](https://github.com/projek-xyz/container/commit/cc7a65fd6023a368f7f6bc500635bbb6ab90896b))
+* fix Container::make() returns existing instance issue ([a162c97](https://github.com/projek-xyz/container/commit/a162c974191676f89880168785e12a7abd90e19c))
+* fix linting issue ([f669f30](https://github.com/projek-xyz/container/commit/f669f30f436bfefefd09b6bc5d4c3e7546856693))
+* fix silly method name typo ([de2f773](https://github.com/projek-xyz/container/commit/de2f7738220254af8a26b486169f822be2625d96))
 
 ## [0.7.0](https://github.com/projek-xyz/container/compare/v0.6.0...v0.7.0) (2021-06-02)
 

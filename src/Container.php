@@ -15,9 +15,9 @@ use Psr\Container\ContainerInterface;
 class Container implements ContainerInterface
 {
     /**
-     * @var array<string, object|callable> List of instances that been initiated.
+     * @var Container\EntryCollector List of instances that been initiated.
      */
-    private $entries = [];
+    private Container\EntryCollector $entries;
 
     /**
      * @var array<string, Closure|callable> List of instance's factory to be initiate.
@@ -42,10 +42,11 @@ class Container implements ContainerInterface
     public function __construct(array $entries = [])
     {
         $this->resolver = new Container\Resolver($this);
-        $this->entries = [
+
+        $this->entries = new Container\EntryCollector([
             self::class => $this,
             ContainerInterface::class => $this,
-        ];
+        ]);
 
         foreach ($entries as $id => $factory) {
             $this->set($id, $factory);
@@ -92,7 +93,7 @@ class Container implements ContainerInterface
      */
     public function has(string $id): bool
     {
-        return \array_key_exists($id, $this->entries);
+        return $this->entries->offsetExists($id);
     }
 
     /**
@@ -105,7 +106,7 @@ class Container implements ContainerInterface
      */
     public function set(string $id, $factory): static
     {
-        if ($this->has($id)) {
+        if ($this->entries->offsetExists($id)) {
             return $this;
         }
 
@@ -113,13 +114,7 @@ class Container implements ContainerInterface
             ? \get_class($factory)
             : $factory;
 
-        $entry = $this->resolver->resolve($this->factories[$id]);
-
-        if (\is_object($entry) && $this->isInjectable($entry)) {
-            $entry->setContainer($this);
-        }
-
-        $this->entries[$id] = $entry;
+        $this->entries[$id] = $this->resolver->resolve($this->factories[$id]);
 
         if (isset($this->handledEntries[$id])) {
             unset($this->handledEntries[$id]);

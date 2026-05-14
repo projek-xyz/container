@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.0.1](https://github.com/projek-xyz/container/compare/v1.0.0...v1.0.1) (2026-05-14)
+
+
+### Features
+
+* **docs:** improve inline documentations across the codebase ([#83](https://github.com/projek-xyz/container/issues/83)) ([6146c31](https://github.com/projek-xyz/container/commit/6146c318fb61ed85199bb1b7cb82f135e296398f))
+* init `EntryCollector` to store the registered entries ([#82](https://github.com/projek-xyz/container/issues/82)) ([b02340c](https://github.com/projek-xyz/container/commit/b02340c34482f4f0c807b9b3c239bc464d02dce4))
+
 ## [1.0.0](https://github.com/projek-xyz/container/compare/v0.7.0...v1.0.0) (2026-05-14)
 
 

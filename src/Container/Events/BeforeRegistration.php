@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace Projek\Container\Events;
 
 /**
+ * Event dispatched before a service entry is registered.
+ *
+ * This event allows listeners to modify the factory before it is
+ * resolved and stored in the container, enabling dynamic factory replacement.
+ *
  * @package Projek\Container
- * @codeCoverageIgnore
+ * @see Container::set()
  */
 final class BeforeRegistration
 {
     /**
-     * @var array{class-string<object>|string,string}|callable|string $factory
+     * @var array{class-string<object>|string,string}|callable|string The service factory.
      */
     private $factory;
 
@@ -26,7 +31,9 @@ final class BeforeRegistration
     }
 
     /**
-     * @param array{class-string<object>|string,string}|callable|string $factory
+     * Set a new factory for the entry.
+     *
+     * @param array{class-string<object>|string,string}|callable|string $factory The new factory.
      */
     public function setFactory(array|callable|string $factory): void
     {
@@ -34,6 +41,8 @@ final class BeforeRegistration
     }
 
     /**
+     * Get the current factory.
+     *
      * @return array{class-string<object>|string,string}|callable|string
      */
     public function getFactory(): array|callable|string

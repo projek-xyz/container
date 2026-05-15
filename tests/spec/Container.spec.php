@@ -131,7 +131,7 @@ describe(Container::class, function () {
                 public function dispatch(object $event): object
                 {
                     if ($event instanceof Events\BeforeRegistration && $event->id === 'foo') {
-                        $event->factory = fn () => 'modified';
+                        $event->setFactory(fn () => 'modified');
                         $this->called = true;
                     }
 
@@ -159,6 +159,7 @@ describe(Container::class, function () {
                 {
                     if ($event instanceof Events\AfterRegistration && $event->id === 'foo') {
                         $this->called = true;
+                        expect($event->getEntry())->toBeAnInstanceOf(Closure::class);
                     }
 
                     return parent::dispatch($event);

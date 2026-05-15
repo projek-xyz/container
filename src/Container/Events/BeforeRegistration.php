@@ -11,13 +11,33 @@ namespace Projek\Container\Events;
 final class BeforeRegistration
 {
     /**
-     * @param array{class-string<object>|string,string}|callable|object|string $factory
-     * @param string $id
+     * @var array{class-string<object>|string,string}|callable|string $factory
+     */
+    private $factory;
+
+    /**
+     * @param array{class-string<object>|string,string}|callable|string $factory
      */
     public function __construct(
-        public array|object|string $factory,
+        array|callable|string $factory,
         public string $id,
     ) {
-        // .
+        $this->factory = $factory;
+    }
+
+    /**
+     * @param array{class-string<object>|string,string}|callable|string $factory
+     */
+    public function setFactory(array|callable|string $factory): void
+    {
+        $this->factory = $factory;
+    }
+
+    /**
+     * @return array{class-string<object>|string,string}|callable|string
+     */
+    public function getFactory(): array|callable|string
+    {
+        return $this->factory;
     }
 }

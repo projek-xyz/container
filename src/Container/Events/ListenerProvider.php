@@ -53,12 +53,14 @@ final class ListenerProvider implements ContainerAware, ListenerProviderInterfac
 
     public function afterResolution(AfterResolution $event): AfterResolution
     {
+        $entry = $event->getEntry();
+
         if (
-            $event->entry instanceof ContainerAware &&
+            $entry instanceof ContainerAware &&
             $event->id !== ContainerInterface::class &&
-            null === $event->entry->getContainer()
+            null === $entry->getContainer()
         ) {
-            $event->entry->setContainer($this->getContainer());
+            $entry->setContainer($this->getContainer());
         }
 
         return $event;

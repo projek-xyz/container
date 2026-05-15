@@ -11,13 +11,19 @@ namespace Projek\Container\Events;
 final class AfterResolution
 {
     /**
-     * @param array{class-string<object>|string,string}|callable|object|string $entry
-     * @param string $id
+     * @var callable|object $entry
      */
+    private $entry;
+
     public function __construct(
-        public array|object|string $entry,
+        callable|object $entry,
         public string $id,
     ) {
-        // .
+        $this->entry = $entry;
+    }
+
+    public function getEntry(): callable|object
+    {
+        return $this->entry;
     }
 }

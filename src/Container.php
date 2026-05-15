@@ -120,7 +120,7 @@ class Container implements ContainerInterface
             $id,
         ));
 
-        $entry = $instance->entry;
+        $entry = $instance->getEntry();
 
         if (\is_object($entry) && ! \is_callable($entry)) {
             return $entry;
@@ -172,7 +172,7 @@ class Container implements ContainerInterface
             $id,
         ));
 
-        $this->entries[$id] = $this->resolver->resolve($reg->factory);
+        $this->entries[$id] = $this->resolver->resolve($reg->getFactory());
 
         if (isset($this->handledEntries[$id])) {
             unset($this->handledEntries[$id]);

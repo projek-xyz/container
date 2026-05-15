@@ -70,21 +70,7 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
             throw new NotFoundException($id);
         }
 
-        $entry = $this->entries[$id];
-
-        if (
-            $entry instanceof ContainerAware &&
-            $id !== ContainerInterface::class &&
-            null === $entry->getContainer()
-        ) {
-            $container = $this->offsetGet(ContainerInterface::class);
-
-            if ($container instanceof ContainerInterface) {
-                $entry->setContainer($container);
-            }
-        }
-
-        return $entry;
+        return $this->entries[$id];
     }
 
     /**

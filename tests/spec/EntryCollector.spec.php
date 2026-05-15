@@ -46,24 +46,6 @@ describe(EntryCollector::class, function () {
         );
     });
 
-    it('should inject container to ContainerAware entries', function () {
-        $container = new Container();
-        $this->collector[ContainerInterface::class] = $container;
-
-        $stub = new class implements ContainerAware {
-            use HasContainer;
-        };
-
-        $this->collector['stub'] = $stub;
-
-        expect($stub->getContainer())->toBeNull();
-
-        $entry = $this->collector['stub'];
-
-        expect($entry)->toBe($stub);
-        expect($entry->getContainer())->toBe($container);
-    });
-
     it('should not recurse infinitely if ContainerInterface itself is ContainerAware', function () {
         $stub = new class implements ContainerAware {
             use HasContainer;

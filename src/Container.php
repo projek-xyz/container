@@ -6,6 +6,7 @@ namespace Projek;
 
 use Closure;
 use Psr\Container\ContainerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * PSR-11 Dependency Injection Container implementation.
@@ -42,14 +43,22 @@ class Container implements ContainerInterface
      *
      * @param array<string, Closure|callable|string> $entries Initial service entries.
      */
-    public function __construct(array $entries = [])
-    {
+    public function __construct(
+        array $entries = [],
+        private ?EventDispatcherInterface $eventDispatcher = null,
+    ) {
         $this->resolver = new Container\Resolver($this);
 
-        $this->entries = new Container\EntryCollector([
+        $defaults = [
             self::class => $this,
             ContainerInterface::class => $this,
-        ]);
+        ];
+
+        if ($eventDispatcher) {
+            $defaults[EventDispatcherInterface::class] = $eventDispatcher;
+        }
+
+        $this->entries = new Container\EntryCollector($defaults);
 
         foreach ($entries as $id => $factory) {
             $this->set($id, $factory);
@@ -68,6 +77,24 @@ class Container implements ContainerInterface
         $this->entries = new Container\EntryCollector($this->entries);
     }
 
+    private function dispatch(object $event): void
+    {
+        $this->eventDispatcher?->dispatch($event);
+    }
+
+    /**
+     * Assign an instance of PSR-14 implementation.
+     *
+     * @param EventDispatcherInterface $eventDispatcher
+     * @return self
+     */
+    public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): self
+    {
+        $this->eventDispatcher = $eventDispatcher;
+
+        return $this;
+    }
+
     /**
      * {@inheritdoc}
      *
@@ -79,11 +106,21 @@ class Container implements ContainerInterface
      */
     public function get(string $id)
     {
+        $this->dispatch($pre = new Container\Events\BeforeResolution($id));
+
+        // Allows service redirection via event.
+        $id = $pre->id;
+
         if (isset($this->handledEntries[$id])) {
             return $this->handledEntries[$id];
         }
 
-        $entry = $this->entries[$id];
+        $this->dispatch($instance = new Container\Events\AfterResolution(
+            $this->entries[$id],
+            $id,
+        ));
+
+        $entry = $instance->getEntry();
 
         if (\is_object($entry) && ! \is_callable($entry)) {
             return $entry;
@@ -130,11 +167,21 @@ class Container implements ContainerInterface
             ? \get_class($factory)
             : $factory;
 
-        $this->entries[$id] = $this->resolver->resolve($this->factories[$id]);
+        $this->dispatch($reg = new Container\Events\BeforeRegistration(
+            $this->factories[$id],
+            $id,
+        ));
+
+        $this->entries[$id] = $this->resolver->resolve($reg->getFactory());
 
         if (isset($this->handledEntries[$id])) {
             unset($this->handledEntries[$id]);
         }
+
+        $this->dispatch(new Container\Events\AfterRegistration(
+            $this->entries[$id],
+            $id,
+        ));
 
         return $this;
     }

@@ -572,4 +572,136 @@ describe(Container::class, function () {
             expect($newEntry->dummy)->not->toBe($this->c->get('dummy'));
         });
     });
+
+    context('Event Lifecycle', function () {
+        it('should dispatch AfterResolution with the resolved instance, not the factory', function () {
+            $factoryCalled = false;
+            $eventReceivedInstance = null;
+
+            $this->c->set('foo', function () use (&$factoryCalled) {
+                $factoryCalled = true;
+                return new stdClass();
+            });
+
+            $this->c->setEventDispatcher(new class ($this->provider, $eventReceivedInstance) extends TheDispatcher {
+                public function __construct(
+                    ListenerProviderInterface $provider,
+                    private &$eventReceivedInstance
+                ) {
+                    parent::__construct($provider);
+                }
+
+                public function dispatch(object $event): object
+                {
+                    if ($event instanceof Events\AfterResolution && $event->id === 'foo') {
+                        $this->eventReceivedInstance = $event->getEntry();
+                    }
+
+                    return parent::dispatch($event);
+                }
+            });
+
+            $instance = $this->c->get('foo');
+
+            expect($factoryCalled)->toBe(true);
+            expect($eventReceivedInstance)->toBe($instance);
+            expect($eventReceivedInstance)->toBeAnInstanceOf(stdClass::class);
+        });
+
+        it('should allow AfterResolution to wrap the instance (Decorator Pattern)', function () {
+            $this->c->set('service', function () {
+                return new class {
+                    public function work()
+                    {
+                        return 'working';
+                    }
+                };
+            });
+
+            // A simple decorator/proxy listener
+            $this->c->setEventDispatcher(new class ($this->provider) extends TheDispatcher {
+                public function dispatch(object $event): object
+                {
+                    if ($event instanceof Events\AfterResolution && $event->id === 'service') {
+                        $original = $event->getEntry();
+                        // Wrap the original service in a proxy
+                        $proxy = new class ($original) {
+                            public function __construct(private $original)
+                            {
+                            }
+                            public function work()
+                            {
+                                return 'proxying ' . $this->original->work();
+                            }
+                        };
+                        $event->setEntry($proxy);
+                    }
+
+                    return parent::dispatch($event);
+                }
+            });
+
+            $instance = $this->c->get('service');
+
+            expect($instance->work())->toBe('proxying working');
+        });
+
+        it('should allow AfterRegistration to modify the registered entry', function () {
+            // A listener that eagerly initializes or modifies a service right after registration
+            $this->c->setEventDispatcher(new class ($this->provider) extends TheDispatcher {
+                public function dispatch(object $event): object
+                {
+                    if ($event instanceof Events\AfterRegistration && $event->id === 'modified.service') {
+                        $entry = $event->getEntry();
+                        if ($entry instanceof stdClass) {
+                            $entry->modified = true;
+                        }
+                        // Explicitly set the modified entry back
+                        $event->setEntry($entry);
+                    }
+
+                    return parent::dispatch($event);
+                }
+            });
+
+            $this->c->set('modified.service', new stdClass());
+
+            $instance = $this->c->get('modified.service');
+            expect($instance->modified)->toBe(true);
+        });
+
+        it('should dispatch BeforeResolution and AfterResolution events in make()', function () {
+            $beforeCalled = false;
+            $afterCalled = false;
+
+            $this->c->setEventDispatcher(new class ($this->provider, $beforeCalled, $afterCalled) extends TheDispatcher {
+                private $beforeCalled;
+                private $afterCalled;
+                public function __construct($provider, &$beforeCalled, &$afterCalled)
+                {
+                    parent::__construct($provider);
+                    $this->beforeCalled = &$beforeCalled;
+                    $this->afterCalled = &$afterCalled;
+                }
+
+                public function dispatch(object $event): object
+                {
+                    if ($event instanceof Events\BeforeResolution && $event->id === stdClass::class) {
+                        $this->beforeCalled = true;
+                    }
+                    if ($event instanceof Events\AfterResolution && $event->id === stdClass::class) {
+                        $this->afterCalled = true;
+                    }
+
+                    return parent::dispatch($event);
+                }
+            });
+
+            $instance = $this->c->make(stdClass::class);
+
+            expect($instance)->toBeAnInstanceOf(stdClass::class);
+            expect($beforeCalled)->toBe(true);
+            expect($afterCalled)->toBe(true);
+        });
+    });
 });

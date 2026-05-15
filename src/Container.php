@@ -130,19 +130,21 @@ class Container implements ContainerInterface
             return $this->handledEntries[$id];
         }
 
-        $this->dispatch($instance = new Container\Events\AfterResolution(
-            $this->entries[$id],
-            $id,
-        ));
-
-        $entry = $instance->getEntry();
+        $entry = $this->entries[$id];
 
         if (\is_object($entry) && ! \is_callable($entry)) {
-            return $entry;
+            $resolved = $entry;
+        } else {
+            /** @var array{object|string,string}|callable|object|string $entry */
+            $resolved = $this->resolver->handle($entry);
         }
 
-        /** @var array{object|string,string}|callable|object|string $entry */
-        return $this->handledEntries[$id] = $this->resolver->handle($entry);
+        if (\is_object($resolved) || \is_callable($resolved)) {
+            $this->dispatch($after = new Container\Events\AfterResolution($resolved, $id));
+            $resolved = $after->getEntry();
+        }
+
+        return $this->handledEntries[$id] = $resolved;
     }
 
     /**
@@ -193,10 +195,12 @@ class Container implements ContainerInterface
             unset($this->handledEntries[$id]);
         }
 
-        $this->dispatch(new Container\Events\AfterRegistration(
+        $this->dispatch($after = new Container\Events\AfterRegistration(
             $this->entries[$id],
             $id,
         ));
+
+        $this->entries[$id] = $after->getEntry();
 
         return $this;
     }
@@ -247,6 +251,14 @@ class Container implements ContainerInterface
             ));
         }
 
+        $id = \is_string($instance) ? $instance : null;
+
+        if ($id) {
+            $this->dispatch($pre = new Container\Events\BeforeResolution($id));
+            $instance = $pre->id;
+            $id = $instance;
+        }
+
         $instance = $this->resolver->resolve(
             \is_string($instance) && isset($this->factories[$instance])
                 ? $this->factories[$instance]
@@ -258,7 +270,14 @@ class Container implements ContainerInterface
             $instance = $condition($instance) ?: $instance;
         }
 
-        return $this->resolver->handle($instance, $args);
+        $resolved = $this->resolver->handle($instance, $args);
+
+        if ($id && (\is_object($resolved) || \is_callable($resolved))) {
+            $this->dispatch($after = new Container\Events\AfterResolution($resolved, $id));
+            $resolved = $after->getEntry();
+        }
+
+        return $resolved;
     }
 
     /**

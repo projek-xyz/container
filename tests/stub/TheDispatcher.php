@@ -12,12 +12,16 @@ class TheDispatcher implements EventDispatcherInterface
     public function __construct(
         private ListenerProviderInterface $listenerProvider
     ) {
+        // .
     }
 
     public function dispatch(object $event): object
     {
-        foreach ($this->listenerProvider->getListenersForEvent($event) as $listener) {
-            $event = $listener($event);
+        /** @var callable[] $listeners */
+        $listeners = $this->listenerProvider->getListenersForEvent($event);
+
+        foreach ($listeners as $listener) {
+            $listener($event);
         }
 
         return $event;

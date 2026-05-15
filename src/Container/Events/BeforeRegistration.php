@@ -9,12 +9,14 @@ namespace Projek\Container\Events;
  */
 final class BeforeRegistration
 {
-    public array|object|string $factory;
-
+    /**
+     * @param array{class-string<object>|string,string}|callable|object|string $factory
+     * @param string $id
+     */
     public function __construct(
-        array|callable|object|string $factory,
+        public array|object|string $factory,
         public string $id,
     ) {
-        $this->factory = $factory;
+        // .
     }
 }

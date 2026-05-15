@@ -17,6 +17,10 @@ final class ListenerProvider implements ContainerAware, ListenerProviderInterfac
 {
     use HasContainer;
 
+    /**
+     * @param object $event
+     * @return iterable<callable>
+     */
     public function getListenersForEvent(object $event): iterable
     {
         $listeners = [

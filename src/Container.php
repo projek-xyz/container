@@ -49,14 +49,16 @@ class Container implements ContainerInterface
     ) {
         $this->resolver = new Container\Resolver($this);
 
-        $this->entries = new Container\EntryCollector([
+        $defaults = [
             self::class => $this,
             ContainerInterface::class => $this,
-        ]);
+        ];
 
-        // if ($eventDispatcher) {
-        //     $entries[EventDispatcherInterface::class] = $eventDispatcher;
-        // }
+        if ($eventDispatcher) {
+            $defaults[EventDispatcherInterface::class] = $eventDispatcher;
+        }
+
+        $this->entries = new Container\EntryCollector($defaults);
 
         foreach ($entries as $id => $factory) {
             $this->set($id, $factory);
@@ -73,6 +75,11 @@ class Container implements ContainerInterface
     {
         $this->resolver = new Container\Resolver($this);
         $this->entries = new Container\EntryCollector($this->entries);
+    }
+
+    private function dispatch(object $event): void
+    {
+        $this->eventDispatcher?->dispatch($event);
     }
 
     /**
@@ -277,10 +284,5 @@ class Container implements ContainerInterface
         }
 
         return $this->entries[$id] = $extended;
-    }
-
-    private function dispatch(object $event): void
-    {
-        $this->eventDispatcher?->dispatch($event);
     }
 }

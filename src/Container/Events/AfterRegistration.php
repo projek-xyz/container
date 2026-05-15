@@ -6,6 +6,7 @@ namespace Projek\Container\Events;
 
 /**
  * @package Projek\Container
+ * @codeCoverageIgnore
  */
 final class AfterRegistration
 {

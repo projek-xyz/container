@@ -9,11 +9,8 @@ namespace Projek\Container\Events;
  */
 final class AfterRegistration
 {
-    /**
-     * @param array{class-string<object>|string,string}|callable|object|string $entry
-     * @param string $id
-     */
     public function __construct(
+        /** @var callable|object $entry */
         public array|object|string $entry,
         public string $id,
     ) {

@@ -1,10 +1,10 @@
 # Container Awareness
 
-The Projek Container provides a way to automatically inject the container instance into your services using the `ContainerAware` interface and `HasContainer` trait.
+The Projek Container provides a mechanism to automatically inject the container instance into your services using the `ContainerAware` interface and `HasContainer` trait.
 
 ## Usage
 
-To make a class "container aware," implement the `Projek\Container\ContainerAware` interface. You can use the `Projek\Container\HasContainer` trait to provide the default implementation.
+To make a class "container aware," implement the `Projek\Container\ContainerAware` interface. You can use the `Projek\Container\HasContainer` trait to provide a standard implementation.
 
 ```php
 use Projek\Container\ContainerAware;
@@ -25,13 +25,23 @@ class MyService implements ContainerAware
 }
 ```
 
-When you register `MyService` in the container using `$container->set()`, the container will automatically call `setContainer($this)` on the instance.
+## How it works (Event-Driven)
+
+As of version 1.x, Container Awareness is powered by the **PSR-14 Event System**. 
+
+When a service is resolved, the container dispatches an `AfterResolution` event. An internal `ListenerProvider` listens for this event and calls `setContainer($this)` on any instance implementing the `ContainerAware` interface.
+
+### Using a Custom Dispatcher
+
+If you provide your own PSR-14 `EventDispatcher`, you must ensure that the container's internal `ListenerProvider` is registered if you want to keep automatic `ContainerAware` injection working:
 
 ```php
-$container->set(MyService::class, MyService::class);
+use Projek\Container\Events\ListenerProvider;
 
-$service = $container->get(MyService::class);
-// $service->getContainer() will return the $container instance
+$provider = new ListenerProvider();
+$provider->setContainer($container);
+
+// Add $provider to your custom dispatcher's listener stack...
 ```
 
 ## The `getContainer()` method
@@ -39,7 +49,7 @@ $service = $container->get(MyService::class);
 The `HasContainer` trait provides a flexible `getContainer()` method:
 
 1.  **Without arguments**: Returns the `Psr\Container\ContainerInterface` instance.
-2.  **With a string argument**: Treats the argument as a service ID and returns the corresponding service from the container (equivalent to `$container->get($id)`).
+2.  **With a string argument**: Treats the argument as a service ID and returns the corresponding service from the container (equivalent to calling `$container->get($id)`).
 
 ```php
 // Returns the container itself
@@ -51,8 +61,8 @@ $logger = $this->getContainer('logger');
 
 ## Why use Container Awareness?
 
-While dependency injection through the constructor is generally preferred (and supported by the container's autowiring), Container Awareness can be useful for:
+While dependency injection through the constructor (autowiring) is generally preferred, Container Awareness is useful for:
 
 - **Optional dependencies**: When a service might need access to many other services but only in specific scenarios.
-- **Service Locators**: In some architectural patterns where a class needs to dynamically fetch services.
+- **Service Locators**: In architectural patterns where a class needs to dynamically fetch services.
 - **Legacy integration**: When you cannot easily change a class constructor.

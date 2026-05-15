@@ -42,6 +42,7 @@ class Container implements ContainerInterface
      * Create a new Container instance.
      *
      * @param array<string, Closure|callable|string> $entries Initial service entries.
+     * @param null|EventDispatcherInterface $eventDispatcher Optional PSR-14 event dispatcher implementation.
      */
     public function __construct(
         array $entries = [],
@@ -77,15 +78,29 @@ class Container implements ContainerInterface
         $this->entries = new Container\EntryCollector($this->entries);
     }
 
+    /**
+     * Dispatch a container lifecycle event.
+     *
+     * This internal method handles the communication with the PSR-14
+     * event dispatcher if one is provided.
+     *
+     * @param object $event The event object to dispatch.
+     * @return void
+     */
     private function dispatch(object $event): void
     {
         $this->eventDispatcher?->dispatch($event);
     }
 
     /**
-     * Assign an instance of PSR-14 implementation.
+     * Assign a PSR-14 event dispatcher implementation.
      *
-     * @param EventDispatcherInterface $eventDispatcher
+     * This library provides lifecycle events and a ListenerProvider for internal
+     * features, but the actual EventDispatcherInterface implementation (e.g.
+     * Symfony EventDispatcher) must be provided by the developer.
+     *
+     * @link https://github.com/projek-xyz/container/wiki/event-lifecycle Event Lifecycle Wiki
+     * @param EventDispatcherInterface $eventDispatcher The event dispatcher instance.
      * @return self
      */
     public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): self

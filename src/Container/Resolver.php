@@ -27,7 +27,7 @@ final class Resolver
     /**
      * @var ContainerInterface The container instance used for dependency lookups.
      */
-    private $container;
+    private ContainerInterface $container;
 
     /**
      * Create a new Resolver instance.

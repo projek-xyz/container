@@ -13,6 +13,7 @@ use Psr\Container\ContainerInterface;
  * automatically injected when resolved by the EntryCollector.
  *
  * @package Projek\Container
+ * @see HasContainer
  */
 interface ContainerAware
 {

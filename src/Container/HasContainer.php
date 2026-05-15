@@ -13,6 +13,7 @@ use Psr\Container\ContainerInterface;
  * as well as shorthand service resolution from within the implementing class.
  *
  * @package Projek\Container
+ * @see ContainerAware
  */
 trait HasContainer
 {

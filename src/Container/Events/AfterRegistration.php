@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace Projek\Container\Events;
 
 /**
+ * Event dispatched after a service entry is registered.
+ *
+ * This event provides access to the resolved entry after it has been
+ * stored in the container, allowing listeners to perform post-registration actions.
+ *
  * @package Projek\Container
- * @codeCoverageIgnore
+ * @see Container::set()
  */
 final class AfterRegistration
 {
     /**
-     * @var callable|object $entry
+     * @var callable|object The resolved entry.
      */
     private $entry;
 
@@ -22,6 +27,11 @@ final class AfterRegistration
         $this->entry = $entry;
     }
 
+    /**
+     * Get the resolved entry.
+     *
+     * @return callable|object
+     */
     public function getEntry(): callable|object
     {
         return $this->entry;

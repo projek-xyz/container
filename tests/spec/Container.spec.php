@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Projek\Container;
 use Projek\Container\Events;
 use Psr\Container\ContainerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\EventDispatcher\ListenerProviderInterface;
 use Stubs\HasContainerClass;
 use Stubs\TheDispatcher;
@@ -574,6 +575,18 @@ describe(Container::class, function () {
     });
 
     context('Event Lifecycle', function () {
+        it('should use anonymous EventDispatcher when none provided', function () {
+            // A "pure" container with no dispatcher provided to constructor
+            $pure = new Container();
+            $pure->set(HasContainerClass::class, HasContainerClass::class);
+
+            $instance = $pure->get(HasContainerClass::class);
+
+            // ContainerAware should still work via the anonymous dispatcher
+            expect($instance->getContainer())->toBe($pure);
+            expect($pure->getEventDispatcher())->toBeAnInstanceOf(EventDispatcherInterface::class);
+        });
+
         it('should dispatch AfterResolution with the resolved instance, not the factory', function () {
             $factoryCalled = false;
             $eventReceivedInstance = null;

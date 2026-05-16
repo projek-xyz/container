@@ -7,6 +7,7 @@ namespace Projek;
 use Closure;
 use Psr\Container\ContainerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\EventDispatcher\ListenerProviderInterface;
 
 /**
  * PSR-11 Dependency Injection Container implementation.
@@ -46,7 +47,7 @@ class Container implements ContainerInterface
      */
     public function __construct(
         array $entries = [],
-        private ?EventDispatcherInterface $eventDispatcher = null,
+        ?EventDispatcherInterface $eventDispatcher = null,
     ) {
         $this->resolver = new Container\Resolver($this);
 
@@ -79,17 +80,49 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Dispatch a container lifecycle event.
+     * Retrieve a PSR-14 event dispatcher instance.
      *
-     * This internal method handles the communication with the PSR-14
-     * event dispatcher if one is provided.
+     * If no implementation is provided by the developer, a minimalist
+     * internal implementation is returned to keep core hooks functional.
      *
-     * @param object $event The event object to dispatch.
-     * @return void
+     * @return EventDispatcherInterface
      */
-    private function dispatch(object $event): void
+    final public function getEventDispatcher(): EventDispatcherInterface
     {
-        $this->eventDispatcher?->dispatch($event);
+        if (isset($this->handledEntries[EventDispatcherInterface::class])) {
+            return $this->handledEntries[EventDispatcherInterface::class];
+        }
+
+        if (! $this->entries->offsetExists(EventDispatcherInterface::class)) {
+            // Simplest implementation to keep core hooks (like ContainerAware) working.
+            $this->entries->offsetSet(
+                EventDispatcherInterface::class,
+                new class ($this) implements EventDispatcherInterface {
+                    private ListenerProviderInterface $provider;
+
+                    public function __construct(ContainerInterface $container)
+                    {
+                        $this->provider = (new Container\Events\ListenerProvider())->setContainer($container);
+                    }
+
+                    public function dispatch(object $event): object
+                    {
+                        /** @var callable[] $listeners */
+                        $listeners = $this->provider->getListenersForEvent($event);
+
+                        foreach ($listeners as $listener) {
+                            $listener($event);
+                        }
+
+                        return $event;
+                    }
+                },
+            );
+        }
+
+        $dispatcher = $this->entries->offsetGet(EventDispatcherInterface::class);
+
+        return $this->handledEntries[EventDispatcherInterface::class] = $dispatcher;
     }
 
     /**
@@ -103,9 +136,10 @@ class Container implements ContainerInterface
      * @param EventDispatcherInterface $eventDispatcher The event dispatcher instance.
      * @return self
      */
-    public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): self
+    final public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): self
     {
-        $this->eventDispatcher = $eventDispatcher;
+        $this->entries->offsetSet(EventDispatcherInterface::class, $eventDispatcher);
+        $this->handledEntries[EventDispatcherInterface::class] = $eventDispatcher;
 
         return $this;
     }
@@ -121,7 +155,9 @@ class Container implements ContainerInterface
      */
     public function get(string $id)
     {
-        $this->dispatch($pre = new Container\Events\BeforeResolution($id));
+        $this->getEventDispatcher()->dispatch(
+            $pre = new Container\Events\BeforeResolution($id)
+        );
 
         // Allows service redirection via event.
         $id = $pre->id;
@@ -133,7 +169,10 @@ class Container implements ContainerInterface
         $resolved = $this->resolver->handle($this->entries[$id]);
 
         if (\is_object($resolved) || \is_callable($resolved)) {
-            $this->dispatch($after = new Container\Events\AfterResolution($resolved, $id));
+            $this->getEventDispatcher()->dispatch(
+                $after = new Container\Events\AfterResolution($resolved, $id)
+            );
+
             $resolved = $after->getEntry();
         }
 
@@ -177,10 +216,9 @@ class Container implements ContainerInterface
             ? \get_class($factory)
             : $factory;
 
-        $this->dispatch($registration = new Container\Events\BeforeRegistration(
-            $this->factories[$id],
-            $id,
-        ));
+        $this->getEventDispatcher()->dispatch(
+            $registration = new Container\Events\BeforeRegistration($this->factories[$id], $id)
+        );
 
         $this->entries[$id] = $this->resolver->resolve($registration->getFactory());
 
@@ -188,10 +226,9 @@ class Container implements ContainerInterface
             unset($this->handledEntries[$id]);
         }
 
-        $this->dispatch($registered = new Container\Events\AfterRegistration(
-            $this->entries[$id],
-            $id,
-        ));
+        $this->getEventDispatcher()->dispatch(
+            $registered = new Container\Events\AfterRegistration($this->entries[$id], $id)
+        );
 
         $this->entries[$id] = $registered->getEntry();
 
@@ -247,7 +284,10 @@ class Container implements ContainerInterface
         $id = \is_string($instance) ? $instance : null;
 
         if ($id) {
-            $this->dispatch($pre = new Container\Events\BeforeResolution($id));
+            $this->getEventDispatcher()->dispatch(
+                $pre = new Container\Events\BeforeResolution($id)
+            );
+
             $instance = $pre->id;
             $id = $instance;
         }
@@ -266,7 +306,10 @@ class Container implements ContainerInterface
         $resolved = $this->resolver->handle($instance, $args);
 
         if ($id && (\is_object($resolved) || \is_callable($resolved))) {
-            $this->dispatch($after = new Container\Events\AfterResolution($resolved, $id));
+            $this->getEventDispatcher()->dispatch(
+                $after = new Container\Events\AfterResolution($resolved, $id)
+            );
+
             $resolved = $after->getEntry();
         }
 

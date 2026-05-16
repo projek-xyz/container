@@ -30,7 +30,7 @@ class Container implements ContainerInterface
     private $factories = [];
 
     /**
-     * @var array<string, mixed> Cache of resolved singleton instances.
+     * @var array<string|class-string<object>, mixed|object> Cache of resolved singleton instances.
      */
     private $handledEntries = [];
 
@@ -120,6 +120,7 @@ class Container implements ContainerInterface
             );
         }
 
+        /** @var EventDispatcherInterface $dispatcher */
         $dispatcher = $this->entries->offsetGet(EventDispatcherInterface::class);
 
         return $this->handledEntries[EventDispatcherInterface::class] = $dispatcher;

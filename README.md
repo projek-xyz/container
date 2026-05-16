@@ -15,8 +15,9 @@ This tiny library aims to provide a dead-simple PSR-11 implementation with flexi
 - **Flexible Registration**: Register services using closures, class names, instances, or even class-method pairs.
 - **Service Extension**: Easily modify or wrap existing services using the `extend()` method.
 - **On-the-fly Resolution**: Create instances without adding them to the container stack using `make()`.
+- **PSR-14 Event Lifecycle**: Fully supports PSR-14 event dispatching for intercepting and filtering container operations.
 - **Container Awareness**: Automatically inject the container into services that implement `ContainerAware`.
-- **Lightweight**: Zero dependencies (other than PSR-11 interface) and a small footprint.
+- **Lightweight**: Minimal dependencies (only PSR-11 and PSR-14 interfaces) and a small footprint.
 
 ## Installation
 

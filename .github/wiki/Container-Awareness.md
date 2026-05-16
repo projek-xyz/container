@@ -25,11 +25,11 @@ class MyService implements ContainerAware
 }
 ```
 
-## How it works (Event-Driven)
+## How it works (Zero-Config)
 
 As of version 1.x, Container Awareness is powered by the **PSR-14 Event System**. 
 
-When a service is resolved, the container dispatches an `AfterResolution` event. An internal `ListenerProvider` listens for this event and calls `setContainer($this)` on any instance implementing the `ContainerAware` interface.
+Automatic injection works **out-of-the-box** using a minimalist internal event dispatcher. When a service is resolved, the container dispatches an `AfterResolution` event. An internal `ListenerProvider` listens for this event and calls `setContainer($this)` on any instance implementing the `ContainerAware` interface.
 
 ### Using a Custom Dispatcher
 

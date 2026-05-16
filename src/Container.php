@@ -89,8 +89,11 @@ class Container implements ContainerInterface
      */
     final public function getEventDispatcher(): EventDispatcherInterface
     {
-        if (isset($this->handledEntries[EventDispatcherInterface::class])) {
-            return $this->handledEntries[EventDispatcherInterface::class];
+        /** @var EventDispatcherInterface $dispatcher */
+        $dispatcher = $this->handledEntries[EventDispatcherInterface::class] ?? null;
+
+        if ($dispatcher instanceof EventDispatcherInterface) {
+            return $dispatcher;
         }
 
         if (! $this->entries->offsetExists(EventDispatcherInterface::class)) {

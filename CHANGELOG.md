@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.1.0](https://github.com/projek-xyz/container/compare/v1.0.1...v1.1.0) (2026-05-16)
+
+
+### Features
+
+* initialize event lifecycle implementation ([#84](https://github.com/projek-xyz/container/issues/84)) ([f9a3447](https://github.com/projek-xyz/container/commit/f9a34477774332b8e77b536cb6182cb172219c64))
+
+
+### Bug Fixes
+
+* event lifecycle implementation ([#86](https://github.com/projek-xyz/container/issues/86)) ([531c459](https://github.com/projek-xyz/container/commit/531c459b38ed88b26bd1a37df320302a59656a22))
+
 ## [1.0.1](https://github.com/projek-xyz/container/compare/v1.0.0...v1.0.1) (2026-05-14)
 
 

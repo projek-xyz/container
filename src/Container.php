@@ -130,14 +130,7 @@ class Container implements ContainerInterface
             return $this->handledEntries[$id];
         }
 
-        $entry = $this->entries[$id];
-
-        if (\is_object($entry) && ! \is_callable($entry)) {
-            $resolved = $entry;
-        } else {
-            /** @var array{object|string,string}|callable|object|string $entry */
-            $resolved = $this->resolver->handle($entry);
-        }
+        $resolved = $this->resolver->handle($this->entries[$id]);
 
         if (\is_object($resolved) || \is_callable($resolved)) {
             $this->dispatch($after = new Container\Events\AfterResolution($resolved, $id));
@@ -184,23 +177,23 @@ class Container implements ContainerInterface
             ? \get_class($factory)
             : $factory;
 
-        $this->dispatch($reg = new Container\Events\BeforeRegistration(
+        $this->dispatch($registration = new Container\Events\BeforeRegistration(
             $this->factories[$id],
             $id,
         ));
 
-        $this->entries[$id] = $this->resolver->resolve($reg->getFactory());
+        $this->entries[$id] = $this->resolver->resolve($registration->getFactory());
 
         if (isset($this->handledEntries[$id])) {
             unset($this->handledEntries[$id]);
         }
 
-        $this->dispatch($after = new Container\Events\AfterRegistration(
+        $this->dispatch($registered = new Container\Events\AfterRegistration(
             $this->entries[$id],
             $id,
         ));
 
-        $this->entries[$id] = $after->getEntry();
+        $this->entries[$id] = $registered->getEntry();
 
         return $this;
     }

@@ -2,18 +2,21 @@
 
 declare(strict_types=1);
 
+use Kahlan\Plugin\Double;
 use Projek\Container;
 use Projek\Container\Events;
 use Psr\Container\ContainerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\EventDispatcher\ListenerProviderInterface;
+use Psr\EventDispatcher\StoppableEventInterface;
 use Stubs\HasContainerClass;
 use Stubs\TheDispatcher;
 
 describe(Container::class, function () {
     beforeEach(function () {
+        $this->c = new Container([]);
+
         $this->provider = new Events\ListenerProvider();
-        $this->dispatcher = new TheDispatcher($this->provider);
-        $this->c = new Container([], $this->dispatcher);
         $this->provider->setContainer($this->c);
     });
 
@@ -314,11 +317,11 @@ describe(Container::class, function () {
             $this->c->set('foo', function () {
                 return new class {
                     protected $items = [];
-                    public function set($item, $value)
+                    public function set(string $item, mixed $value)
                     {
                         $this->items[$item] = $value;
                     }
-                    public function get($item)
+                    public function get(string $item)
                     {
                         return $this->items[$item] ?? null;
                     }
@@ -570,6 +573,188 @@ describe(Container::class, function () {
             expect($newEntry)->toBeAnInstanceOf(Stubs\CouldExtends::class);
             expect($oldEntry->dummy)->not->toBe($this->c->get('dummy'));
             expect($newEntry->dummy)->not->toBe($this->c->get('dummy'));
+        });
+    });
+
+    context('Event Lifecycle', function () {
+        it('should use anonymous EventDispatcher when none provided', function () {
+            // A "pure" container with no dispatcher provided to constructor
+            $this->c->set(HasContainerClass::class, HasContainerClass::class);
+
+            $instance = $this->c->get(HasContainerClass::class);
+
+            // ContainerAware should still work via the anonymous dispatcher
+            expect($instance->getContainer())->toBe($this->c);
+            expect($this->c->getEventDispatcher())->toBeAnInstanceOf(EventDispatcherInterface::class);
+        });
+
+        it('should respect stoppable events in anonymous EventDispatcher', function () {
+            // Test loop break (after listener) using a custom provider to ensure multiple listeners
+            $provider = new class implements ListenerProviderInterface {
+                public $count = 0;
+                public function getListenersForEvent(object $event): iterable
+                {
+                    return [
+                        function ($e) {
+                            $this->count++;
+                            $e->stop = true;
+                        },
+                        function ($e) {
+                            $this->count++;
+                        },
+                    ];
+                }
+            };
+
+            $this->c->setEventDispatcher(
+                new Events\Dispatcher($this->c, $provider)
+            );
+
+            $stoppable = new class () implements StoppableEventInterface {
+                public $stop = false;
+                public function isPropagationStopped(): bool
+                {
+                    return $this->stop;
+                }
+            };
+
+            $this->c->getEventDispatcher()->dispatch($stoppable);
+
+            expect($provider->count)->toBe(1); // Second listener should be skipped
+        });
+
+        it('should dispatch AfterResolution with the resolved instance, not the factory', function () {
+            $factoryCalled = false;
+            $eventReceivedInstance = null;
+
+            $this->c->set('foo', function () use (&$factoryCalled) {
+                $factoryCalled = true;
+                return new stdClass();
+            });
+
+            $this->c->setEventDispatcher(new class ($this->provider, $eventReceivedInstance) extends TheDispatcher {
+                public function __construct(
+                    ListenerProviderInterface $provider,
+                    private &$eventReceivedInstance
+                ) {
+                    parent::__construct($provider);
+                }
+
+                public function dispatch(object $event): object
+                {
+                    if ($event instanceof Events\AfterResolution && $event->id === 'foo') {
+                        $this->eventReceivedInstance = $event->getEntry();
+                    }
+
+                    return parent::dispatch($event);
+                }
+            });
+
+            $instance = $this->c->get('foo');
+
+            expect($factoryCalled)->toBe(true);
+            expect($eventReceivedInstance)->toBe($instance);
+            expect($eventReceivedInstance)->toBeAnInstanceOf(stdClass::class);
+        });
+
+        it('should allow AfterResolution to wrap the instance (Decorator Pattern)', function () {
+            $this->c->set('service', function () {
+                return new class {
+                    public function work()
+                    {
+                        return 'working';
+                    }
+                };
+            });
+
+            // A simple decorator/proxy listener
+            $this->c->setEventDispatcher(new class ($this->provider) extends TheDispatcher {
+                public function dispatch(object $event): object
+                {
+                    if ($event instanceof Events\AfterResolution && $event->id === 'service') {
+                        $original = $event->getEntry();
+                        // Wrap the original service in a proxy
+                        $proxy = new class ($original) {
+                            public function __construct(private object $original)
+                            {
+                            }
+                            public function work()
+                            {
+                                return 'proxying ' . $this->original->work();
+                            }
+                        };
+                        $event->setEntry($proxy);
+                    }
+
+                    return parent::dispatch($event);
+                }
+            });
+
+            $instance = $this->c->get('service');
+
+            expect($instance->work())->toBe('proxying working');
+        });
+
+        it('should allow AfterRegistration to modify the registered entry', function () {
+            // A listener that eagerly initializes or modifies a service right after registration
+            $this->c->setEventDispatcher(new class ($this->provider) extends TheDispatcher {
+                public function dispatch(object $event): object
+                {
+                    if ($event instanceof Events\AfterRegistration && $event->id === 'modified.service') {
+                        $entry = $event->getEntry();
+                        if ($entry instanceof stdClass) {
+                            $entry->modified = true;
+                        }
+                        // Explicitly set the modified entry back
+                        $event->setEntry($entry);
+                    }
+
+                    return parent::dispatch($event);
+                }
+            });
+
+            $this->c->set('modified.service', new stdClass());
+
+            $instance = $this->c->get('modified.service');
+            expect($instance->modified)->toBe(true);
+        });
+
+        it('should dispatch BeforeResolution and AfterResolution events in make()', function () {
+            $beforeCalled = false;
+            $afterCalled = false;
+
+            $this->c->setEventDispatcher(new class ($this->provider, $beforeCalled, $afterCalled) extends TheDispatcher {
+                private $beforeCalled;
+                private $afterCalled;
+
+                public function __construct(
+                    ListenerProviderInterface $provider,
+                    bool &$beforeCalled,
+                    bool &$afterCalled
+                ) {
+                    parent::__construct($provider);
+                    $this->beforeCalled = &$beforeCalled;
+                    $this->afterCalled = &$afterCalled;
+                }
+
+                public function dispatch(object $event): object
+                {
+                    if ($event instanceof Events\BeforeResolution && $event->id === stdClass::class) {
+                        $this->beforeCalled = true;
+                    }
+                    if ($event instanceof Events\AfterResolution && $event->id === stdClass::class) {
+                        $this->afterCalled = true;
+                    }
+
+                    return parent::dispatch($event);
+                }
+            });
+
+            $instance = $this->c->make(stdClass::class);
+
+            expect($instance)->toBeAnInstanceOf(stdClass::class);
+            expect($beforeCalled)->toBe(true);
+            expect($afterCalled)->toBe(true);
         });
     });
 });

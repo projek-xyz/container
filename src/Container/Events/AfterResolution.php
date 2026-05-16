@@ -36,4 +36,14 @@ final class AfterResolution
     {
         return $this->entry;
     }
+
+    /**
+     * Set a new entry.
+     *
+     * @param callable|object $entry The new entry.
+     */
+    public function setEntry(callable|object $entry): void
+    {
+        $this->entry = $entry;
+    }
 }

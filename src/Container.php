@@ -7,7 +7,6 @@ namespace Projek;
 use Closure;
 use Psr\Container\ContainerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
-use Psr\EventDispatcher\ListenerProviderInterface;
 
 /**
  * PSR-11 Dependency Injection Container implementation.
@@ -89,7 +88,6 @@ class Container implements ContainerInterface
      */
     final public function getEventDispatcher(): EventDispatcherInterface
     {
-        /** @var EventDispatcherInterface $dispatcher */
         $dispatcher = $this->handledEntries[EventDispatcherInterface::class] ?? null;
 
         if ($dispatcher instanceof EventDispatcherInterface) {
@@ -97,29 +95,9 @@ class Container implements ContainerInterface
         }
 
         if (! $this->entries->offsetExists(EventDispatcherInterface::class)) {
-            // Simplest implementation to keep core hooks (like ContainerAware) working.
             $this->entries->offsetSet(
                 EventDispatcherInterface::class,
-                new class ($this) implements EventDispatcherInterface {
-                    private ListenerProviderInterface $provider;
-
-                    public function __construct(ContainerInterface $container)
-                    {
-                        $this->provider = (new Container\Events\ListenerProvider())->setContainer($container);
-                    }
-
-                    public function dispatch(object $event): object
-                    {
-                        /** @var callable[] $listeners */
-                        $listeners = $this->provider->getListenersForEvent($event);
-
-                        foreach ($listeners as $listener) {
-                            $listener($event);
-                        }
-
-                        return $event;
-                    }
-                },
+                new Container\Events\Dispatcher($this)
             );
         }
 

@@ -2,19 +2,21 @@
 
 declare(strict_types=1);
 
+use Kahlan\Plugin\Double;
 use Projek\Container;
 use Projek\Container\Events;
 use Psr\Container\ContainerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\EventDispatcher\ListenerProviderInterface;
+use Psr\EventDispatcher\StoppableEventInterface;
 use Stubs\HasContainerClass;
 use Stubs\TheDispatcher;
 
 describe(Container::class, function () {
     beforeEach(function () {
+        $this->c = new Container([]);
+
         $this->provider = new Events\ListenerProvider();
-        $this->dispatcher = new TheDispatcher($this->provider);
-        $this->c = new Container([], $this->dispatcher);
         $this->provider->setContainer($this->c);
     });
 
@@ -315,11 +317,11 @@ describe(Container::class, function () {
             $this->c->set('foo', function () {
                 return new class {
                     protected $items = [];
-                    public function set($item, $value)
+                    public function set(string $item, mixed $value)
                     {
                         $this->items[$item] = $value;
                     }
-                    public function get($item)
+                    public function get(string $item)
                     {
                         return $this->items[$item] ?? null;
                     }
@@ -577,14 +579,48 @@ describe(Container::class, function () {
     context('Event Lifecycle', function () {
         it('should use anonymous EventDispatcher when none provided', function () {
             // A "pure" container with no dispatcher provided to constructor
-            $pure = new Container();
-            $pure->set(HasContainerClass::class, HasContainerClass::class);
+            $this->c->set(HasContainerClass::class, HasContainerClass::class);
 
-            $instance = $pure->get(HasContainerClass::class);
+            $instance = $this->c->get(HasContainerClass::class);
 
             // ContainerAware should still work via the anonymous dispatcher
-            expect($instance->getContainer())->toBe($pure);
-            expect($pure->getEventDispatcher())->toBeAnInstanceOf(EventDispatcherInterface::class);
+            expect($instance->getContainer())->toBe($this->c);
+            expect($this->c->getEventDispatcher())->toBeAnInstanceOf(EventDispatcherInterface::class);
+        });
+
+        it('should respect stoppable events in anonymous EventDispatcher', function () {
+            // Test loop break (after listener) using a custom provider to ensure multiple listeners
+            $provider = new class implements ListenerProviderInterface {
+                public $count = 0;
+                public function getListenersForEvent(object $event): iterable
+                {
+                    return [
+                        function ($e) {
+                            $this->count++;
+                            $e->stop = true;
+                        },
+                        function ($e) {
+                            $this->count++;
+                        },
+                    ];
+                }
+            };
+
+            $this->c->setEventDispatcher(
+                new Events\Dispatcher($this->c, $provider)
+            );
+
+            $stoppable = new class () implements StoppableEventInterface {
+                public $stop = false;
+                public function isPropagationStopped(): bool
+                {
+                    return $this->stop;
+                }
+            };
+
+            $this->c->getEventDispatcher()->dispatch($stoppable);
+
+            expect($provider->count)->toBe(1); // Second listener should be skipped
         });
 
         it('should dispatch AfterResolution with the resolved instance, not the factory', function () {
@@ -639,7 +675,7 @@ describe(Container::class, function () {
                         $original = $event->getEntry();
                         // Wrap the original service in a proxy
                         $proxy = new class ($original) {
-                            public function __construct(private $original)
+                            public function __construct(private object $original)
                             {
                             }
                             public function work()
@@ -690,8 +726,12 @@ describe(Container::class, function () {
             $this->c->setEventDispatcher(new class ($this->provider, $beforeCalled, $afterCalled) extends TheDispatcher {
                 private $beforeCalled;
                 private $afterCalled;
-                public function __construct($provider, &$beforeCalled, &$afterCalled)
-                {
+
+                public function __construct(
+                    ListenerProviderInterface $provider,
+                    bool &$beforeCalled,
+                    bool &$afterCalled
+                ) {
                     parent::__construct($provider);
                     $this->beforeCalled = &$beforeCalled;
                     $this->afterCalled = &$afterCalled;

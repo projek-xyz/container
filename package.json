@@ -13,7 +13,7 @@
         "@commitlint/config-conventional": "^21.0.1",
         "commit-and-tag-version": "^13.1.2",
         "lint-staged": "^17.0.4",
-        "simple-git-hooks": "^2.13.1"
+        "simple-git-hooks": "2.14.0"
     },
     "commitlint": {
         "extends": [
@@ -29,5 +29,8 @@
         "*.php": [
             "sh -c 'composer format -- \"$@\"; rc=$?; [ \"$rc\" -ge 0 ]' --"
         ]
+    },
+    "allowScripts": {
+        "simple-git-hooks@2.14.0": true
     }
 }

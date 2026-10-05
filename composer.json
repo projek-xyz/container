@@ -22,12 +22,12 @@
     ],
     "scripts": {
         "format": "phpcbf --standard=PSR12",
-        "spec": [
+        "lint": "phpcs --standard=PSR12 -n -p src",
+        "spec": "kahlan --config=tests/config.php",
+        "test": [
             "@lint",
             "@test"
-        ],
-        "test": "kahlan --config=tests/config.php",
-        "lint": "phpcs --standard=PSR12 -n -p src"
+        ]
     },
     "autoload": {
         "psr-4": {

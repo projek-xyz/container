@@ -113,16 +113,16 @@
     "packages-dev": [
         {
             "name": "kahlan/kahlan",
-            "version": "6.1.1",
+            "version": "6.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kahlan/kahlan.git",
-                "reference": "043cfed915990800b971189d16024082b3190312"
+                "reference": "933a9d698ce9ae2cd7accb704a40723bdaa9316b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kahlan/kahlan/zipball/043cfed915990800b971189d16024082b3190312",
-                "reference": "043cfed915990800b971189d16024082b3190312",
+                "url": "https://api.github.com/repos/kahlan/kahlan/zipball/933a9d698ce9ae2cd7accb704a40723bdaa9316b",
+                "reference": "933a9d698ce9ae2cd7accb704a40723bdaa9316b",
                 "shasum": ""
             },
             "require": {
@@ -166,9 +166,9 @@
             ],
             "support": {
                 "issues": "https://github.com/kahlan/kahlan/issues",
-                "source": "https://github.com/kahlan/kahlan/tree/6.1.1"
+                "source": "https://github.com/kahlan/kahlan/tree/6.1.2"
             },
-            "time": "2026-07-21T08:31:19+00:00"
+            "time": "2026-09-28T15:14:56+00:00"
         },
         {
             "name": "squizlabs/php_codesniffer",

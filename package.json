@@ -5,7 +5,7 @@
     "author": "Fery Wardiyanto <ferywardiyanto@gmail.com>",
     "repository": "github:projek-xyz/container",
     "scripts": {
-        "postinstall": "if [ -z \"$CI\" ]; then simple-git-hooks; fi",
+        "prepare": "simple-git-hooks",
         "release": "commit-and-tag-version -s"
     },
     "devDependencies": {

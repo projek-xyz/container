@@ -6,57 +6,41 @@ Desktop.ini
 .directory
 ._*
 *.DS_Store
-*.old
+*.gz
 *.log
-*.tmp
-
-# caches
-.cache
-*.cache
-*~
-
-# distribution
-dist
+*.old
 *.zip
+
+# Backup, Cache and Temporary
+.cache
+*~
+*.bak*
+*.bak
+*.cache
+*.swp
+
+# AI Agents
+# --------------------------
+.ai
+.opencode
+.superpowers
+opencode.json
 
 # Development files
 # --------------------------
 .env.*
 .env
-.php-version
-.tool-versions
-node_modules
-vendor
-coveralls-upload.json
-
-# Other package managers
 bun.lock
-bun.lockb
-package-lock.json
+node_modules
 pnpm-lock.yaml
+vendor
 yarn.lock
 
-# AI Agents
-# --------------------------
-.agents
-.antigravitycli
-.augment
-.cursor
-.gemini
-.github/copilot-instructions.md
-conductor
-CLAUDE.md
-GEMINI.md
-opencode.json
-
-# IDE Project Configurations
+# Other IDE and Project Configs
 # --------------------------
 .idea
 .settings
-.vscode
 .project
-.zed
-nbproject
 *.sublime-*
 
 # But Keep these

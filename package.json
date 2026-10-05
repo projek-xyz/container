@@ -9,11 +9,14 @@
         "release": "commit-and-tag-version -s"
     },
     "devDependencies": {
-        "@commitlint/cli": "^21.0.1",
-        "@commitlint/config-conventional": "^21.0.1",
-        "commit-and-tag-version": "^13.1.2",
-        "lint-staged": "^17.0.4",
-        "simple-git-hooks": "2.14.0"
+        "@commitlint/cli": "^21.2.3",
+        "@commitlint/config-conventional": "^21.2.3",
+        "commit-and-tag-version": "^13.2.1",
+        "lint-staged": "^17.6.0",
+        "simple-git-hooks": "^2.14.0"
+    },
+    "allowScripts": {
+        "simple-git-hooks@2.14.0": true
     },
     "commitlint": {
         "extends": [
@@ -29,8 +32,5 @@
         "*.php": [
             "sh -c 'composer format -- \"$@\"; rc=$?; [ \"$rc\" -ge 0 ]' --"
         ]
-    },
-    "allowScripts": {
-        "simple-git-hooks@2.14.0": true
     }
 }

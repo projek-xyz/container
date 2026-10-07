@@ -40,7 +40,7 @@
         }
     },
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.4",
         "psr/container": "^2.0",
         "psr/event-dispatcher": "^1.0"
     },

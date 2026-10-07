@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Stubs;
 
 class ServiceProvider
@@ -12,7 +14,7 @@ class ServiceProvider
     }
 
     /**
-     * @param Dummy $d
+     * @param  Dummy  $d
      * @return string
      */
     public function __invoke($dummy)

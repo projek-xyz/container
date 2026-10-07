@@ -18,7 +18,6 @@ use Psr\EventDispatcher\ListenerProviderInterface;
  * - BeforeResolution: Before a service is resolved.
  * - AfterResolution: After a service is resolved (handles ContainerAware injection).
  *
- * @package Projek\Container
  * @internal This class is for internal use by the Container.
  */
 final class ListenerProvider implements ContainerAware, ListenerProviderInterface
@@ -28,7 +27,7 @@ final class ListenerProvider implements ContainerAware, ListenerProviderInterfac
     /**
      * Get listeners for a specific event.
      *
-     * @param object $event The event object.
+     * @param  object  $event  The event object.
      * @return iterable<callable> An iterable of listener callables.
      */
     public function getListenersForEvent(object $event): iterable
@@ -48,9 +47,6 @@ final class ListenerProvider implements ContainerAware, ListenerProviderInterfac
 
     /**
      * Handle BeforeRegistration event.
-     *
-     * @param BeforeRegistration $event
-     * @return BeforeRegistration
      */
     public function beforeRegistration(BeforeRegistration $event): BeforeRegistration
     {
@@ -59,9 +55,6 @@ final class ListenerProvider implements ContainerAware, ListenerProviderInterfac
 
     /**
      * Handle AfterRegistration event.
-     *
-     * @param AfterRegistration $event
-     * @return AfterRegistration
      */
     public function afterRegistration(AfterRegistration $event): AfterRegistration
     {
@@ -70,9 +63,6 @@ final class ListenerProvider implements ContainerAware, ListenerProviderInterfac
 
     /**
      * Handle BeforeResolution event.
-     *
-     * @param BeforeResolution $event
-     * @return BeforeResolution
      */
     public function beforeResolution(BeforeResolution $event): BeforeResolution
     {
@@ -83,9 +73,6 @@ final class ListenerProvider implements ContainerAware, ListenerProviderInterfac
      * Handle AfterResolution event.
      *
      * Injects the container into ContainerAware instances after resolution.
-     *
-     * @param AfterResolution $event
-     * @return AfterResolution
      */
     public function afterResolution(AfterResolution $event): AfterResolution
     {
@@ -94,7 +81,7 @@ final class ListenerProvider implements ContainerAware, ListenerProviderInterfac
         if (
             $entry instanceof ContainerAware &&
             $event->id !== ContainerInterface::class &&
-            null === $entry->getContainer()
+            $entry->getContainer() === null
         ) {
             $entry->setContainer($this->getContainer());
         }

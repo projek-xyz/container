@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Projek\Container;
 use Projek\Container\ContainerAware;
 use Projek\Container\EntryCollector;
 use Projek\Container\Exception;
@@ -10,9 +9,14 @@ use Projek\Container\HasContainer;
 use Projek\Container\NotFoundException;
 use Psr\Container\ContainerInterface;
 
+use function Kahlan\describe;
+use function Kahlan\expect;
+use function Kahlan\given;
+use function Kahlan\it;
+
 describe(EntryCollector::class, function () {
     given('collector', function () {
-        return new EntryCollector();
+        return new EntryCollector;
     });
 
     it('should be able to set and get an entry', function () {
@@ -47,7 +51,8 @@ describe(EntryCollector::class, function () {
     });
 
     it('should not recurse infinitely if ContainerInterface itself is ContainerAware', function () {
-        $stub = new class implements ContainerAware {
+        $stub = new class implements ContainerAware
+        {
             use HasContainer;
         };
 

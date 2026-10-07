@@ -3,16 +3,23 @@
 declare(strict_types=1);
 
 use Projek\Container;
-use Projek\Container\{HasContainer, ContainerAware};
+use Projek\Container\ContainerAware;
+use Projek\Container\HasContainer;
 use Psr\Container\ContainerInterface;
+
+use function Kahlan\describe;
+use function Kahlan\expect;
+use function Kahlan\given;
+use function Kahlan\it;
 
 describe(ContainerAware::class, function () {
     given('container', function () {
-        return new Container();
+        return new Container;
     });
 
     given('stub', function () {
-        return new class implements ContainerAware {
+        return new class implements ContainerAware
+        {
             use HasContainer;
         };
     });

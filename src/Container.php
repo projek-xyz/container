@@ -13,8 +13,6 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  *
  * This class handles service registration, resolution, and autowiring
  * of dependencies using reflection.
- *
- * @package Projek\Container
  */
 class Container implements ContainerInterface
 {
@@ -41,8 +39,8 @@ class Container implements ContainerInterface
     /**
      * Create a new Container instance.
      *
-     * @param array<string, Closure|callable|string> $entries Initial service entries.
-     * @param null|EventDispatcherInterface $eventDispatcher Optional PSR-14 event dispatcher implementation.
+     * @param  array<string, Closure|callable|string>  $entries  Initial service entries.
+     * @param  null|EventDispatcherInterface  $eventDispatcher  Optional PSR-14 event dispatcher implementation.
      */
     public function __construct(
         array $entries = [],
@@ -83,8 +81,6 @@ class Container implements ContainerInterface
      *
      * If no implementation is provided by the developer, a minimalist
      * internal implementation is returned to keep core hooks functional.
-     *
-     * @return EventDispatcherInterface
      */
     final public function getEventDispatcher(): EventDispatcherInterface
     {
@@ -115,8 +111,8 @@ class Container implements ContainerInterface
      * Symfony EventDispatcher) must be provided by the developer.
      *
      * @link https://github.com/projek-xyz/container/wiki/event-lifecycle Event Lifecycle Wiki
-     * @param EventDispatcherInterface $eventDispatcher The event dispatcher instance.
-     * @return self
+     *
+     * @param  EventDispatcherInterface  $eventDispatcher  The event dispatcher instance.
      */
     final public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): self
     {
@@ -165,9 +161,10 @@ class Container implements ContainerInterface
      * Check if an entry is registered in the container.
      *
      * {@inheritdoc}
+     *
      * @see ContainerInterface::has()
-     * @param string $id The entry identifier.
-     * @return bool
+     *
+     * @param  string  $id  The entry identifier.
      */
     public function has(string $id): bool
     {
@@ -184,9 +181,9 @@ class Container implements ContainerInterface
      * it will be treated as a factory, and `get()` will return the result of that invocation.
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance Registering an Instance Wiki
-     * @param string $id The entry identifier.
-     * @param Closure|callable|string|object $factory A factory closure, callable, class name, or object instance.
-     * @return static
+     *
+     * @param  string  $id  The entry identifier.
+     * @param  Closure|callable|string|object  $factory  A factory closure, callable, class name, or object instance.
      */
     public function set(string $id, $factory): static
     {
@@ -241,16 +238,17 @@ class Container implements ContainerInterface
      * @template TArgs of array<int, mixed>
      *
      * @link https://github.com/projek-xyz/container/wiki/create-an-instance Creating an Instance Wiki
-     * @param Closure|callable|string|object $instance Class name, factory, or object instance.
-     * @param TArgs|Closure(TObj):?TObj $args Optional arguments or a condition closure.
-     * @param null|Closure(TObj):?TObj $condition Optional condition closure if $args is an array.
-     * @return mixed
+     *
+     * @param  Closure|callable|string|object  $instance  Class name, factory, or object instance.
+     * @param  TArgs|Closure(TObj):?TObj  $args  Optional arguments or a condition closure.
+     * @param  null|Closure(TObj):?TObj  $condition  Optional condition closure if $args is an array.
+     *
      * @throws Container\InvalidArgumentException If arguments are invalid.
      * @throws Container\Exception If resolution fails.
      */
     public function make($instance, $args = [], ?Closure $condition = null): mixed
     {
-        if (null === $condition && $args instanceof Closure) {
+        if ($condition === null && $args instanceof Closure) {
             $condition = $args;
             $args = [];
         }
@@ -258,7 +256,7 @@ class Container implements ContainerInterface
         if (! is_array($args)) {
             throw new Container\InvalidArgumentException(\sprintf(
                 'Argument #2 must be an %s, %s given',
-                (null === $condition ? 'array or instance of closure' : 'array'),
+                ($condition === null ? 'array or instance of closure' : 'array'),
                 \gettype($args)
             ));
         }
@@ -308,9 +306,11 @@ class Container implements ContainerInterface
      * type or a subclass of the original service.
      *
      * @link https://github.com/projek-xyz/container/wiki/extending-an-instance Extending an Instance Wiki
-     * @param string $id Identifier of the existing entry.
-     * @param Closure(object):object $callback Callback to extend the service.
+     *
+     * @param  string  $id  Identifier of the existing entry.
+     * @param  Closure(object):object  $callback  Callback to extend the service.
      * @return object Returns the extended object instance.
+     *
      * @throws Container\NotFoundException If the entry ID is not found.
      * @throws Container\Exception If trying to extend a non-object or callable.
      */

@@ -6,7 +6,6 @@ namespace Projek\Container;
 
 use ArrayAccess;
 use IteratorAggregate;
-use Psr\Container\ContainerInterface;
 
 /**
  * Internal storage for container entries.
@@ -14,8 +13,8 @@ use Psr\Container\ContainerInterface;
  * This class handles the storage of resolved instances and factories,
  * ensuring that ContainerAware instances are properly initialized.
  *
- * @package Projek\Container
  * @internal
+ *
  * @template-implements ArrayAccess<string, object|callable>
  * @template-implements IteratorAggregate<string, object|callable>
  */
@@ -29,7 +28,7 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     /**
      * Create new instance.
      *
-     * @param iterable<string, object|callable> $entries
+     * @param  iterable<string, object|callable>  $entries
      */
     public function __construct(iterable $entries = [])
     {
@@ -51,7 +50,7 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     /**
      * {@inheritdoc}
      *
-     * @param string $id
+     * @param  string  $id
      */
     public function offsetExists(mixed $id): bool
     {
@@ -61,7 +60,7 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     /**
      * {@inheritdoc}
      *
-     * @param string $id
+     * @param  string  $id
      * @return object|callable
      */
     public function offsetGet(mixed $id): mixed
@@ -76,8 +75,8 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     /**
      * {@inheritdoc}
      *
-     * @param string $id
-     * @param object|callable $entry
+     * @param  string  $id
+     * @param  object|callable  $entry
      */
     public function offsetSet(mixed $id, mixed $entry): void
     {
@@ -87,7 +86,8 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     /**
      * {@inheritdoc}
      *
-     * @param string $id
+     * @param  string  $id
+     *
      * @throws Exception Always, as removing registered entries is not supported.
      */
     public function offsetUnset(mixed $id): void

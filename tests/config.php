@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @link https://kahlan.github.io/docs/config-file.html
  */
@@ -24,7 +26,7 @@ Filters::apply($this, 'reporting', function ($next) {
     if ($lcov_file) {
         Exporter\Lcov::write([
             'collector' => $reporter,
-            'file'      => $lcov_file,
+            'file' => $lcov_file,
         ]);
     }
 

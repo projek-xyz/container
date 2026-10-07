@@ -19,7 +19,6 @@ use ReflectionNamedType;
  * This class uses reflection to autowire dependencies and execute
  * various types of factories (closures, callables, etc.).
  *
- * @package Projek\Container
  * @internal This class is for internal use by the Container.
  */
 final class Resolver
@@ -32,7 +31,7 @@ final class Resolver
     /**
      * Create a new Resolver instance.
      *
-     * @param ContainerInterface $container The parent container.
+     * @param  ContainerInterface  $container  The parent container.
      */
     public function __construct(ContainerInterface $container)
     {
@@ -45,9 +44,9 @@ final class Resolver
      * This method ensures that class names are instantiated and class-method
      * strings are converted into valid callables.
      *
-     * @param array{class-string<object>|string,string}|callable|object|string $factory
-     * @param array<int, mixed> $args Optional constructor arguments.
-     * @return callable|object
+     * @param  array{class-string<object>|string,string}|callable|object|string  $factory
+     * @param  array<int, mixed>  $args  Optional constructor arguments.
+     *
      * @throws Exception If the factory cannot be resolved.
      * @throws InvalidArgumentException If the factory format is invalid.
      */
@@ -82,11 +81,13 @@ final class Resolver
      *
      * @template TArgs of array<int, mixed>
      *
-     * @param array{object|string,string}|callable|object|string $callable
-     * @param TArgs $args Explicit arguments to pass to the callable.
+     * @param  array{object|string,string}|callable|object|string  $callable
+     * @param  TArgs  $args  Explicit arguments to pass to the callable.
      * @return ($callable is object ? object : mixed)
+     *
      * @throws Exception If an argument cannot be resolved.
      * @throws InvalidArgumentException If reflection fails.
+     *
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function handle($callable, array $args = []): mixed
@@ -110,7 +111,7 @@ final class Resolver
                 );
             }
 
-            /** @var array{object|string,string} $callable */
+            /** @var array{object,string} $callable */
             return $ref->invokeArgs(
                 \is_object($callable[0]) ? $callable[0] : null,
                 $this->resolveArgs($ref, $args)
@@ -128,9 +129,10 @@ final class Resolver
      * @template TObj of object
      * @template TArgs of array<int, mixed>
      *
-     * @param class-string<TObj>|string $className The class name to instantiate.
-     * @param TArgs $args Optional constructor arguments.
+     * @param  class-string<TObj>|string  $className  The class name to instantiate.
+     * @param  TArgs  $args  Optional constructor arguments.
      * @return ($className is class-string<TObj> ? TObj : mixed)
+     *
      * @throws Exception If the class is not found or not instantiable.
      */
     private function createInstance(string $className, array $args = [])
@@ -167,8 +169,8 @@ final class Resolver
     /**
      * Create a reflection instance for the given callable.
      *
-     * @param array{object|string,string}|callable|object|string $callable
-     * @return ReflectionMethod|ReflectionFunction
+     * @param  array{object|string,string}|callable|object|string  $callable
+     *
      * @throws Exception If a non-static method is called statically.
      * @throws ReflectionException If reflection fails.
      */
@@ -194,7 +196,7 @@ final class Resolver
         if (! $ref->isStatic() && \is_string($callable[0])) {
             throw new Exception(\sprintf(
                 'Non-static method %s should not be called statically',
-                \join('::', $callable)
+                \implode('::', $callable)
             ));
         }
 
@@ -204,9 +206,10 @@ final class Resolver
     /**
      * Resolve arguments for a function or method using autowiring.
      *
-     * @param ReflectionFunctionAbstract $ref The reflection instance.
-     * @param array<int, mixed> $args Already provided arguments.
+     * @param  ReflectionFunctionAbstract  $ref  The reflection instance.
+     * @param  array<int, mixed>  $args  Already provided arguments.
      * @return array<int, mixed> The resolved arguments.
+     *
      * @throws Exception If a required argument cannot be resolved.
      */
     private function resolveArgs(ReflectionFunctionAbstract $ref, array $args = []): array

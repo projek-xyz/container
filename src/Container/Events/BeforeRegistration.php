@@ -10,7 +10,6 @@ namespace Projek\Container\Events;
  * This event allows listeners to modify the factory before it is
  * resolved and stored in the container, enabling dynamic factory replacement.
  *
- * @package Projek\Container
  * @see Container::set()
  */
 final class BeforeRegistration
@@ -21,7 +20,7 @@ final class BeforeRegistration
     private $factory;
 
     /**
-     * @param array{class-string<object>|string,string}|callable|string $factory
+     * @param  array{class-string<object>|string,string}|callable|string  $factory
      */
     public function __construct(
         array|callable|string $factory,
@@ -33,7 +32,7 @@ final class BeforeRegistration
     /**
      * Set a new factory for the entry.
      *
-     * @param array{class-string<object>|string,string}|callable|string $factory The new factory.
+     * @param  array{class-string<object>|string,string}|callable|string  $factory  The new factory.
      */
     public function setFactory(array|callable|string $factory): void
     {

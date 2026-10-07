@@ -12,7 +12,6 @@ use Psr\Container\ContainerInterface;
  * Classes implementing this interface will have the container instance
  * automatically injected when resolved by the EntryCollector.
  *
- * @package Projek\Container
  * @see HasContainer
  */
 interface ContainerAware
@@ -20,8 +19,7 @@ interface ContainerAware
     /**
      * Inject the container instance.
      *
-     * @param ContainerInterface $container The container instance.
-     * @return static
+     * @param  ContainerInterface  $container  The container instance.
      */
     public function setContainer(ContainerInterface $container): static;
 
@@ -36,7 +34,7 @@ interface ContainerAware
      * $instance->getContainer(SomeClass::class); // Returns the SomeClass instance
      * ```
      *
-     * @param string|null $name Optional service name to resolve.
+     * @param  string|null  $name  Optional service name to resolve.
      * @return ($name is null ? ContainerInterface : mixed)
      */
     public function getContainer(?string $name = null);

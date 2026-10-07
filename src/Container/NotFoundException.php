@@ -8,16 +8,14 @@ use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Exception thrown when a requested entry is not found in the container.
- *
- * @package Projek\Container
  */
 class NotFoundException extends \InvalidArgumentException implements NotFoundExceptionInterface
 {
     /**
      * Create a new NotFoundException instance.
      *
-     * @param string $name The name of the missing entry.
-     * @param \Throwable|null $prev The previous exception if any.
+     * @param  string  $name  The name of the missing entry.
+     * @param  \Throwable|null  $prev  The previous exception if any.
      */
     public function __construct(
         private string $name,
@@ -28,8 +26,6 @@ class NotFoundException extends \InvalidArgumentException implements NotFoundExc
 
     /**
      * Retrieve the name of the missing entry.
-     *
-     * @return string
      */
     final public function getName(): string
     {

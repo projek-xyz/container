@@ -10,7 +10,6 @@ namespace Projek\Container\Events;
  * This event provides access to the resolved entry and allows
  * listeners to perform actions after resolution completes.
  *
- * @package Projek\Container
  * @see Container::get()
  */
 final class AfterResolution
@@ -29,8 +28,6 @@ final class AfterResolution
 
     /**
      * Get the resolved entry.
-     *
-     * @return callable|object
      */
     public function getEntry(): callable|object
     {
@@ -40,7 +37,7 @@ final class AfterResolution
     /**
      * Set a new entry.
      *
-     * @param callable|object $entry The new entry.
+     * @param  callable|object  $entry  The new entry.
      */
     public function setEntry(callable|object $entry): void
     {

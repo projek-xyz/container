@@ -12,7 +12,6 @@ use Projek\Container\Container;
  * This event allows listeners to modify the entry ID before resolution
  * occurs, enabling service redirection or aliasing.
  *
- * @package Projek\Container
  * @see Container::get()
  */
 final class BeforeResolution

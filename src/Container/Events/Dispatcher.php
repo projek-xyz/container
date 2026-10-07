@@ -12,7 +12,6 @@ use Psr\EventDispatcher\StoppableEventInterface;
 /**
  * Internal minimalist PSR-14 Event Dispatcher.
  *
- * @package Projek\Container
  * @internal
  */
 final class Dispatcher implements EventDispatcherInterface
@@ -22,15 +21,11 @@ final class Dispatcher implements EventDispatcherInterface
      */
     private $provider;
 
-    /**
-     * @param ContainerInterface $container
-     * @param ListenerProviderInterface $provider
-     */
     public function __construct(
         ContainerInterface $container,
         ?ListenerProviderInterface $provider = null
     ) {
-        $this->provider = $provider ?? (new ListenerProvider())->setContainer($container);
+        $this->provider = $provider ?? (new ListenerProvider)->setContainer($container);
     }
 
     /**

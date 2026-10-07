@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Stubs;
 
 interface FooInterface
@@ -12,9 +14,7 @@ interface BarInterface
     public function barMethod();
 }
 
-interface FooBarInterface extends FooInterface, BarInterface
-{
-}
+interface FooBarInterface extends BarInterface, FooInterface {}
 
 class FooBar implements FooBarInterface
 {

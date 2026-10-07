@@ -21,8 +21,8 @@
         }
     ],
     "scripts": {
-        "format": "phpcbf --standard=PSR12 src tests/spec",
-        "lint": "phpcs --standard=PSR12 src tests/spec -n -p",
+        "format": "pint --parallel",
+        "lint": "pint --parallel --test",
         "spec": "kahlan --config=tests/config.php",
         "test": [
             "@lint",
@@ -46,7 +46,7 @@
     },
     "require-dev": {
         "kahlan/kahlan": "^6.1",
-        "squizlabs/php_codesniffer": "^4.0"
+        "laravel/pint": "^1.32"
     },
     "provide": {
         "psr/container-implementation": "^2.0"

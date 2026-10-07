@@ -10,7 +10,6 @@ namespace Projek\Container;
  * This class provides a default implementation of the ContainerAware interface
  * via the HasContainer trait.
  *
- * @package Projek\Container
  * @internal This class is for internal use. Please implement `ContainerAware`
  *           and use the `HasContainer` trait in your own classes instead.
  */

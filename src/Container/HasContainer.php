@@ -12,7 +12,6 @@ use Psr\Container\ContainerInterface;
  * This trait manages the storage and retrieval of the container instance,
  * as well as shorthand service resolution from within the implementing class.
  *
- * @package Projek\Container
  * @see ContainerAware
  */
 trait HasContainer
@@ -26,9 +25,10 @@ trait HasContainer
      * Set the container instance.
      *
      * {@inheritdoc}
+     *
      * @see ContainerAware::setContainer()
-     * @param ContainerInterface $container The container instance.
-     * @return static
+     *
+     * @param  ContainerInterface  $container  The container instance.
      */
     public function setContainer(ContainerInterface $container): static
     {
@@ -41,8 +41,10 @@ trait HasContainer
      * Get the container instance or a resolved service.
      *
      * {@inheritdoc}
+     *
      * @see ContainerAware::getContainer()
-     * @param string|null $name Optional service name to resolve.
+     *
+     * @param  string|null  $name  Optional service name to resolve.
      * @return ($name is null ? ContainerInterface : mixed)
      */
     public function getContainer(?string $name = null)

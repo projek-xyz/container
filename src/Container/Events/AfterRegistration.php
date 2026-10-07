@@ -10,7 +10,6 @@ namespace Projek\Container\Events;
  * This event provides access to the resolved entry after it has been
  * stored in the container, allowing listeners to perform post-registration actions.
  *
- * @package Projek\Container
  * @see Container::set()
  */
 final class AfterRegistration
@@ -29,8 +28,6 @@ final class AfterRegistration
 
     /**
      * Get the resolved entry.
-     *
-     * @return callable|object
      */
     public function getEntry(): callable|object
     {
@@ -40,7 +37,7 @@ final class AfterRegistration
     /**
      * Set a new entry.
      *
-     * @param callable|object $entry The new entry.
+     * @param  callable|object  $entry  The new entry.
      */
     public function setEntry(callable|object $entry): void
     {

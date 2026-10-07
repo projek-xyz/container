@@ -3,17 +3,28 @@
 declare(strict_types=1);
 
 use Projek\Container;
+use Stubs\AbstractFoo;
+use Stubs\ConcreteBar;
+use Stubs\Dummy;
+use Stubs\SomeClass;
+
+use function Kahlan\beforeEach;
+use function Kahlan\context;
+use function Kahlan\describe;
+use function Kahlan\expect;
+use function Kahlan\given;
+use function Kahlan\it;
 
 describe(Container\Resolver::class, function () {
     given('dummy', function () {
-        return new Stubs\Dummy();
+        return new Dummy;
     });
 
     beforeEach(function () {
         $c = new Container([
             'dummy' => $this->dummy,
             'std' => stdClass::class,
-            Stubs\AbstractFoo::class => Stubs\ConcreteBar::class,
+            AbstractFoo::class => ConcreteBar::class,
         ]);
 
         $this->r = new Container\Resolver($c);
@@ -27,7 +38,7 @@ describe(Container\Resolver::class, function () {
         });
 
         it('should resolve array of class name & static method pair', function () {
-            $instance = new Stubs\SomeClass();
+            $instance = new SomeClass;
 
             expect(
                 $this->r->resolve([$instance, 'staticMethod'])
@@ -35,7 +46,7 @@ describe(Container\Resolver::class, function () {
         });
 
         it('should resolve array of class name & non-static method pair', function () {
-            $instance = new Stubs\SomeClass();
+            $instance = new SomeClass;
 
             expect(
                 $this->r->resolve([$instance, 'nonStaticMethod'])
@@ -44,14 +55,14 @@ describe(Container\Resolver::class, function () {
 
         it('should resolve array of class name & static method pair', function () {
             expect(
-                $this->r->resolve([Stubs\SomeClass::class, 'staticMethod'])
-            )->toEqual([new Stubs\SomeClass(), 'staticMethod']);
+                $this->r->resolve([SomeClass::class, 'staticMethod'])
+            )->toEqual([new SomeClass, 'staticMethod']);
         });
 
         it('should resolve array of class name & non-static method pair', function () {
             expect(
-                $this->r->resolve([Stubs\SomeClass::class, 'nonStaticMethod'])
-            )->toEqual([new Stubs\SomeClass(), 'nonStaticMethod']);
+                $this->r->resolve([SomeClass::class, 'nonStaticMethod'])
+            )->toEqual([new SomeClass, 'nonStaticMethod']);
         });
 
         it('should throw error when entry is an empty array', function () {
@@ -81,13 +92,13 @@ describe(Container\Resolver::class, function () {
         it('should resolve string of class name & static method pair', function () {
             expect(
                 $this->r->resolve('Stubs\SomeClass::staticMethod')
-            )->toEqual([new Stubs\SomeClass(), 'staticMethod']);
+            )->toEqual([new SomeClass, 'staticMethod']);
         });
 
         it('should resolve string of class name & non-static method pair', function () {
             expect(
                 $this->r->resolve('Stubs\SomeClass::nonStaticMethod')
-            )->toEqual([new Stubs\SomeClass(), 'nonStaticMethod']);
+            )->toEqual([new SomeClass, 'nonStaticMethod']);
         });
 
         it('should throw error when entry is an invalid string of non-existing class', function () {
@@ -121,17 +132,15 @@ describe(Container\Resolver::class, function () {
         });
 
         it('should resolve closure callable', function () {
-            expect($this->r->resolve(function () {
-                return;
-            }))->toBeAnInstanceOf(\Closure::class);
+            expect($this->r->resolve(function () {}))->toBeAnInstanceOf(Closure::class);
         });
 
         it('should resolve instance of class', function () {
-            expect($this->r->resolve($this->dummy))->toBeAnInstanceOf(Stubs\Dummy::class);
+            expect($this->r->resolve($this->dummy))->toBeAnInstanceOf(Dummy::class);
         });
 
         it('should resolve existing container', function () {
-            expect($this->r->resolve('dummy'))->toBeAnInstanceOf(Stubs\Dummy::class);
+            expect($this->r->resolve('dummy'))->toBeAnInstanceOf(Dummy::class);
         });
     });
 
@@ -142,13 +151,13 @@ describe(Container\Resolver::class, function () {
 
         it('should handle array of class name & static method pair', function () {
             expect(
-                $this->r->handle([Stubs\SomeClass::class, 'staticMethod'])
+                $this->r->handle([SomeClass::class, 'staticMethod'])
             )->toBe('value from static method');
         });
 
         it('should not handle array of class name & non-static method pair', function () {
             expect(function () {
-                $this->r->handle([Stubs\SomeClass::class, 'nonStaticMethod']);
+                $this->r->handle([SomeClass::class, 'nonStaticMethod']);
             })->toThrow(new Container\Exception(
                 'Non-static method Stubs\SomeClass::nonStaticMethod should not be called statically'
             ));
@@ -156,13 +165,13 @@ describe(Container\Resolver::class, function () {
 
         it('should handle array of class instance & static method pair', function () {
             expect(
-                $this->r->handle([new Stubs\SomeClass(), 'staticMethod'])
+                $this->r->handle([new SomeClass, 'staticMethod'])
             )->toBe('value from static method');
         });
 
         it('should handle array of class instance & non-static method pair', function () {
             expect(
-                $this->r->handle([new Stubs\SomeClass(), 'nonStaticMethod'])
+                $this->r->handle([new SomeClass, 'nonStaticMethod'])
             )->toBe('value from non-static method');
         });
 
@@ -185,9 +194,9 @@ describe(Container\Resolver::class, function () {
         });
 
         it('should handle closure callable', function () {
-            expect($this->r->handle(function (Stubs\AbstractFoo $foo, $dummy, $std) {
-                expect($foo)->toBeAnInstanceOf(Stubs\ConcreteBar::class);
-                expect($dummy)->toBeAnInstanceOf(Stubs\Dummy::class);
+            expect($this->r->handle(function (AbstractFoo $foo, $dummy, $std) {
+                expect($foo)->toBeAnInstanceOf(ConcreteBar::class);
+                expect($dummy)->toBeAnInstanceOf(Dummy::class);
 
                 return $std;
             }))->toBeAnInstanceOf(stdClass::class);
@@ -200,7 +209,7 @@ describe(Container\Resolver::class, function () {
 
             expect($this->r->handle(function ($dummy, $foobar = null) {
                 return $foobar ?? $dummy;
-            }))->toBeAnInstanceOf(Stubs\Dummy::class);
+            }))->toBeAnInstanceOf(Dummy::class);
         });
     });
 });

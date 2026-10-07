@@ -39,7 +39,7 @@ jobs:
           set -e
           SHORT_SHA=${GITHUB_SHA:0:7}
 
-          cd ${{ github.workspace }}/wiki
+          cd ${{ github.workspace }}/wiki && rm *.md
           cp -a ${{ github.workspace }}/repo/.github/wiki/* .
 
           git config --global user.name "${{ vars.CI_BOT_USERNAME }}"

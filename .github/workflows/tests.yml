@@ -55,7 +55,7 @@ jobs:
           restore-keys: composer-php${{ matrix.php }}-
 
       - name: Install dependencies
-        run: composer update --ansi --prefer-dist --no-progress --no-suggest
+        run: composer update --ansi --prefer-dist --no-progress
 
       - name: Run tests
         run: composer test

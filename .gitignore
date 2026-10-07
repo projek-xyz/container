@@ -30,10 +30,14 @@ opencode.json
 # --------------------------
 .env.*
 .env
-bun.lock
 node_modules
-pnpm-lock.yaml
 vendor
+
+# Package managers lock files
+bun.lock
+bun.lockb
+# package-lock.json
+pnpm-lock.yaml
 yarn.lock
 
 # Other IDE and Project Configs

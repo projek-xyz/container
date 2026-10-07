@@ -33,4 +33,4 @@ Documentations and usages available on [wiki](https://github.com/projek-xyz/cont
 
 ## License
 
-This library is open-sourced software licensed under [MIT license](LICENSE.md).
+This library is open-sourced software licensed under [MIT license](LICENSE).

@@ -7,7 +7,7 @@ $container->set(string $id, $entry): static
 | Parameters | Type | Description |
 | --- | --- | --- |
 | `$id` | `string` | Name of the service |
-| `$entry` | `callable`, `object` | Instance of the service |
+| `$factory` | `Closure`, `callable`, `string`, `object` | Factory closure, callable, class name, or object instance |
 
 ## Usage
 
@@ -63,7 +63,7 @@ $container->set('myService', SomeFactoryClass::class);
 
 ### 3. Use an existing entry (as an alias)
 
-You can use the name of the registered service as the `$entry` parameter.
+You can use the name of the registered service as the `$factory` parameter.
 
 ```php
 // Based on the example above

@@ -1,15 +1,15 @@
 # Create an instance of a class without registering it to the container stack.
 
 ```php
-$container->make($callable[, $arguments|$condition[, $condition]]) mixed
+$container->make($instance, array|Closure $args = [], ?Closure $condition = null): mixed
 ```
 
 Unlike `get()`, the `make()` method will **not** store the resolved instance in the container. Every time you call `make()`, it will return a new instance (unless the callable itself returns a shared instance).
 
 | Parameters | Type | Description |
 | --- | --- | --- |
-| `$callable` | `string`, `callable` | `string` of class name or `callable` |
-| `$arguments` | `array`, `\Closure` | **Optional**: pass an array to callback handler or conditionally resolve the callback |
+| `$instance` | `string`, `callable` | `string` of class name or `callable` |
+| `$args` | `array`, `\Closure` | **Optional**: pass an array to callback handler or conditionally resolve the callback |
 | `$condition` | `\Closure` | **Optional**: conditionally resolve the callback |
 
 ## Usage

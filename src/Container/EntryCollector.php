@@ -10,8 +10,8 @@ use IteratorAggregate;
 /**
  * Internal storage for container entries.
  *
- * This class handles the storage of resolved instances and factories,
- * ensuring that ContainerAware instances are properly initialized.
+ * This class handles the storage of registered entries and resolved
+ * instances, and enforces that entries cannot be removed.
  *
  * @internal
  *

@@ -21,13 +21,13 @@
         }
     ],
     "scripts": {
-        "format": "phpcbf --standard=PSR12",
-        "spec": [
+        "format": "phpcbf --standard=PSR12 src tests/spec",
+        "lint": "phpcs --standard=PSR12 src tests/spec -n -p",
+        "spec": "kahlan --config=tests/config.php",
+        "test": [
             "@lint",
-            "@test"
-        ],
-        "test": "kahlan --config=tests/config.php",
-        "lint": "phpcs --standard=PSR12 -n -p src"
+            "@spec"
+        ]
     },
     "autoload": {
         "psr-4": {

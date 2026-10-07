@@ -7,7 +7,7 @@ dependencies:
       - any-glob-to-any-file:
           - "composer.json"
           - "package.json"
-          - "pnpm-lock.yaml"
+          - "package-lock.json"
 
 documentation:
   - changed-files:
@@ -30,5 +30,4 @@ integration:
   - changed-files:
       - any-glob-to-any-file:
           - ".github/**.yml"
-          - "scripts/**"
           - "tests/**.php"

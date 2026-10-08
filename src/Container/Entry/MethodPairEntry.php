@@ -14,11 +14,15 @@ use ReflectionMethod;
 /**
  * A `Class::method` string or [class, method] pair: class and method are
  * validated beside the class they describe.
+ *
+ * @internal
  */
-class MethodPairEntry extends Entry
+final class MethodPairEntry extends Entry
 {
     /**
-     * @param  string|array{class-string|object, string}  $factory
+     * @template T of object
+     *
+     * @param  array{class-string<T>|T,non-empty-string}|non-empty-string  $factory
      *
      * @throws InvalidArgumentException When the pair shape, class, method, or method visibility is invalid.
      */
@@ -31,7 +35,7 @@ class MethodPairEntry extends Entry
 
             [$class, $method] = \explode('::', $factory, 2);
         } else {
-            if (\count($factory) !== 2 || ! isset($factory[0], $factory[1])) {
+            if (\count($factory) !== 2) {
                 throw InvalidArgumentException::invalidPairSize($id);
             }
 

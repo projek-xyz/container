@@ -12,8 +12,10 @@ use Psr\Container\ContainerInterface;
 /**
  * Any other string — including non-buildable type symbols whose
  * target pre-exists. The target check belongs to Container::set(), not here.
+ *
+ * @internal
  */
-class AliasEntry extends Entry
+final class AliasEntry extends Entry
 {
     /**
      * @param  string  $factory  Registered id of the alias target.

@@ -77,7 +77,9 @@ class Container implements ContainerInterface
      * Infrastructure defaults are inserted directly (no events); user entries
      * are registered through set(), which fires EntryRegistered.
      *
-     * @param  array<string, mixed>  $entries  Initial service entries.
+     * @template T of object
+     *
+     * @param  array<string, array{class-string<T>|T,string}|callable|string|EntryFactory>  $entries  Initial service entries.
      * @param  null|EventDispatcherInterface  $eventDispatcher  Optional PSR-14 event dispatcher implementation.
      */
     public function __construct(
@@ -190,6 +192,11 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/event-lifecycle Event Lifecycle Wiki
      *
+     * @template T of object
+     *
+     * @param  class-string<T>|string  $id  The entry identifier.
+     * @return ($id is class-string<T> ? T : mixed)
+     *
      * @throws NotFoundException If the entry is not found.
      * @throws ResolutionException If the entry cannot be built.
      */
@@ -269,7 +276,7 @@ class Container implements ContainerInterface
      *
      * @see ContainerInterface::has()
      *
-     * @param  string  $id  The entry identifier.
+     * @param  class-string|string  $id  The entry identifier.
      */
     public function has(string $id): bool
     {
@@ -285,8 +292,10 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance Registering an Instance Wiki
      *
-     * @param  string  $id  The entry identifier.
-     * @param  mixed  $factory  A factory closure, callable, class name, pair, or EntryFactory.
+     * @template T of object
+     *
+     * @param  class-string<T>|string  $id  The entry identifier.
+     * @param  array{class-string<T>|T,string}|callable|string|EntryFactory  $factory  A factory closure, callable, class name, pair, or EntryFactory.
      *
      * @throws InvalidArgumentException If the id is a duplicate or the factory is invalid.
      */
@@ -342,8 +351,11 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/create-an-instance Creating an Instance Wiki
      *
-     * @param  array|callable|object|string  $instance  Registered id, class name, or callable shape.
+     * @template T of object
+     *
+     * @param  array{class-string<T>|T,string}|callable|callable-string  $instance  Registered id, class name, or callable shape.
      * @param  array<mixed>  $args  Positional/named arguments for the invocation or constructor.
+     * @return ($instance is class-string<T> ? T : mixed)
      *
      * @throws InvalidArgumentException If the input matches no family.
      * @throws ResolutionException If a package call fails to resolve.
@@ -448,8 +460,10 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/extending-an-instance Extending an Instance Wiki
      *
-     * @param  string  $id  Identifier of the existing entry.
-     * @param  Closure  $callback  Decorator declaring an explicit single class return type.
+     * @template T of object
+     *
+     * @param  class-string<T>|string  $id  Identifier of the existing entry.
+     * @param  Closure(T $instance, mixed ...$args):T  $callback  Decorator declaring an explicit single class return type.
      *
      * @throws NotFoundException If the entry id is absent.
      * @throws InvalidArgumentException If the target or the callback return type is invalid.

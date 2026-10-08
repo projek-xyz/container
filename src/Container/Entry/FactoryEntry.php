@@ -14,8 +14,10 @@ use ReflectionMethod;
 /**
  * An EntryFactory instance — the explicit door for registering an
  * object instance: `new EntryFactory(fn () => $instance)`.
+ *
+ * @internal
  */
-class FactoryEntry extends Entry
+final class FactoryEntry extends Entry
 {
     public function __construct(string $id, public readonly EntryFactory $factory, bool $auto = false)
     {

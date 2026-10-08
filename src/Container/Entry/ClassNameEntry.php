@@ -18,13 +18,15 @@ use ReflectionClass;
  * An instantiable class-string: binds and constructs itself through
  * the package's shared ParametersHelper trait — never through the Handler, so
  * a bare class-string never reaches Handler::handle().
+ *
+ * @internal
  */
-class ClassNameEntry extends Entry
+final class ClassNameEntry extends Entry
 {
     use ParametersHelper;
 
     /**
-     * @param  string  $factory  class-string of an instantiable class (dispatch guarantees buildability; re-asserted defensively).
+     * @param  class-string  $factory  class-string of an instantiable class (dispatch guarantees buildability; re-asserted defensively).
      *
      * @throws InvalidArgumentException When the class does not exist, is not instantiable, or its constructor takes parameters by reference.
      */
@@ -69,7 +71,11 @@ class ClassNameEntry extends Entry
      * package's construction path; otherwise the constructor is bound directly
      * through the composed ParametersHelper — no container-side binding logic.
      *
+     * @template T of object
+     *
+     * @param  class-string<T>  $class
      * @param  array<mixed>  $args
+     * @return T
      *
      * @throws UnresolvableCallableException When the class is not instantiable (defensive).
      */

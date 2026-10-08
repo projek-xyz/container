@@ -16,16 +16,22 @@ use ReflectionMethod;
 /**
  * A closure, a function-name string, or an object with __invoke — one class
  * for all three: stored and invoked as-is, never re-instantiated.
+ *
+ * @internal
  */
-class CallableEntry extends Entry
+final class CallableEntry extends Entry
 {
     /**
-     * @param  string|object  $factory  Closure, function name, or invokable object.
-     *
      * @throws InvalidArgumentException When the factory is not a supported callable shape or takes parameters by reference.
      */
-    public function __construct(string $id, public readonly string|object $factory, bool $auto = false)
-    {
+    public function __construct(
+        string $id,
+        /**
+         * @var callable-string|Closure|object $factory  Closure, function name, or invokable object.
+         */
+        public readonly string|object $factory,
+        bool $auto = false
+    ) {
         if ($factory instanceof Closure) {
             $reflection = new ReflectionFunction($factory);
         } elseif (\is_object($factory)) {

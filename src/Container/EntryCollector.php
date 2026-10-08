@@ -10,25 +10,26 @@ use IteratorAggregate;
 /**
  * Internal storage for container entries.
  *
- * This class handles the storage of registered entries and resolved
- * instances, and enforces that entries cannot be removed.
+ * Holds the registered `Entry` objects and enforces that entries cannot be
+ * removed. The `offsetSet()` parameters stay `mixed` — narrowing them to
+ * `Entry` violates the `ArrayAccess` parameter contravariance (fatal).
  *
  * @internal
  *
- * @template-implements ArrayAccess<string, object|callable>
- * @template-implements IteratorAggregate<string, object|callable>
+ * @template-implements ArrayAccess<string, Entry>
+ * @template-implements IteratorAggregate<string, Entry>
  */
 final class EntryCollector implements ArrayAccess, IteratorAggregate
 {
     /**
-     * @var array<string, object|callable> List of registered entries.
+     * @var array<string, Entry> List of registered entries.
      */
     private array $entries = [];
 
     /**
      * Create new instance.
      *
-     * @param  iterable<string, object|callable>  $entries
+     * @param  iterable<string, Entry>  $entries
      */
     public function __construct(iterable $entries = [])
     {
@@ -40,7 +41,7 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     /**
      * {@inheritdoc}
      *
-     * @return \Traversable<string, object|callable>
+     * @return \Traversable<string, Entry>
      */
     public function getIterator(): \Traversable
     {
@@ -58,10 +59,13 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     }
 
     /**
+     * The only construction site of a NotFoundException: an id missing here is
+     * genuinely absent, so the label it carries is always truthful (§7/§13).
+     *
      * {@inheritdoc}
      *
      * @param  string  $id
-     * @return object|callable
+     * @return Entry
      */
     public function offsetGet(mixed $id): mixed
     {
@@ -76,7 +80,7 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
      * {@inheritdoc}
      *
      * @param  string  $id
-     * @param  object|callable  $entry
+     * @param  mixed  $entry  The `Entry` instance registered by `Container::set()`.
      */
     public function offsetSet(mixed $id, mixed $entry): void
     {
@@ -88,11 +92,11 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
      *
      * @param  string  $id
      *
-     * @throws Exception Always, as removing registered entries is not supported.
+     * @throws InvalidArgumentException Always, as removing registered entries is not supported.
      */
     public function offsetUnset(mixed $id): void
     {
-        throw new Exception(
+        throw new InvalidArgumentException(
             \sprintf('Removing registered entry "%s" is not supported.', (string) $id)
         );
     }

@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Projek\Container;
 
-use Psr\Container\ContainerExceptionInterface;
-
 /**
  * Exception thrown when an invalid argument is provided during service resolution.
  */
-class InvalidArgumentException extends \InvalidArgumentException implements ContainerExceptionInterface
+class InvalidArgumentException extends \InvalidArgumentException
 {
     /**
      * By-reference parameter rejection, shared byte-identically by

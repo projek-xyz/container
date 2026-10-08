@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-use Projek\Container\ContainerAware;
+use Projek\Container\Entry;
+use Projek\Container\Entry\CallableEntry;
 use Projek\Container\EntryCollector;
-use Projek\Container\Exception;
-use Projek\Container\HasContainer;
+use Projek\Container\InvalidArgumentException;
 use Projek\Container\NotFoundException;
-use Psr\Container\ContainerInterface;
 
 use function Kahlan\describe;
 use function Kahlan\expect;
@@ -19,27 +18,40 @@ describe(EntryCollector::class, function () {
         return new EntryCollector;
     });
 
-    it('should be able to set and get an entry', function () {
-        $this->collector['foo'] = 'bar';
+    it('should store and return an Entry by id', function () {
+        $entry = new CallableEntry('foo', fn () => 'bar');
 
-        expect($this->collector['foo'])->toBe('bar');
+        $this->collector['foo'] = $entry;
+
+        expect($this->collector['foo'])->toBe($entry);
+        expect($this->collector['foo'])->toBeAnInstanceOf(Entry::class);
         expect(isset($this->collector['foo']))->toBeTruthy();
+        expect(isset($this->collector['baz']))->toBeFalsy();
+    });
+
+    it('should accept initial Entry storage through the constructor', function () {
+        $entry = new CallableEntry('foo', fn () => 'bar');
+        $collector = new EntryCollector(['foo' => $entry]);
+
+        expect($collector['foo'])->toBe($entry);
     });
 
     it('should be able to iterate over entries', function () {
-        $entries = [
-            'foo' => 'bar',
-            'baz' => 'qux',
-        ];
+        $foo = new CallableEntry('foo', fn () => 'bar');
+        $baz = new CallableEntry('baz', fn () => 'qux');
 
-        $collector = new EntryCollector($entries);
+        $collector = new EntryCollector([
+            'foo' => $foo,
+            'baz' => $baz,
+        ]);
+
         $result = [];
 
         foreach ($collector as $id => $entry) {
             $result[$id] = $entry;
         }
 
-        expect($result)->toBe($entries);
+        expect($result)->toBe(['foo' => $foo, 'baz' => $baz]);
     });
 
     it('should throw NotFoundException for missing entries', function () {
@@ -50,28 +62,13 @@ describe(EntryCollector::class, function () {
         );
     });
 
-    it('should not recurse infinitely if ContainerInterface itself is ContainerAware', function () {
-        $stub = new class implements ContainerAware
-        {
-            use HasContainer;
-        };
-
-        $this->collector[ContainerInterface::class] = $stub;
-
-        // This should not trigger infinite recursion
-        $entry = $this->collector[ContainerInterface::class];
-
-        expect($entry)->toBe($stub);
-        expect($entry->getContainer())->toBeNull();
-    });
-
     it('should not allow entry removal', function () {
-        $this->collector['foo'] = 'bar';
+        $this->collector['foo'] = new CallableEntry('foo', fn () => 'bar');
 
         expect(function () {
             unset($this->collector['foo']);
         })->toThrow(
-            new Exception('Removing registered entry "foo" is not supported.')
+            new InvalidArgumentException('Removing registered entry "foo" is not supported.')
         );
     });
 });

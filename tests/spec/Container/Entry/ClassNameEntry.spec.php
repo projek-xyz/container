@@ -27,7 +27,7 @@ use function Kahlan\it;
 
 describe(ClassNameEntry::class, function () {
     /**
-     * Build a container wired with a recording resolver (per-build fetch, §5).
+     * Build a container wired with a recording resolver (per-build fetch).
      */
     $wired = function (): array {
         $container = new StubContainer([]);

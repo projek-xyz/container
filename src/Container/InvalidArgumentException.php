@@ -11,7 +11,7 @@ class InvalidArgumentException extends \InvalidArgumentException
 {
     /**
      * By-reference parameter rejection, shared byte-identically by
-     * CallableEntry (§5 row 1) and ClassNameEntry (§5 row 3b).
+     * CallableEntry and ClassNameEntry.
      */
     public static function byReferenceParam(string $id, string $param): static
     {
@@ -58,7 +58,7 @@ class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A factory of an unsupported type in set()'s default dispatch row.
+     * A factory of an unsupported type: the catch-all arm of set()'s dispatch rejects it.
      */
     public static function invalidFactoryType(string $id, mixed $factory): static
     {

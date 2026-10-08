@@ -60,7 +60,7 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
 
     /**
      * The only construction site of a NotFoundException: an id missing here is
-     * genuinely absent, so the label it carries is always truthful (§7/§13).
+     * genuinely absent, so the label it carries is always truthful.
      *
      * {@inheritdoc}
      *

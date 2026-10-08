@@ -288,23 +288,23 @@ describe(Container::class, function () {
                 );
             };
 
-            // row 5 — plain objects.
+            // Plain objects.
             $reject(new stdClass, 'Cannot register entry "bad": plain object stdClass is not a factory — register instances as "fn () => $instance" or "new EntryFactory(...)"');
 
-            // row 6 — anything else.
+            // Anything else.
             $reject(42, 'Cannot register entry "bad": invalid factory of type int');
             $reject(null, 'Cannot register entry "bad": invalid factory of type null');
 
-            // row 4 — pair shape and contents (messages shared with the child specs).
+            // Pair shape and contents (messages shared with the child specs).
             $reject(['only-one'], 'Cannot register entry "bad": method pair must contain exactly two elements [class, method].');
             $reject([['nope'], 'handle'], 'Cannot register entry "bad": class "array" does not exist.');
-            // An object class slot stays row 4 (§5): it unwraps to its class,
+            // An object class slot stays a method pair: it unwraps to its class,
             // so the method beside it is what gets validated.
             $reject([new stdClass, 'handle'], 'Cannot register entry "bad": method "stdClass::handle()" does not exist.');
             $reject([SomeClass::class, 'missing'], 'Cannot register entry "bad": method "Stubs\SomeClass::missing()" does not exist.');
             $reject([MultiParamStub::class, 'hidden'], 'Cannot register entry "bad": method "Stubs\MultiParamStub::hidden()" is not public.');
 
-            // row 3b — by-reference constructor parameter.
+            // By-reference constructor parameter.
             $reject(ByRefStub::class, 'Cannot register entry "bad": by-reference parameter $value is not allowed.');
 
             // nothing was stored by any of the failures.
@@ -430,8 +430,8 @@ describe(Container::class, function () {
 
         it('should unwrap aliases, running target decorators then alias decorators', function () {
             $c = $this->c;
-            // A class-string registers as a class entry (§6 row 3b) — an
-            // alias needs a non-buildable target id (§6 row 3d).
+            // A class-string registers as a class entry — an
+            // alias needs a non-buildable target id.
             $c->set('target', CouldExtends::class);
             $c->set('alias', 'target');
 

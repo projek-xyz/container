@@ -55,7 +55,7 @@ describe(MethodPairEntry::class, function () {
         expect($entry->returnType)->toBeNull();
     });
 
-    it('does not reject by-reference method parameters (row 4 has no by-ref rule)', function () {
+    it('does not reject by-reference method parameters (method pairs have no by-ref rule)', function () {
         $entry = new MethodPairEntry('byref', [ByRefStub::class, 'byRefMethod']);
 
         expect($entry->factory)->toBe([ByRefStub::class, 'byRefMethod']);

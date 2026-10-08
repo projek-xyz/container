@@ -12,7 +12,7 @@ use Psr\Container\ContainerInterface;
 use ReflectionMethod;
 
 /**
- * An EntryFactory instance (§5 row 2) — the explicit door for registering an
+ * An EntryFactory instance — the explicit door for registering an
  * object instance: `new EntryFactory(fn () => $instance)`.
  */
 class FactoryEntry extends Entry

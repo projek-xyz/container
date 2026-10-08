@@ -7,7 +7,7 @@ namespace Stubs;
 /**
  * Every member takes its argument by reference: used to prove the
  * registration-time by-ref rejections (constructor, __invoke) and that
- * row-4 method pairs deliberately do NOT reject by-ref methods.
+ * method pairs deliberately do NOT reject by-ref methods.
  */
 class ByRefStub
 {

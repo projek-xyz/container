@@ -198,7 +198,7 @@ class Container implements ContainerInterface
         $entry = $this->entries->offsetGet($id);
 
         if ($id === ResolverInterface::class && $this->buildingResolver && $this->handler === null) {
-            // Bootstrap guard (§12): the shared handler's constructor pulls
+            // Bootstrap guard: the shared handler's constructor pulls
             // this id, and that build needs the very handler being
             // constructed. Hand it the default resolver — the same fallback
             // Handler applies when no resolver entry exists — so the cycle
@@ -279,7 +279,7 @@ class Container implements ContainerInterface
     /**
      * Register a new service factory or class in the container.
      *
-     * The factory is classified (§6 dispatch) but never built — registration
+     * The factory is classified but never built — registration
      * is lazy. Duplicate user registrations throw; infrastructure (auto)
      * defaults may be replaced.
      *
@@ -300,7 +300,7 @@ class Container implements ContainerInterface
         // statement's begin line when a paren group survives to the `;` —
         // without them the closing `});` line can never be marked covered.
         $entry = (match (true) {
-            // row 1 — the is_object guard is load-bearing: a class-string
+            // Invokable shapes first — the is_object guard is load-bearing: a class-string
             // naming an invokable class must fall through to the ClassName
             // arm (build, never invoke).
             $factory instanceof Closure
@@ -316,12 +316,12 @@ class Container implements ContainerInterface
             \is_string($factory) => $this->has($factory)
                 ? new AliasEntry($id, $factory)
                 : throw InvalidArgumentException::unresolvableString($id, $factory),
-            \is_array($factory) => new MethodPairEntry($id, $factory),   // pair validation in its ctor (row 4)
-            // row 5 — plain objects only; invokables matched row 1 above.
+            \is_array($factory) => new MethodPairEntry($id, $factory),   // pair validation in its ctor
+            // Plain objects only; invokables matched the arm above.
             // (\is_object, not `instanceof object` — the latter always
             // evaluates false: `object` is parsed as a class name.)
             \is_object($factory) => throw InvalidArgumentException::plainObjectNotAFactory($id, $factory),
-            // row 6 — invalid factory of type %s.
+            // Invalid factory of type %s.
             default => throw InvalidArgumentException::invalidFactoryType($id, $factory),
         });
 
@@ -351,7 +351,7 @@ class Container implements ContainerInterface
     public function make(array|callable|object|string $instance, array $args = []): mixed
     {
         try {
-            // row 1 — a registered id wins even when it also looks like a
+            // A registered id wins even when it also looks like a
             // class or a function.
             if (\is_string($instance) && $this->entries->offsetExists($instance)) {
                 $aliases = [];
@@ -394,7 +394,7 @@ class Container implements ContainerInterface
                 return $this->injectContainer($value);
             }
 
-            // row 2 — an unregistered, instantiable class-string builds
+            // An unregistered, instantiable class-string builds
             // transiently through the same ClassNameEntry path as set()
             // (never stored, no cache, no events, zero decorators).
             if (
@@ -409,9 +409,9 @@ class Container implements ContainerInterface
                 return $this->injectContainer($value);
             }
 
-            // row 3 — structural callable shape only; contents are validated
+            // Structural callable shape only; contents are validated
             // by the package (an invokable class-string can never land here —
-            // row 2 runs first: build, never invoke).
+            // the class-string arm runs first: build, never invoke).
             // Parens as in set() — they let Kahlan attribute the `});`
             // terminator line to the statement for coverage.
             $shape = (match (true) {
@@ -429,8 +429,8 @@ class Container implements ContainerInterface
                 );
             }
 
-            // row 4 — thrown from inside the boundary: the InvalidArgumentException
-            // passes it untouched (§13 rule 4).
+            // Thrown from inside the boundary: the InvalidArgumentException
+            // passes it untouched — the boundary never wraps a user-facing InvalidArgumentException.
             throw \is_object($instance)
                 ? InvalidArgumentException::cannotMakePlainObject($this->describeTarget($instance))
                 : InvalidArgumentException::cannotMakeUnsupported($this->describeTarget($instance));

@@ -12,8 +12,8 @@ use Psr\Container\ContainerInterface;
 use ReflectionMethod;
 
 /**
- * A `Class::method` string, or a 2-element pair `[class-string|object, method]`
- * (§5 rows 3a/4): class and method are validated beside the class they describe.
+ * A `Class::method` string or [class, method] pair: class and method are
+ * validated beside the class they describe.
  */
 class MethodPairEntry extends Entry
 {

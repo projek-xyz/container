@@ -89,7 +89,7 @@ abstract class Entry
 
     /**
      * Adapt the child's factory shape and produce a raw value; never caches
-     * and never dispatches events (get()/make() own that, §7/§8).
+     * and never dispatches events (get()/make() own that).
      *
      * @param  array<mixed>  $args
      */

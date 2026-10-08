@@ -15,7 +15,7 @@ use Psr\Container\ContainerInterface;
 use ReflectionClass;
 
 /**
- * An instantiable class-string (§5 row 3b): binds and constructs itself through
+ * An instantiable class-string: binds and constructs itself through
  * the package's shared ParametersHelper trait — never through the Handler, so
  * a bare class-string never reaches Handler::handle().
  */
@@ -65,7 +65,7 @@ class ClassNameEntry extends Entry
     }
 
     /**
-     * Bind and construct one instance (§5): empty $args delegates to the
+     * Bind and construct one instance: empty $args delegates to the
      * package's construction path; otherwise the constructor is bound directly
      * through the composed ParametersHelper — no container-side binding logic.
      *

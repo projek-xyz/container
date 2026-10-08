@@ -14,7 +14,7 @@ use Psr\Container\ContainerExceptionInterface;
 class ResolutionException extends \RuntimeException implements ContainerExceptionInterface
 {
     /**
-     * @param  \Throwable|null  $previous  The previous exception (§13 boundary passes the original cause).
+     * @param  \Throwable|null  $previous  The previous exception (the error boundary passes the original cause through).
      */
     public function __construct(string $message, ?\Throwable $previous = null)
     {

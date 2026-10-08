@@ -10,7 +10,7 @@ use Projek\Container\EntryCollector;
 use Psr\Container\ContainerInterface;
 
 /**
- * Any other string (§5 row 3d) — including non-buildable type symbols whose
+ * Any other string — including non-buildable type symbols whose
  * target pre-exists. The target check belongs to Container::set(), not here.
  */
 class AliasEntry extends Entry
@@ -26,7 +26,7 @@ class AliasEntry extends Entry
     /**
      * {@inheritdoc}
      *
-     * get() path only: make() unwraps the alias chain first (§8), so $args
+     * get() path only: make() unwraps the alias chain first, so $args
      * never reach this branch with a non-empty value.
      */
     protected function produce(Handler $handler, ContainerInterface $container, array $args): mixed

@@ -15,7 +15,7 @@ use ReflectionMethod;
 
 /**
  * A closure, a function-name string, or an object with __invoke — one class
- * for all three (§5 row 1/3c): stored and invoked as-is, never re-instantiated.
+ * for all three: stored and invoked as-is, never re-instantiated.
  */
 class CallableEntry extends Entry
 {

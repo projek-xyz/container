@@ -27,7 +27,7 @@ final class CallableEntry extends Entry
     public function __construct(
         string $id,
         /**
-         * @var callable-string|Closure|object $factory  Closure, function name, or invokable object.
+         * @var callable-string|object $factory  Closure, function name, or invokable object.
          */
         public readonly string|object $factory,
         bool $auto = false
@@ -66,9 +66,11 @@ final class CallableEntry extends Entry
     }
 
     /**
-     * @template T of object
+     * @assert-if-true callable-string|object $factory
      *
-     * @assert-if-true Closure|callable-string|callable $factory
+     * @phpstan-assert-if-true callable-string|object $factory
+     *
+     * @psalm-assert-if-true callable-string|object $factory
      */
     public static function isValid(mixed $factory): bool
     {

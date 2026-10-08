@@ -140,6 +140,8 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A string "Class::method" or array pair "[class, method]" factory.
+     *
+     * @param  string|array{mixed,mixed}  $factory
      */
     public static function invalidMethodPair(string $id, string|array $factory): static
     {

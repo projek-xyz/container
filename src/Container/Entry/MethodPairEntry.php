@@ -22,7 +22,7 @@ final class MethodPairEntry extends Entry
     /**
      * @template T of object
      *
-     * @param  array{class-string<T>|T,non-empty-string}|non-empty-string  $factory
+     * @param  array{class-string<T>|T,string}|string  $factory
      *
      * @throws InvalidArgumentException When the pair shape, class, method, or method visibility is invalid.
      */
@@ -74,9 +74,11 @@ final class MethodPairEntry extends Entry
     }
 
     /**
-     * @template T of object
+     * @assert-if-true array{class-string|object,string}|string $factory
      *
-     * @assert-if-true string|array{class-string<T>|T, string} $factory
+     * @phpstan-assert-if-true array{class-string|object,string}|string $factory
+     *
+     * @psalm-assert-if-true array{class-string|object,string}|string $factory
      */
     public static function isValid(mixed $factory): bool
     {

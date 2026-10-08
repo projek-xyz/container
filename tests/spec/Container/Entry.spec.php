@@ -180,6 +180,13 @@ describe(Entry::class, function () {
             new ResolutionException('Failed to resolve "entry-id": circular reference while building.')
         );
 
+        // §13 boundary: new ResolutionException($msg, $e) — message round-trips, previous is kept
+        $previous = new RuntimeException('inner cause');
+        $wrapped = new ResolutionException('Failed to resolve "entry-id": inner cause', $previous);
+
+        expect($wrapped->getMessage())->toBe('Failed to resolve "entry-id": inner cause');
+        expect($wrapped->getPrevious())->toBe($previous);
+
         $entry->endBuild();
         $entry->beginBuild();
 

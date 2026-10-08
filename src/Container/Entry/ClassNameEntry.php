@@ -63,32 +63,17 @@ final class ClassNameEntry extends Entry
     {
         $this->resolver = $container->get(ResolverInterface::class);
 
-        return $this->instantiate($this->factory, $args);
-    }
-
-    /**
-     * Bind and construct one instance: empty $args delegates to the
-     * package's construction path; otherwise the constructor is bound directly
-     * through the composed ParametersHelper — no container-side binding logic.
-     *
-     * @template T of object
-     *
-     * @param  class-string<T>  $class
-     * @param  array<mixed>  $args
-     * @return T
-     *
-     * @throws UnresolvableCallableException When the class is not instantiable (defensive).
-     */
-    private function instantiate(string $class, array $args): object
-    {
         if ($args === []) {
-            return $this->resolver->resolveInstance($class);
+            $this->resolver->resolveInstance($this->factory);
         }
 
-        $reflection = new ReflectionClass($class);
+        // Bind and construct one instance: empty $args delegates to the
+        // package's construction path; otherwise the constructor is bound directly
+        // through the composed `ParametersHelper` — no container-side binding logic.
+        $reflection = new ReflectionClass($this->factory);
 
         if (! $reflection->isInstantiable()) {
-            throw UnresolvableCallableException::notInstantiable($class);
+            throw UnresolvableCallableException::notInstantiable($this->factory);
         }
 
         $constructor = $reflection->getConstructor();

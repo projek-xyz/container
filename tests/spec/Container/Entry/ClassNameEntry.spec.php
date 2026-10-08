@@ -171,15 +171,6 @@ describe(ClassNameEntry::class, function () {
         expect($entry->build($handler, $container, ['ignored']))->toBeAnInstanceOf(Dummy::class);
     });
 
-    it('rejects a non-instantiable class inside instantiate() as well (defensive)', function () {
-        $entry = new ClassNameEntry('provider', ServiceProvider::class);
-        $instantiate = new ReflectionMethod($entry, 'instantiate');
-
-        expect(fn () => $instantiate->invoke($entry, AbstractFoo::class, ['arg']))->toThrow(
-            'Stubs\AbstractFoo is not instantiable'
-        );
-    });
-
     it('derives the extension target as the class itself', function () {
         $entry = new ClassNameEntry('provider', ServiceProvider::class);
 

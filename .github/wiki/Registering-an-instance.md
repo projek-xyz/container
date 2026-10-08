@@ -14,7 +14,7 @@ Registration is **lazy**: `set()` only classifies and stores the factory as an i
 Validation on the other hand is eager: an invalid factory, a duplicate id, or an unknown alias target throws `Projek\Container\InvalidArgumentException` right away, with a `Cannot register entry "%s": …` message. Nothing has been stored when that happens.
 
 > [!NOTE]
-> Since `set()` never builds anything, registration order between entries does not matter — only resolution order does.
+> Since `set()` never builds anything, registration order between entries does not matter — only resolution order does — except for aliases, whose target must already be registered.
 
 ## Accepted factory shapes
 
@@ -169,7 +169,7 @@ The container automatically resolves parameters that the factory did not receive
 4. Otherwise the resolution fails with a `ResolutionException` (or the `NotFoundException` of the missing class type).
 
 ```php
-$container->set('dbHost', 'localhost');
+$container->set('dbHost', fn (): string => 'localhost');
 
 $container->set('db', function ($dbHost) {
     // $dbHost is untyped → looked up as the entry id 'dbHost' → 'localhost'

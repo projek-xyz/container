@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "54cad221d9c2e3a11da91f91477e0f8f",
+    "content-hash": "bbcc40414f646019264830d495407a62",
     "packages": [
         {
             "name": "projek-xyz/callable",
-            "version": "v0.3.0",
+            "version": "v0.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/projek-xyz/callable.git",
-                "reference": "b778393698cd389028b27ca24257548365379d2d"
+                "reference": "11ad05dc3ec48fe5adefffc7d61590031cd09f87"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/projek-xyz/callable/zipball/b778393698cd389028b27ca24257548365379d2d",
-                "reference": "b778393698cd389028b27ca24257548365379d2d",
+                "url": "https://api.github.com/repos/projek-xyz/callable/zipball/11ad05dc3ec48fe5adefffc7d61590031cd09f87",
+                "reference": "11ad05dc3ec48fe5adefffc7d61590031cd09f87",
                 "shasum": ""
             },
             "require": {
@@ -62,7 +62,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-07T18:47:51+00:00"
+            "time": "2026-10-08T05:16:13+00:00"
         },
         {
             "name": "psr/container",

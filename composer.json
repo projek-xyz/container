@@ -41,7 +41,7 @@
     },
     "require": {
         "php": ">=8.4",
-        "projek-xyz/callable": "^0.3",
+        "projek-xyz/callable": "^0.3.1",
         "psr/container": "^2.0",
         "psr/event-dispatcher": "^1.0"
     },

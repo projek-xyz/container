@@ -86,6 +86,7 @@ describe(Container::class, function () {
             $listener = function (Events\EntryResolved $event) use (&$c, &$reentered): void {
                 // The value must already be cached: no circular guard trip,
                 // no rebuild, no second event for the inner get().
+                /** @var Container $c */
                 $reentered = $c->get($event->id);
             };
 

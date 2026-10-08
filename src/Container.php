@@ -30,6 +30,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use ReflectionClass;
 use ReflectionFunction;
 use ReflectionNamedType;
+use Throwable;
 
 /**
  * PSR-11 Dependency Injection Container implementation.
@@ -253,7 +254,7 @@ class Container implements ContainerInterface
                         $this->dispatch($event);
                     }
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 throw $this->boundary($e, $id);
             }
         }
@@ -433,7 +434,7 @@ class Container implements ContainerInterface
             throw \is_object($instance)
                 ? InvalidArgumentException::cannotMakePlainObject($this->describeTarget($instance))
                 : InvalidArgumentException::cannotMakeUnsupported($this->describeTarget($instance));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw $this->boundary($e, $this->describeTarget($instance));
         }
     }
@@ -456,7 +457,6 @@ class Container implements ContainerInterface
     public function extend(string $id, Closure $callback): static
     {
         $entry = $this->entries->offsetGet($id);
-
         $target = $entry->extensionTarget($this->entries);
 
         if ($target === null) {
@@ -513,7 +513,7 @@ class Container implements ContainerInterface
      * for the genuine missing-id witness, keep an existing ResolutionException
      * as-is, wrap package failures, rethrow user code untouched.
      */
-    private function boundary(\Throwable $e, string $label): \Throwable
+    private function boundary(Throwable $e, string $label): Throwable
     {
         for ($cause = $e; $cause !== null; $cause = $cause->getPrevious()) {
             if ($cause instanceof NotFoundExceptionInterface) {

@@ -25,6 +25,7 @@ use Stubs\MultiParamStub;
 use Stubs\RecordingDispatcher;
 use Stubs\SomeClass;
 use Stubs\SpyResolver;
+use Stubs\VariadicStub;
 
 use function Kahlan\beforeEach;
 use function Kahlan\context;
@@ -76,6 +77,87 @@ describe(Container::class, function () {
             expect($resolved)->toHaveLength(1);
             expect($resolved[0]->id)->toBe('foo');
             expect($resolved[0]->instance)->toBe($one);
+        });
+
+        it('should cache strictly before dispatch — a listener re-entering get() of the same id hits the cache', function () {
+            $c = null;
+            $reentered = null;
+
+            $listener = function (Events\EntryResolved $event) use (&$c, &$reentered): void {
+                // The value must already be cached: no circular guard trip,
+                // no rebuild, no second event for the inner get().
+                $reentered = $c->get($event->id);
+            };
+
+            $provider = new class($listener) implements ListenerProviderInterface
+            {
+                public function __construct(private mixed $listener) {}
+
+                public function getListenersForEvent(object $event): iterable
+                {
+                    return $event instanceof Events\EntryResolved ? [$this->listener] : [];
+                }
+            };
+            $recorder = new RecordingDispatcher($provider);
+
+            $c = new Container([], $recorder);
+            $c->set('foo', fn () => new stdClass);
+
+            $first = $c->get('foo');
+            $resolved = $recorder->eventsFor(Events\EntryResolved::class);
+
+            expect($reentered)->toBe($first);
+            expect($resolved)->toHaveLength(1);
+            expect($resolved[0]->id)->toBe('foo');
+            expect($resolved[0]->instance)->toBe($first);
+        });
+
+        it('should keep the entry cached when an EntryResolved listener throws — no un-cache, no replay', function () {
+            $boom = new RuntimeException('listener boom');
+            $calls = 0;
+
+            $provider = new class($boom) implements ListenerProviderInterface
+            {
+                public function __construct(private RuntimeException $boom) {}
+
+                public function getListenersForEvent(object $event): iterable
+                {
+                    return $event instanceof Events\EntryResolved
+                        ? [fn (Events\EntryResolved $e): object => throw $this->boom]
+                        : [];
+                }
+            };
+            $recorder = new RecordingDispatcher($provider);
+
+            $c = new Container([], $recorder);
+            $c->set('foo', function () use (&$calls) {
+                $calls++;
+
+                return new stdClass;
+            });
+
+            $error = null;
+
+            try {
+                $c->get('foo');
+            } catch (Throwable $e) {
+                $error = $e;
+            }
+
+            // The listener's exception propagates untouched (user code) …
+            expect($error)->toBe($boom);
+
+            $resolved = $recorder->eventsFor(Events\EntryResolved::class);
+            expect($resolved)->toHaveLength(1);
+            expect($resolved[0]->id)->toBe('foo');
+
+            // … but the cache write already happened: the next get() is a
+            // hit, the factory does not re-run, the event is not replayed.
+            $cached = $c->get('foo');
+
+            expect($cached)->toBeAnInstanceOf(stdClass::class);
+            expect($calls)->toBe(1);
+            expect($recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(1);
         });
 
         it('should cache non-object results without dispatching', function () {
@@ -379,6 +461,21 @@ describe(Container::class, function () {
             expect($one)->toBeAnInstanceOf(InstantiableClass::class);
             expect($one)->not->toBe($two);
             expect($this->c->has(InstantiableClass::class))->toBeFalsy();
+        });
+
+        it('should feed $args to the constructor of a transient class-string', function () {
+            $dep = new ConcreteBar(new Dummy);
+
+            expect($this->c->has(VariadicStub::class))->toBeFalsy();
+
+            $made = $this->c->make(VariadicStub::class, [$dep]);
+
+            expect($made)->toBeAnInstanceOf(VariadicStub::class);
+            expect($made->foo)->toBe($dep);
+
+            // Row 2 stays transient: never registered, never cached, no events.
+            expect($this->c->has(VariadicStub::class))->toBeFalsy();
+            expect($this->recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(0);
         });
 
         it('should accept every callable shape', function () {
@@ -781,6 +878,22 @@ describe(Container::class, function () {
 
             expect($this->c->getResolver())->toBe($custom);
             expect($this->c->getResolver())->toBe($this->c->get(ResolverInterface::class));
+
+            // The resolver-replacement EntryResolved fired while the
+            // EventDispatcherInterface entry was mid-build (its build pulls
+            // the shared handler, which pulls this resolver) — it was queued
+            // and must be delivered by the FIFO flush, before the outer
+            // EntryRegistered dispatch completes.
+            $resolved = $this->recorder->eventsFor(Events\EntryResolved::class);
+            $registered = $this->recorder->eventsFor(Events\EntryRegistered::class);
+
+            expect($resolved)->toHaveLength(1);
+            expect($resolved[0]->id)->toBe(ResolverInterface::class);
+            expect($resolved[0]->instance)->toBe($custom);
+            expect($registered)->toHaveLength(1);
+            expect($registered[0]->entry->id)->toBe(ResolverInterface::class);
+            expect($this->recorder->events[0])->toBe($resolved[0]);
+            expect($this->recorder->events[1])->toBe($registered[0]);
         });
 
         it('should provide a default internal dispatcher lazily when none is given', function () {

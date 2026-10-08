@@ -103,6 +103,17 @@ final class ClassNameEntry extends Entry
     }
 
     /**
+     * @template T of object
+     *
+     * @assert-if-true class-string<T> $factory
+     */
+    public static function isValid(mixed $factory): bool
+    {
+        return \is_string($factory) && \class_exists($factory)
+            && (new ReflectionClass($factory))->isInstantiable();
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function extensionTarget(EntryCollector $entries): ?string

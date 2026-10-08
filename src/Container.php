@@ -284,6 +284,56 @@ class Container implements ContainerInterface
     }
 
     /**
+     * Register a new service factory or class in the container.
+     *
+     * The factory is classified but never built — registration
+     * is lazy. Duplicate user registrations throw; infrastructure (auto)
+     * defaults may be replaced.
+     *
+     * @link https://github.com/projek-xyz/container/wiki/registering-an-instance Registering an Instance Wiki
+     *
+     * @template T of object
+     *
+     * @param  class-string<T>|string  $id  The entry identifier.
+     * @param  array{class-string<T>|T,string}|callable|string|EntryFactory  $factory  A factory closure, callable, class name, pair, or EntryFactory.
+     *
+     * @throws InvalidArgumentException If the id is a duplicate or the factory is invalid.
+     */
+    public function set(string $id, mixed $factory): static
+    {
+        if ($this->entries->offsetExists($id) && ! $this->entries->offsetGet($id)->auto) {
+            throw InvalidArgumentException::alreadyRegistered($id);
+        }
+
+        // The wrapping parens are load-bearing: Kahlan only records a
+        // statement's begin line when a paren group survives to the `;` —
+        // without them the closing `});` line can never be marked covered.
+        $this->entries[$id] = (match (true) {
+            // Invokable shapes first — the is_object guard is load-bearing: a class-string naming
+            // an invokable class must fall through to the ClassName arm (build, never invoke).
+            FactoryEntry::isValid($factory) => new FactoryEntry($id, $factory),
+            CallableEntry::isValid($factory) => new CallableEntry($id, $factory),
+            ClassNameEntry::isValid($factory) => new ClassNameEntry($id, $factory),
+            MethodPairEntry::isValid($factory) => new MethodPairEntry($id, $factory),
+            // any other string — incl. non-buildable type symbols (interface, trait, abstract
+            // class, enum): must name a pre-registered entry (the typo catcher).
+            \is_string($factory) => $this->has($factory)
+                ? new AliasEntry($id, $factory)
+                : throw InvalidArgumentException::unresolvableString($id, $factory),
+            // Plain objects only; invokables matched the arm above.
+            // (\is_object, not `instanceof object` — the latter always
+            // evaluates false: `object` is parsed as a class name.)
+            \is_object($factory) => throw InvalidArgumentException::plainObjectNotAFactory($id, $factory),
+            // Invalid factory of type %s.
+            default => throw InvalidArgumentException::invalidFactoryType($id, $factory),
+        });
+
+        $this->dispatch(new EntryRegistered($this->entries[$id]));
+
+        return $this;
+    }
+
+    /**
      * Create a new instance without registering it as a singleton.
      *
      * Accepts exactly four families: a registered id, an unregistered
@@ -363,16 +413,7 @@ class Container implements ContainerInterface
         // the class-string arm runs first: build, never invoke).
         // Parens as in set() — they let Kahlan attribute the `});`
         // terminator line to the statement for coverage.
-        $shape = (match (true) {
-            $instance instanceof Closure => true,
-            \is_object($instance) && \method_exists($instance, '__invoke') => true,
-            \is_string($instance) && \function_exists($instance) => true,
-            \is_string($instance) && \str_contains($instance, '::') => true,
-            \is_array($instance) => isset($instance[0], $instance[1]),
-            default => false,
-        });
-
-        if ($shape) {
+        if (CallableEntry::isValid($instance) || MethodPairEntry::isValid($instance)) {
             try {
                 /** @var callable $instance */
                 return $this->injectContainer(
@@ -386,64 +427,6 @@ class Container implements ContainerInterface
         throw \is_object($instance)
             ? InvalidArgumentException::cannotMakePlainObject($this->describeTarget($instance))
             : InvalidArgumentException::cannotMakeUnsupported($this->describeTarget($instance));
-    }
-
-    /**
-     * Register a new service factory or class in the container.
-     *
-     * The factory is classified but never built — registration
-     * is lazy. Duplicate user registrations throw; infrastructure (auto)
-     * defaults may be replaced.
-     *
-     * @link https://github.com/projek-xyz/container/wiki/registering-an-instance Registering an Instance Wiki
-     *
-     * @template T of object
-     *
-     * @param  class-string<T>|string  $id  The entry identifier.
-     * @param  array{class-string<T>|T,string}|callable|string|EntryFactory  $factory  A factory closure, callable, class name, pair, or EntryFactory.
-     *
-     * @throws InvalidArgumentException If the id is a duplicate or the factory is invalid.
-     */
-    public function set(string $id, mixed $factory): static
-    {
-        if ($this->entries->offsetExists($id) && ! $this->entries->offsetGet($id)->auto) {
-            throw InvalidArgumentException::alreadyRegistered($id);
-        }
-
-        // The wrapping parens are load-bearing: Kahlan only records a
-        // statement's begin line when a paren group survives to the `;` —
-        // without them the closing `});` line can never be marked covered.
-        $entry = (match (true) {
-            // Invokable shapes first — the is_object guard is load-bearing: a class-string
-            // naming an invokable class must fall through to the ClassName
-            // arm (build, never invoke).
-            $factory instanceof Closure
-                || (\is_object($factory) && \method_exists($factory, '__invoke')) => new CallableEntry($id, $factory),
-            $factory instanceof EntryFactory => new FactoryEntry($id, $factory),
-            \is_string($factory) && \str_contains($factory, '::') => new MethodPairEntry($id, $factory),
-            \is_string($factory) && \class_exists($factory)
-                && (new ReflectionClass($factory))->isInstantiable() => new ClassNameEntry($id, $factory),
-            \is_string($factory) && \function_exists($factory) => new CallableEntry($id, $factory),
-            // any other string — incl. non-buildable type symbols (interface,
-            // trait, abstract class, enum): must name a pre-registered entry
-            // (the typo catcher).
-            \is_string($factory) => $this->has($factory)
-                ? new AliasEntry($id, $factory)
-                : throw InvalidArgumentException::unresolvableString($id, $factory),
-            \is_array($factory) => new MethodPairEntry($id, $factory),   // pair validation in its ctor
-            // Plain objects only; invokables matched the arm above.
-            // (\is_object, not `instanceof object` — the latter always
-            // evaluates false: `object` is parsed as a class name.)
-            \is_object($factory) => throw InvalidArgumentException::plainObjectNotAFactory($id, $factory),
-            // Invalid factory of type %s.
-            default => throw InvalidArgumentException::invalidFactoryType($id, $factory),
-        });
-
-        $this->entries[$id] = $entry;
-
-        $this->dispatch(new EntryRegistered($entry));
-
-        return $this;
     }
 
     /**

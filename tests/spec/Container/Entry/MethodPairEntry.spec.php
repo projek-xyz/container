@@ -64,51 +64,43 @@ describe(MethodPairEntry::class, function () {
 
     it('rejects a string without a method separator', function () {
         expect(fn () => new MethodPairEntry('bad', 'plain'))->toThrow(
-            new InvalidArgumentException('Cannot register entry "bad": "plain" is not a "Class::method" string.')
+            InvalidArgumentException::invalidMethodPair('bad', 'plain')
         );
     });
 
     it('rejects a pair without exactly two elements', function () {
         expect(fn () => new MethodPairEntry('bad', [SomeClass::class]))->toThrow(
-            new InvalidArgumentException(
-                'Cannot register entry "bad": method pair must contain exactly two elements [class, method].'
-            )
+            InvalidArgumentException::invalidMethodPair('bad', [SomeClass::class])
         );
     });
 
     it('rejects a pair whose class does not exist', function () {
         expect(fn () => new MethodPairEntry('bad', ['Stubs\Missing', 'handle']))->toThrow(
-            new InvalidArgumentException('Cannot register entry "bad": class "Stubs\Missing" does not exist.')
+            InvalidArgumentException::pairClassNotFound('bad', 'Stubs\Missing')
         );
     });
 
     it('rejects a method that does not exist', function () {
         expect(fn () => new MethodPairEntry('bad', [SomeClass::class, 'missing']))->toThrow(
-            new InvalidArgumentException(
-                'Cannot register entry "bad": method "Stubs\SomeClass::missing()" does not exist.'
-            )
+            InvalidArgumentException::pairMethodNotFound('bad', SomeClass::class, 'missing')
         );
     });
 
     it('rejects a non-public method', function () {
         expect(fn () => new MethodPairEntry('bad', [MultiParamStub::class, 'hidden']))->toThrow(
-            new InvalidArgumentException(
-                'Cannot register entry "bad": method "Stubs\MultiParamStub::hidden()" is not public.'
-            )
+            InvalidArgumentException::pairMethodNotPublic('bad', MultiParamStub::class, 'hidden')
         );
     });
 
     it('rejects a non-string method slot with a type-safe message', function () {
         expect(fn () => new MethodPairEntry('bad', [SomeClass::class, new stdClass]))->toThrow(
-            new InvalidArgumentException(
-                'Cannot register entry "bad": method "Stubs\SomeClass::stdClass()" does not exist.'
-            )
+            InvalidArgumentException::pairMethodNotFound('bad', SomeClass::class, new stdClass)
         );
     });
 
     it('rejects a non-string class slot with a type-safe message', function () {
         expect(fn () => new MethodPairEntry('bad', [[], 'handle']))->toThrow(
-            new InvalidArgumentException('Cannot register entry "bad": class "array" does not exist.')
+            InvalidArgumentException::pairClassNotFound('bad', [])
         );
     });
 

@@ -66,6 +66,18 @@ final class CallableEntry extends Entry
     }
 
     /**
+     * @template T of object
+     *
+     * @assert-if-true Closure|callable-string|callable $factory
+     */
+    public static function isValid(mixed $factory): bool
+    {
+        return $factory instanceof Closure
+            || (\is_object($factory) && \method_exists($factory, '__invoke'))
+            || (\is_string($factory) && \function_exists($factory));
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function extensionTarget(EntryCollector $entries): ?string

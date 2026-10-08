@@ -37,6 +37,16 @@ final class FactoryEntry extends Entry
     }
 
     /**
+     * @template T of object
+     *
+     * @assert-if-true EntryFactory $factory
+     */
+    public static function isValid(mixed $factory): bool
+    {
+        return $factory instanceof EntryFactory;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function extensionTarget(EntryCollector $entries): ?string

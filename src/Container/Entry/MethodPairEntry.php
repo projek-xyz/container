@@ -30,13 +30,13 @@ final class MethodPairEntry extends Entry
     {
         if (\is_string($factory)) {
             if (! \str_contains($factory, '::')) {
-                throw InvalidArgumentException::notClassMethodString($id, $factory);
+                throw InvalidArgumentException::invalidMethodPair($id, $factory);
             }
 
             [$class, $method] = \explode('::', $factory, 2);
         } else {
             if (\count($factory) !== 2) {
-                throw InvalidArgumentException::invalidPairSize($id);
+                throw InvalidArgumentException::invalidMethodPair($id, $factory);
             }
 
             [$class, $method] = [$factory[0], $factory[1]];
@@ -71,6 +71,17 @@ final class MethodPairEntry extends Entry
     protected function produce(Handler $handler, ContainerInterface $container, array $args): mixed
     {
         return $handler->handle($this->factory, $args);
+    }
+
+    /**
+     * @template T of object
+     *
+     * @assert-if-true string|array{class-string<T>|T, string} $factory
+     */
+    public static function isValid(mixed $factory): bool
+    {
+        return (\is_string($factory) && \str_contains($factory, '::'))
+            || (\is_array($factory) && count($factory) === 2);
     }
 
     /**

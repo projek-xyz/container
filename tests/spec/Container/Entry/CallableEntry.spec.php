@@ -64,27 +64,25 @@ describe(CallableEntry::class, function () {
         expect(fn () => new CallableEntry('byref', function (&$value) {
             // .
         }))->toThrow(
-            new InvalidArgumentException('Cannot register entry "byref": by-reference parameter $value is not allowed.')
+            InvalidArgumentException::byReferenceParam('byref', 'value')
         );
     });
 
     it('rejects a callable object whose __invoke takes by-reference parameters', function () {
         expect(fn () => new CallableEntry('byref', new ByRefStub))->toThrow(
-            new InvalidArgumentException('Cannot register entry "byref": by-reference parameter $value is not allowed.')
+            InvalidArgumentException::byReferenceParam('byref', 'value')
         );
     });
 
     it('rejects a plain object without __invoke', function () {
         expect(fn () => new CallableEntry('plain', new stdClass))->toThrow(
-            new InvalidArgumentException(
-                'Cannot register entry "plain": plain object stdClass is not a factory — register instances as "fn () => $instance" or "new EntryFactory(...)"'
-            )
+            InvalidArgumentException::plainObjectNotAFactory('plain', new stdClass)
         );
     });
 
     it('rejects a string that is not a function', function () {
         expect(fn () => new CallableEntry('bad', 'not-a-function'))->toThrow(
-            new InvalidArgumentException('Cannot register entry "bad": "not-a-function" is not a function.')
+            InvalidArgumentException::notAFunction('bad', 'not-a-function')
         );
     });
 

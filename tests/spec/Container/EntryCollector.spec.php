@@ -68,7 +68,7 @@ describe(EntryCollector::class, function () {
         expect(function () {
             unset($this->collector['foo']);
         })->toThrow(
-            new InvalidArgumentException('Removing registered entry "foo" is not supported.')
+            InvalidArgumentException::removalNotSupported('foo')
         );
     });
 });

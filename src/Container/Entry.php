@@ -107,6 +107,11 @@ abstract class Entry
     abstract protected function produce(Handler $handler, ContainerInterface $container, array $args): mixed;
 
     /**
+     * The class type extend() derives from this entry, or null when not derivable.
+     */
+    abstract public function extensionTarget(EntryCollector $entries): ?string;
+
+    /**
      * Run the whole decorator list from index 0 against the current value.
      */
     public function applyDecorators(Handler $handler, mixed $value): mixed
@@ -163,11 +168,6 @@ abstract class Entry
     {
         $this->building = false;
     }
-
-    /**
-     * The class type extend() derives from this entry, or null when not derivable.
-     */
-    abstract public function extensionTarget(EntryCollector $entries): ?string;
 
     /**
      * Shared metadata extraction over any reflected function/method.

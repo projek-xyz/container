@@ -139,25 +139,20 @@ class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A string factory without a "Class::method" separator (MethodPairEntry).
+     * A string "Class::method" or array pair "[class, method]" factory.
      */
-    public static function notClassMethodString(string $id, string $factory): static
+    public static function invalidMethodPair(string $id, string|array $factory): static
     {
+        if (is_array($factory)) {
+            $class = var_export($factory[0] ?? null, true);
+            $method = var_export($factory[1] ?? null, true);
+            $factory = "[$class, $method]";
+        }
+
         return new static(\sprintf(
-            'Cannot register entry "%s": "%s" is not a "Class::method" string.',
+            'Cannot register entry "%s": method pair must contain exactly two elements [class, method] or Class::method, "%s" given.',
             $id,
             $factory
-        ));
-    }
-
-    /**
-     * A method pair that is not exactly [class, method] (MethodPairEntry).
-     */
-    public static function invalidPairSize(string $id): static
-    {
-        return new static(\sprintf(
-            'Cannot register entry "%s": method pair must contain exactly two elements [class, method].',
-            $id
         ));
     }
 

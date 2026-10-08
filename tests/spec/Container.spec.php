@@ -258,17 +258,17 @@ describe(Container::class, function () {
             $c = $this->c;
             $c->set('dummy', Dummy::class);
 
-            expect(fn () => $c->set('iface', CertainInterface::class))->toThrow(new Container\InvalidArgumentException(
-                'Cannot register entry "iface": "Stubs\CertainInterface" is neither a registered entry, an instantiable class, nor a function.'
-            ));
+            expect(fn () => $c->set('iface', CertainInterface::class))->toThrow(
+                Container\InvalidArgumentException::unresolvableString('iface', CertainInterface::class)
+            );
 
-            expect(fn () => $c->set('abs', AbstractFoo::class))->toThrow(new Container\InvalidArgumentException(
-                'Cannot register entry "abs": "Stubs\AbstractFoo" is neither a registered entry, an instantiable class, nor a function.'
-            ));
+            expect(fn () => $c->set('abs', AbstractFoo::class))->toThrow(
+                Container\InvalidArgumentException::unresolvableString('abs', AbstractFoo::class)
+            );
 
-            expect(fn () => $c->set('trait', 'Stubs\RequireDummy'))->toThrow(new Container\InvalidArgumentException(
-                'Cannot register entry "trait": "Stubs\RequireDummy" is neither a registered entry, an instantiable class, nor a function.'
-            ));
+            expect(fn () => $c->set('trait', 'Stubs\RequireDummy'))->toThrow(
+                Container\InvalidArgumentException::unresolvableString('trait', 'Stubs\RequireDummy')
+            );
 
             $c->set(CertainInterface::class, SomeClass::class);
             $c->set(AbstractFoo::class, ConcreteBar::class);
@@ -282,30 +282,28 @@ describe(Container::class, function () {
         it('should reject invalid factories with the shared validation messages', function () {
             $c = $this->c;
 
-            $reject = function (mixed $factory, string $message) use ($c): void {
-                expect(fn () => $c->set('bad', $factory))->toThrow(
-                    new Container\InvalidArgumentException($message)
-                );
+            $reject = function (mixed $factory, Container\InvalidArgumentException $expected) use ($c): void {
+                expect(fn () => $c->set('bad', $factory))->toThrow($expected);
             };
 
             // Plain objects.
-            $reject(new stdClass, 'Cannot register entry "bad": plain object stdClass is not a factory — register instances as "fn () => $instance" or "new EntryFactory(...)"');
+            $reject(new stdClass, Container\InvalidArgumentException::plainObjectNotAFactory('bad', new stdClass));
 
             // Anything else.
-            $reject(42, 'Cannot register entry "bad": invalid factory of type int');
-            $reject(null, 'Cannot register entry "bad": invalid factory of type null');
+            $reject(42, Container\InvalidArgumentException::invalidFactoryType('bad', 42));
+            $reject(null, Container\InvalidArgumentException::invalidFactoryType('bad', null));
 
             // Pair shape and contents (messages shared with the child specs).
-            $reject(['only-one'], 'Cannot register entry "bad": method pair must contain exactly two elements [class, method].');
-            $reject([['nope'], 'handle'], 'Cannot register entry "bad": class "array" does not exist.');
+            $reject(['only-one'], Container\InvalidArgumentException::invalidFactoryType('bad', ['only-one']));
+            $reject([['nope'], 'handle'], Container\InvalidArgumentException::pairClassNotFound('bad', ['nope']));
             // An object class slot stays a method pair: it unwraps to its class,
             // so the method beside it is what gets validated.
-            $reject([new stdClass, 'handle'], 'Cannot register entry "bad": method "stdClass::handle()" does not exist.');
-            $reject([SomeClass::class, 'missing'], 'Cannot register entry "bad": method "Stubs\SomeClass::missing()" does not exist.');
-            $reject([MultiParamStub::class, 'hidden'], 'Cannot register entry "bad": method "Stubs\MultiParamStub::hidden()" is not public.');
+            $reject([new stdClass, 'handle'], Container\InvalidArgumentException::pairMethodNotFound('bad', 'stdClass', 'handle'));
+            $reject([SomeClass::class, 'missing'], Container\InvalidArgumentException::pairMethodNotFound('bad', SomeClass::class, 'missing'));
+            $reject([MultiParamStub::class, 'hidden'], Container\InvalidArgumentException::pairMethodNotPublic('bad', MultiParamStub::class, 'hidden'));
 
             // By-reference constructor parameter.
-            $reject(ByRefStub::class, 'Cannot register entry "bad": by-reference parameter $value is not allowed.');
+            $reject(ByRefStub::class, Container\InvalidArgumentException::byReferenceParam('bad', 'value'));
 
             // nothing was stored by any of the failures.
             expect($c->has('bad'))->toBeFalsy();
@@ -315,7 +313,7 @@ describe(Container::class, function () {
             $this->c->set('std', stdClass::class);
 
             expect(fn () => $this->c->set('std', fn () => null))->toThrow(
-                new Container\InvalidArgumentException('Cannot register entry "std": already registered.')
+                Container\InvalidArgumentException::alreadyRegistered('std')
             );
         });
 
@@ -516,21 +514,21 @@ describe(Container::class, function () {
         it('should reject inputs outside the four accepted families', function () {
             $c = new Container;
 
-            expect(fn () => $c->make(new stdClass))->toThrow(new Container\InvalidArgumentException(
-                'Cannot make from "stdClass": plain object has no __invoke — make() accepts a registered entry id, an instantiable class-string, or a callable; pass "fn () => …" instead.'
-            ));
+            expect(fn () => $c->make(new stdClass))->toThrow(
+                Container\InvalidArgumentException::cannotMakePlainObject('stdClass')
+            );
 
-            expect(fn () => $c->make('not-registered'))->toThrow(new Container\InvalidArgumentException(
-                'Cannot make from "not-registered": make() accepts a registered entry id, an instantiable class-string, or a callable.'
-            ));
+            expect(fn () => $c->make('not-registered'))->toThrow(
+                Container\InvalidArgumentException::cannotMakeUnsupported('not-registered')
+            );
 
-            expect(fn () => $c->make(CertainInterface::class))->toThrow(new Container\InvalidArgumentException(
-                'Cannot make from "Stubs\CertainInterface": make() accepts a registered entry id, an instantiable class-string, or a callable.'
-            ));
+            expect(fn () => $c->make(CertainInterface::class))->toThrow(
+                Container\InvalidArgumentException::cannotMakeUnsupported(CertainInterface::class)
+            );
 
-            expect(fn () => $c->make([]))->toThrow(new Container\InvalidArgumentException(
-                'Cannot make from "array": make() accepts a registered entry id, an instantiable class-string, or a callable.'
-            ));
+            expect(fn () => $c->make([]))->toThrow(
+                Container\InvalidArgumentException::cannotMakeUnsupported('array')
+            );
         });
     });
 
@@ -551,15 +549,11 @@ describe(Container::class, function () {
             $this->c->set('str', fn (): string => 'value');
 
             expect(fn () => $this->c->extend('cb', fn (object $entry): object => $entry))->toThrow(
-                new Container\InvalidArgumentException(
-                    'Cannot extend entry "cb": extension target type is not derivable.'
-                )
+                Container\InvalidArgumentException::extensionTargetNotDerivable('cb')
             );
 
             expect(fn () => $this->c->extend('str', fn (object $entry): object => $entry))->toThrow(
-                new Container\InvalidArgumentException(
-                    'Cannot extend entry "str": extension target type is not derivable.'
-                )
+                Container\InvalidArgumentException::extensionTargetNotDerivable('str')
             );
         });
 
@@ -567,29 +561,21 @@ describe(Container::class, function () {
             $id = CouldExtends::class;
 
             expect(fn () => $this->c->extend($id, fn ($entry) => $entry))->toThrow(
-                new Container\InvalidArgumentException(
-                    'Cannot extend entry "Stubs\CouldExtends": callback must declare an explicit, non-union, named return type.'
-                )
+                Container\InvalidArgumentException::callbackReturnTypeInvalid($id)
             );
 
             expect(fn () => $this->c->extend($id, fn ($entry): mixed => $entry))->toThrow(
-                new Container\InvalidArgumentException(
-                    'Cannot extend entry "Stubs\CouldExtends": callback must declare an explicit, non-union, named return type.'
-                )
+                Container\InvalidArgumentException::callbackReturnTypeInvalid($id)
             );
 
             expect(fn () => $this->c->extend($id, fn ($entry): CouldExtends|stdClass => $entry))->toThrow(
-                new Container\InvalidArgumentException(
-                    'Cannot extend entry "Stubs\CouldExtends": callback must declare an explicit, non-union, named return type.'
-                )
+                Container\InvalidArgumentException::callbackReturnTypeInvalid($id)
             );
         });
 
         it('should reject callbacks whose return type is not the target type', function () {
             expect(fn () => $this->c->extend(CouldExtends::class, fn ($entry): stdClass => $entry))->toThrow(
-                new Container\InvalidArgumentException(
-                    'Cannot extend entry "Stubs\CouldExtends": callback must return "Stubs\CouldExtends"'
-                )
+                Container\InvalidArgumentException::callbackReturnMismatch(CouldExtends::class, CouldExtends::class)
             );
         });
 
@@ -826,9 +812,9 @@ describe(Container::class, function () {
             expect($error)->toBe($boom);
 
             // make()'s own input rejection passes the boundary untouched.
-            expect(fn () => $c->make('nope'))->toThrow(new Container\InvalidArgumentException(
-                'Cannot make from "nope": make() accepts a registered entry id, an instantiable class-string, or a callable.'
-            ));
+            expect(fn () => $c->make('nope'))->toThrow(
+                Container\InvalidArgumentException::cannotMakeUnsupported('nope')
+            );
         });
 
         it('should catch make() re-entering its own registered entry as circular', function () {

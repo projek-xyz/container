@@ -56,17 +56,17 @@ describe(ClassNameEntry::class, function () {
 
     it('defensively rejects a non-instantiable class-string', function () {
         expect(fn () => new ClassNameEntry('bad', AbstractFoo::class))->toThrow(
-            new InvalidArgumentException('Cannot register entry "bad": "Stubs\AbstractFoo" is not an instantiable class.')
+            InvalidArgumentException::notInstantiable('bad', AbstractFoo::class)
         );
 
         expect(fn () => new ClassNameEntry('bad', CertainInterface::class))->toThrow(
-            new InvalidArgumentException('Cannot register entry "bad": "Stubs\CertainInterface" is not an instantiable class.')
+            InvalidArgumentException::notInstantiable('bad', CertainInterface::class)
         );
     });
 
     it('defensively rejects a constructor with by-reference parameters', function () {
         expect(fn () => new ClassNameEntry('bad', ByRefStub::class))->toThrow(
-            new InvalidArgumentException('Cannot register entry "bad": by-reference parameter $value is not allowed.')
+            InvalidArgumentException::byReferenceParam('bad', 'value')
         );
     });
 

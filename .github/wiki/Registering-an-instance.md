@@ -93,14 +93,14 @@ The entry is still lazy — `SomeFactoryClass` is constructed on the first `get(
 Plain objects are **not** factories — the container cannot "produce" a value from a value, so `$container->set('myService', new SomeClass)` throws `InvalidArgumentException`. Register the instance through a closure, or implement the `Projek\Container\EntryFactory` interface for the explicit door:
 
 ```php
+// Or the explicit EntryFactory door
+use Projek\Container\EntryFactory;
+use Psr\Container\ContainerInterface;
+
 $instance = new SomeClass($config);
 
 // Closure wrapper
 $container->set('myService', fn (): SomeClass => $instance);
-
-// Or the explicit EntryFactory door
-use Projek\Container\ContainerInterface;
-use Projek\Container\EntryFactory;
 
 $configFactory = new class($config) implements EntryFactory {
     public function __construct(private array $config) {}

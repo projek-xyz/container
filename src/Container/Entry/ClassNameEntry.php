@@ -107,12 +107,4 @@ class ClassNameEntry extends Entry
     {
         return $this->factory;
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getFactory(): string
-    {
-        return $this->factory;
-    }
 }

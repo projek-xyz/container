@@ -56,12 +56,4 @@ class AliasEntry extends Entry
 
         return null;
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getFactory(): string
-    {
-        return $this->factory;
-    }
 }

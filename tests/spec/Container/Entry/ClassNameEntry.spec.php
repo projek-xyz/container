@@ -44,7 +44,7 @@ describe(ClassNameEntry::class, function () {
         expect($entry->factory)->toBe('Stubs\ServiceProvider');
         expect($entry->parameters)->toBe(['abs' => 'Stubs\AbstractFoo']);
         expect($entry->returnType)->toBe('Stubs\ServiceProvider');
-        expect($entry->getFactory())->toBe('Stubs\ServiceProvider');
+        expect($entry->factory)->toBe('Stubs\ServiceProvider');
     });
 
     it('recognises a class-string without a constructor', function () {

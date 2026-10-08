@@ -30,7 +30,7 @@ describe(FactoryEntry::class, function () {
         expect($entry->factory)->toBe($factory);
         expect($entry->parameters)->toBe(['container' => 'Psr\Container\ContainerInterface']);
         expect($entry->returnType)->toBe('object');
-        expect($entry->getFactory())->toBe($factory);
+        expect($entry->factory)->toBe($factory);
     });
 
     it('produces by calling create() with the build container, ignoring args', function () {

@@ -24,7 +24,7 @@ describe(AliasEntry::class, function () {
         expect($entry->parameters)->toBe([]);
         expect($entry->returnType)->toBeNull();
         expect($entry->auto)->toBeTruthy();
-        expect($entry->getFactory())->toBe('not-registered-yet');
+        expect($entry->factory)->toBe('not-registered-yet');
     });
 
     it('produces by resolving the target through the container', function () {

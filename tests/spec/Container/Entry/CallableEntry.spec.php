@@ -35,7 +35,7 @@ describe(CallableEntry::class, function () {
             'text' => '?string',
         ]);
         expect($entry->returnType)->toBe('Stubs\SomeClass');
-        expect($entry->getFactory())->toBe($factory);
+        expect($entry->factory)->toBe($factory);
     });
 
     it('recognises a function-string factory and captures its metadata', function () {
@@ -47,7 +47,7 @@ describe(CallableEntry::class, function () {
         expect($entry->factory)->toBe('Stubs\dummyLorem');
         expect($entry->parameters)->toBe(['foo' => 'Stubs\AbstractFoo']);
         expect($entry->returnType)->toBeNull();
-        expect($entry->getFactory())->toBe('Stubs\dummyLorem');
+        expect($entry->factory)->toBe('Stubs\dummyLorem');
     });
 
     it('recognises an invokable object and stores it as-is, never re-instantiated', function () {

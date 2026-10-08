@@ -28,7 +28,7 @@ describe(MethodPairEntry::class, function () {
             'text' => '?string',
         ]);
         expect($entry->returnType)->toBe('string');
-        expect($entry->getFactory())->toBe('Stubs\SomeClass::handle');
+        expect($entry->factory)->toBe('Stubs\SomeClass::handle');
     });
 
     it('recognises a class-string pair and captures its metadata', function () {
@@ -42,7 +42,7 @@ describe(MethodPairEntry::class, function () {
             'text' => '?string',
         ]);
         expect($entry->returnType)->toBe('string');
-        expect($entry->getFactory())->toBe($factory);
+        expect($entry->factory)->toBe($factory);
     });
 
     it('recognises an object pair and reflects the method on its class', function () {

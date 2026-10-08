@@ -43,11 +43,6 @@ describe(Entry::class, function () {
                 return null;
             }
 
-            public function getFactory(): mixed
-            {
-                return null;
-            }
-
             public static function metadata(ReflectionFunctionAbstract $reflection): array
             {
                 return self::extractMetadata($reflection);
@@ -70,7 +65,6 @@ describe(Entry::class, function () {
         expect((new ReflectionMethod(Entry::class, 'build'))->isFinal())->toBeTruthy();
         expect((new ReflectionMethod(Entry::class, 'produce'))->isAbstract())->toBeTruthy();
         expect((new ReflectionMethod(Entry::class, 'extensionTarget'))->isAbstract())->toBeTruthy();
-        expect((new ReflectionMethod(Entry::class, 'getFactory'))->isAbstract())->toBeTruthy();
     });
 
     it('builds through the produce template, forwarding handler, container and args', function () use ($subject) {

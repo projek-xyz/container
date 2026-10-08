@@ -170,11 +170,6 @@ abstract class Entry
     abstract public function extensionTarget(EntryCollector $entries): ?string;
 
     /**
-     * The raw factory as given — never wrapped.
-     */
-    abstract public function getFactory(): mixed;
-
-    /**
      * Shared metadata extraction over any reflected function/method.
      *
      * @return array{array<string, string|null>, string|null} [parameters, returnType]

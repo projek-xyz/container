@@ -41,12 +41,4 @@ class FactoryEntry extends Entry
     {
         return 'object';
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getFactory(): EntryFactory
-    {
-        return $this->factory;
-    }
 }

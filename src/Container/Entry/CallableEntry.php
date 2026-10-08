@@ -74,12 +74,4 @@ class CallableEntry extends Entry
     {
         return self::namedClassType($this->returnType);
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getFactory(): string|object
-    {
-        return $this->factory;
-    }
 }

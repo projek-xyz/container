@@ -97,12 +97,4 @@ class MethodPairEntry extends Entry
     {
         return self::namedClassType($this->returnType);
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getFactory(): string|array
-    {
-        return $this->factory;
-    }
 }

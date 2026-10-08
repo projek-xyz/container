@@ -199,8 +199,8 @@ abstract class Entry
                 return $scope?->getName() ?? $name;
             }
 
-            if ($name === 'parent') {
-                return $scope?->getParentClass()?->getName() ?? $name;
+            if ($name === 'parent' && ($parent = $scope?->getParentClass())) {
+                return $parent->getName();
             }
 
             return $name;

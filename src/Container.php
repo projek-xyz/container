@@ -186,6 +186,20 @@ class Container implements ContainerInterface
     }
 
     /**
+     * Check if an entry is registered in the container.
+     *
+     * {@inheritdoc}
+     *
+     * @see ContainerInterface::has()
+     *
+     * @param  class-string|string  $id  The entry identifier.
+     */
+    public function has(string $id): bool
+    {
+        return $this->entries->offsetExists($id);
+    }
+
+    /**
      * Resolve a registered entry, building and caching it on first use.
      *
      * {@inheritdoc}
@@ -202,8 +216,6 @@ class Container implements ContainerInterface
      */
     public function get(string $id)
     {
-        $entry = $this->entries->offsetGet($id);
-
         if ($id === ResolverInterface::class && $this->buildingResolver && $this->handler === null) {
             // Bootstrap guard: the shared handler's constructor pulls
             // this id, and that build needs the very handler being
@@ -213,56 +225,58 @@ class Container implements ContainerInterface
             return new Resolver($this);
         }
 
-        if (! $entry->isBuilt()) {
-            try {
-                $entry->beginBuild();
+        $entry = $this->entries->offsetGet($id);
 
-                $isResolver = $id === ResolverInterface::class;
-                $isDispatcher = $id === EventDispatcherInterface::class;
+        if ($entry->isBuilt()) {
+            return $entry->value();
+        }
 
-                if ($isResolver) {
-                    $this->buildingResolver = true;
-                }
+        $entry->beginBuild();
 
-                if ($isDispatcher) {
-                    $this->buildingDispatcher = true;
-                }
+        $isResolver = $id === ResolverInterface::class;
+        $isDispatcher = $id === EventDispatcherInterface::class;
 
-                try {
-                    $value = $entry->build($this->getHandler(), $this);
-                } finally {
-                    if ($isResolver) {
-                        $this->buildingResolver = false;
-                    }
+        if ($isResolver) {
+            $this->buildingResolver = true;
+        }
 
-                    if ($isDispatcher) {
-                        $this->buildingDispatcher = false;
-                    }
+        if ($isDispatcher) {
+            $this->buildingDispatcher = true;
+        }
 
-                    $entry->endBuild();
-                }
+        try {
+            $value = $entry->build($this->getHandler(), $this);
+        } catch (Throwable $e) {
+            throw $this->boundary($e, $id);
+        } finally {
+            if ($isResolver) {
+                $this->buildingResolver = false;
+            }
 
-                // Cache strictly before dispatch: an EntryResolved listener
-                // may re-enter get() for this very id.
-                $entry->cache($value);
+            if ($isDispatcher) {
+                $this->buildingDispatcher = false;
+            }
 
-                if (! $entry->auto && ! $entry instanceof AliasEntry && \is_object($value)) {
-                    $this->dispatch(new EntryResolved($id, $value));
-                }
+            $entry->endBuild();
+        }
 
-                if ($isDispatcher) {
-                    // Flush events raised while this dispatcher was being
-                    // built (its own build completes before the first
-                    // dispatch, so the lookup below is always a cache hit).
-                    $deferred = $this->deferredEvents;
-                    $this->deferredEvents = [];
+        // Cache strictly before dispatch: an EntryResolved listener
+        // may re-enter get() for this very id.
+        $entry->cache($value);
 
-                    foreach ($deferred as $event) {
-                        $this->dispatch($event);
-                    }
-                }
-            } catch (Throwable $e) {
-                throw $this->boundary($e, $id);
+        if (! $entry->auto && ! $entry instanceof AliasEntry && \is_object($value)) {
+            $this->dispatch(new EntryResolved($id, $value));
+        }
+
+        if ($isDispatcher) {
+            // Flush events raised while this dispatcher was being
+            // built (its own build completes before the first
+            // dispatch, so the lookup below is always a cache hit).
+            $deferred = $this->deferredEvents;
+            $this->deferredEvents = [];
+
+            foreach ($deferred as $event) {
+                $this->dispatch($event);
             }
         }
 
@@ -270,17 +284,108 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Check if an entry is registered in the container.
+     * Create a new instance without registering it as a singleton.
      *
-     * {@inheritdoc}
+     * Accepts exactly four families: a registered id, an unregistered
+     * instantiable class-string, a callable shape, or nothing else (throws).
+     * Results are never cached and no events are dispatched — ContainerAware
+     * injection is direct.
      *
-     * @see ContainerInterface::has()
+     * @link https://github.com/projek-xyz/container/wiki/create-an-instance Creating an Instance Wiki
      *
-     * @param  class-string|string  $id  The entry identifier.
+     * @template T of object
+     *
+     * @param  array{class-string<T>|T,string}|callable|callable-string  $instance  Registered id, class name, or callable shape.
+     * @param  array<mixed>  $args  Positional/named arguments for the invocation or constructor.
+     * @return ($instance is class-string<T> ? T : mixed)
+     *
+     * @throws InvalidArgumentException If the input matches no family.
+     * @throws ResolutionException If a package call fails to resolve.
      */
-    public function has(string $id): bool
+    public function make(array|callable|object|string $instance, array $args = []): mixed
     {
-        return $this->entries->offsetExists($id);
+        // A registered id wins even when it also looks like a
+        // class or a function.
+        if (\is_string($instance) && $this->entries->offsetExists($instance)) {
+            $aliases = [];
+            $current = $this->entries->offsetGet($instance);
+
+            while ($current instanceof AliasEntry) {
+                $aliases[] = $current;
+                $current = $this->entries->offsetGet($current->factory);
+            }
+
+            $current->beginBuild();
+
+            if ($isResolver = $current->id === ResolverInterface::class) {
+                // make() entered the resolver's build before the shared
+                // handler existed — mark it so the handler constructor's
+                // pull of this id takes the bootstrap guard in get().
+                $this->buildingResolver = true;
+            }
+
+            try {
+                $value = $current->build($this->getHandler(), $this, $args);
+            } finally {
+                if ($isResolver) {
+                    $this->buildingResolver = false;
+                }
+
+                $current->endBuild();
+            }
+
+            // The aliases' own decorators never ran — make() bypassed
+            // their build(); innermost first, mirroring get().
+            $handler = $this->getHandler();
+
+            foreach (\array_reverse($aliases) as $alias) {
+                $value = $alias->applyDecorators($handler, $value);
+            }
+
+            return $this->injectContainer($value);
+        }
+
+        // An unregistered, instantiable class-string builds
+        // transiently through the same ClassNameEntry path as set()
+        // (never stored, no cache, no events, zero decorators).
+        if (
+            \is_string($instance) && ! \str_contains($instance, '::')
+            && \class_exists($instance) && (new ReflectionClass($instance))->isInstantiable()
+        ) {
+            $value = (new ClassNameEntry($instance, $instance))
+                ->build($this->getHandler(), $this, $args);
+
+            return $this->injectContainer($value);
+        }
+
+        // Structural callable shape only; contents are validated
+        // by the package (an invokable class-string can never land here —
+        // the class-string arm runs first: build, never invoke).
+        // Parens as in set() — they let Kahlan attribute the `});`
+        // terminator line to the statement for coverage.
+        $shape = (match (true) {
+            $instance instanceof Closure => true,
+            \is_object($instance) && \method_exists($instance, '__invoke') => true,
+            \is_string($instance) && \function_exists($instance) => true,
+            \is_string($instance) && \str_contains($instance, '::') => true,
+            \is_array($instance) => isset($instance[0], $instance[1]),
+            default => false,
+        });
+
+        if ($shape) {
+            try {
+                /** @var callable $instance */
+                return $this->injectContainer(
+                    $this->getHandler()->handle($instance, $args)
+                );
+            } catch (Throwable $e) {
+                throw $this->boundary($e, $this->describeTarget($instance));
+            }
+        }
+
+        throw \is_object($instance)
+            ? InvalidArgumentException::cannotMakePlainObject($this->describeTarget($instance))
+            : InvalidArgumentException::cannotMakeUnsupported($this->describeTarget($instance));
     }
 
     /**
@@ -339,116 +444,6 @@ class Container implements ContainerInterface
         $this->dispatch(new EntryRegistered($entry));
 
         return $this;
-    }
-
-    /**
-     * Create a new instance without registering it as a singleton.
-     *
-     * Accepts exactly four families: a registered id, an unregistered
-     * instantiable class-string, a callable shape, or nothing else (throws).
-     * Results are never cached and no events are dispatched — ContainerAware
-     * injection is direct.
-     *
-     * @link https://github.com/projek-xyz/container/wiki/create-an-instance Creating an Instance Wiki
-     *
-     * @template T of object
-     *
-     * @param  array{class-string<T>|T,string}|callable|callable-string  $instance  Registered id, class name, or callable shape.
-     * @param  array<mixed>  $args  Positional/named arguments for the invocation or constructor.
-     * @return ($instance is class-string<T> ? T : mixed)
-     *
-     * @throws InvalidArgumentException If the input matches no family.
-     * @throws ResolutionException If a package call fails to resolve.
-     */
-    public function make(array|callable|object|string $instance, array $args = []): mixed
-    {
-        try {
-            // A registered id wins even when it also looks like a
-            // class or a function.
-            if (\is_string($instance) && $this->entries->offsetExists($instance)) {
-                $aliases = [];
-                $current = $this->entries->offsetGet($instance);
-
-                while ($current instanceof AliasEntry) {
-                    $aliases[] = $current;
-                    $current = $this->entries->offsetGet($current->factory);
-                }
-
-                $current->beginBuild();
-
-                $isResolver = $current->id === ResolverInterface::class;
-
-                if ($isResolver) {
-                    // make() entered the resolver's build before the shared
-                    // handler existed — mark it so the handler constructor's
-                    // pull of this id takes the bootstrap guard in get().
-                    $this->buildingResolver = true;
-                }
-
-                try {
-                    $value = $current->build($this->getHandler(), $this, $args);
-                } finally {
-                    if ($isResolver) {
-                        $this->buildingResolver = false;
-                    }
-
-                    $current->endBuild();
-                }
-
-                // The aliases' own decorators never ran — make() bypassed
-                // their build(); innermost first, mirroring get().
-                $handler = $this->getHandler();
-
-                foreach (\array_reverse($aliases) as $alias) {
-                    $value = $alias->applyDecorators($handler, $value);
-                }
-
-                return $this->injectContainer($value);
-            }
-
-            // An unregistered, instantiable class-string builds
-            // transiently through the same ClassNameEntry path as set()
-            // (never stored, no cache, no events, zero decorators).
-            if (
-                \is_string($instance)
-                && ! \str_contains($instance, '::')
-                && \class_exists($instance)
-                && (new ReflectionClass($instance))->isInstantiable()
-            ) {
-                $value = (new ClassNameEntry($instance, $instance))
-                    ->build($this->getHandler(), $this, $args);
-
-                return $this->injectContainer($value);
-            }
-
-            // Structural callable shape only; contents are validated
-            // by the package (an invokable class-string can never land here —
-            // the class-string arm runs first: build, never invoke).
-            // Parens as in set() — they let Kahlan attribute the `});`
-            // terminator line to the statement for coverage.
-            $shape = (match (true) {
-                $instance instanceof Closure => true,
-                \is_object($instance) && \method_exists($instance, '__invoke') => true,
-                \is_string($instance) && \function_exists($instance) => true,
-                \is_string($instance) && \str_contains($instance, '::') => true,
-                \is_array($instance) => isset($instance[0], $instance[1]),
-                default => false,
-            });
-
-            if ($shape) {
-                return $this->injectContainer(
-                    $this->getHandler()->handle($instance, $args)
-                );
-            }
-
-            // Thrown from inside the boundary: the InvalidArgumentException
-            // passes it untouched — the boundary never wraps a user-facing InvalidArgumentException.
-            throw \is_object($instance)
-                ? InvalidArgumentException::cannotMakePlainObject($this->describeTarget($instance))
-                : InvalidArgumentException::cannotMakeUnsupported($this->describeTarget($instance));
-        } catch (Throwable $e) {
-            throw $this->boundary($e, $this->describeTarget($instance));
-        }
     }
 
     /**

@@ -514,7 +514,7 @@ describe(Container::class, function () {
         });
 
         it('should reject inputs outside the four accepted families', function () {
-            $c = $this->c;
+            $c = new Container;
 
             expect(fn () => $c->make(new stdClass))->toThrow(new Container\InvalidArgumentException(
                 'Cannot make from "stdClass": plain object has no __invoke — make() accepts a registered entry id, an instantiable class-string, or a callable; pass "fn () => …" instead.'

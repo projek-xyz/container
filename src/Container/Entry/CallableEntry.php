@@ -50,11 +50,7 @@ class CallableEntry extends Entry
 
         foreach ($reflection->getParameters() as $parameter) {
             if ($parameter->isPassedByReference()) {
-                throw new InvalidArgumentException(\sprintf(
-                    'Cannot register entry "%s": by-reference parameter $%s is not allowed.',
-                    $id,
-                    $parameter->getName()
-                ));
+                throw InvalidArgumentException::byReferenceParam($id, $parameter->getName());
             }
         }
 

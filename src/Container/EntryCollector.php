@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Projek\Container;
 
 use ArrayAccess;
+use ArrayIterator;
 use IteratorAggregate;
+use Traversable;
 
 /**
  * Internal storage for container entries.
@@ -41,11 +43,11 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     /**
      * {@inheritdoc}
      *
-     * @return \Traversable<string, Entry>
+     * @return Traversable<string, Entry>
      */
-    public function getIterator(): \Traversable
+    public function getIterator(): Traversable
     {
-        return new \ArrayIterator($this->entries);
+        return new ArrayIterator($this->entries);
     }
 
     /**

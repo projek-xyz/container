@@ -77,6 +77,17 @@ abstract class Entry
     }
 
     /**
+     * Reset the singleton cache and the guard; metadata, factory and
+     * decorators copy by value (object values inside them are shared).
+     */
+    public function __clone()
+    {
+        $this->built = false;
+        $this->value = null;
+        $this->building = false;
+    }
+
+    /**
      * Build template: produce() yields the raw value, decorators always run
      * inside build() — a value returned from build() is fully decorated.
      *
@@ -150,17 +161,6 @@ abstract class Entry
 
     public function endBuild(): void
     {
-        $this->building = false;
-    }
-
-    /**
-     * Reset the singleton cache and the guard; metadata, factory and
-     * decorators copy by value (object values inside them are shared).
-     */
-    public function __clone()
-    {
-        $this->built = false;
-        $this->value = null;
         $this->building = false;
     }
 

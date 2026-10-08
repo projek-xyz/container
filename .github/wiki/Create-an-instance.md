@@ -21,7 +21,7 @@ Unlike `get()`, the `make()` method will **not** store anything in the container
 4. **Anything else** — throws (plain objects, interface/trait/abstract-class names that are not registered ids, malformed arrays, …).
 
 ```php
-$container->make(SomeClass::class);                 // fresh instance, constructor autowired
+$container->make(SomeClass::class);                  // fresh instance, constructor autowired
 $container->make(SomeClass::class, [$dependency]);   // $dependency feeds the constructor
 $container->make(SomeClass::class, ['name' => 'x']); // named arguments also work
 $container->make('SomeClass::handle');               // returns handle()'s return value

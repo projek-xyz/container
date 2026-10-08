@@ -98,6 +98,20 @@ describe(MethodPairEntry::class, function () {
         );
     });
 
+    it('rejects a non-string method slot with a type-safe message', function () {
+        expect(fn () => new MethodPairEntry('bad', [SomeClass::class, new stdClass]))->toThrow(
+            new InvalidArgumentException(
+                'Cannot register entry "bad": method "Stubs\SomeClass::stdClass()" does not exist.'
+            )
+        );
+    });
+
+    it('rejects a non-string class slot with a type-safe message', function () {
+        expect(fn () => new MethodPairEntry('bad', [[], 'handle']))->toThrow(
+            new InvalidArgumentException('Cannot register entry "bad": class "array" does not exist.')
+        );
+    });
+
     it('produces by handing the pair and args to the handler', function () {
         $foo = new ConcreteBar(null);
         $container = new StubContainer([AbstractFoo::class => $foo]);

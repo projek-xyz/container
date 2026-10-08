@@ -53,7 +53,7 @@ class MethodPairEntry extends Entry
             throw new InvalidArgumentException(\sprintf(
                 'Cannot register entry "%s": class "%s" does not exist.',
                 $id,
-                $class
+                \is_string($class) ? $class : \get_debug_type($class)
             ));
         }
 
@@ -62,7 +62,7 @@ class MethodPairEntry extends Entry
                 'Cannot register entry "%s": method "%s::%s()" does not exist.',
                 $id,
                 $class,
-                $method
+                \is_string($method) ? $method : \get_debug_type($method)
             ));
         }
 

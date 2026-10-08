@@ -77,8 +77,6 @@ final class MethodPairEntry extends Entry
      * @assert-if-true array{class-string|object,string}|string $factory
      *
      * @phpstan-assert-if-true array{class-string|object,string}|string $factory
-     *
-     * @psalm-assert-if-true array{class-string|object,string}|string $factory
      */
     public static function isValid(mixed $factory): bool
     {

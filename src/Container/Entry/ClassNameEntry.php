@@ -106,8 +106,6 @@ final class ClassNameEntry extends Entry
      * @assert-if-true class-string $factory
      *
      * @phpstan-assert-if-true class-string $factory
-     *
-     * @psalm-assert-if-true class-string $factory
      */
     public static function isValid(mixed $factory): bool
     {

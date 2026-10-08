@@ -69,8 +69,6 @@ final class CallableEntry extends Entry
      * @assert-if-true callable-string|Closure $factory
      *
      * @phpstan-assert-if-true callable-string|Closure $factory
-     *
-     * @psalm-assert-if-true callable-string|Closure $factory
      */
     public static function isValid(mixed $factory): bool
     {

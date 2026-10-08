@@ -40,8 +40,6 @@ final class FactoryEntry extends Entry
      * @assert-if-true EntryFactory $factory
      *
      * @phpstan-assert-if-true EntryFactory $factory
-     *
-     * @psalm-assert-if-true EntryFactory $factory
      */
     public static function isValid(mixed $factory): bool
     {

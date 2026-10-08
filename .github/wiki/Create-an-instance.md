@@ -1,26 +1,33 @@
 # Create an instance of a class without registering it to the container stack.
 
 ```php
-$container->make($instance, array|Closure $args = [], ?Closure $condition = null): mixed
+$container->make(array|callable|object|string $instance, array $args = []): mixed
 ```
 
-Unlike `get()`, the `make()` method will **not** store the resolved instance in the container. Every time you call `make()`, it will return a new instance (unless the callable itself returns a shared instance).
+Unlike `get()`, the `make()` method will **not** store anything in the container: every call builds a **fresh** value, no entry is registered (`has()` stays `false`), and **no events are dispatched**. `ContainerAware` results still get the container injected — directly, without going through the event system.
 
 | Parameters | Type | Description |
 | --- | --- | --- |
-| `$instance` | `string`, `callable` | `string` of class name or `callable` |
-| `$args` | `array`, `\Closure` | **Optional**: pass an array to callback handler or conditionally resolve the callback |
-| `$condition` | `\Closure` | **Optional**: conditionally resolve the callback |
+| `$instance` | `string`, `callable`, `array`, `object` | What to build: a registered id, a class name, or a callable shape |
+| `$args` | `array` | **Optional**: arguments for the constructor or invocation (positional by order, or named) |
 
 ## Usage
 
-This method will always assume that the first argument is a callable, which means the return value of this method is the return value of the callable. 
+`make()` accepts exactly **four families** of input — anything else throws `Projek\Container\InvalidArgumentException`:
+
+1. **A registered id** (string) — builds that entry fresh: the factory runs and `extend()` decorators are applied, aliases are followed to their target. Still never cached, still no events.
+2. **An instantiable class-name string** (unregistered, no `::`) — a fresh instance of the class; `$args` feeds the **constructor**, and unprovided parameters are autowired.
+3. **A valid callable shape** — a `Closure`, an object with `__invoke()`, a function name, a `Class::method` string, or a `[class-string|object, method]` pair. Returns whatever the callable returns; `$args` are its arguments.
+4. **Anything else** — throws (plain objects, interface/trait/abstract-class names that are not registered ids, malformed arrays, …).
 
 ```php
-$container->make(SomeClass::class);
+$container->make(SomeClass::class);                 // fresh instance, constructor autowired
+$container->make(SomeClass::class, [$dependency]);   // $dependency feeds the constructor
+$container->make(SomeClass::class, ['name' => 'x']); // named arguments also work
+$container->make('SomeClass::handle');               // returns handle()'s return value
+$container->make([new SomeClass, 'handle']);         // ditto, from an object pair
+$container->make('my.service');                      // registered entry, built fresh + decorated
 ```
-
-So, if `SomeClass` has an `__invoke()` method, it will return the value from `__invoke()` instead. Otherwise, it will return the class instance. Also, any arguments required for the `__construct()` and the `__invoke()` methods will be automatically injected if they're available in the container.
 
 ```php
 class SomeClass {
@@ -35,74 +42,64 @@ class SomeClass {
     }
 }
 
-$container->make(SomeClass::class);
+$container->make(SomeClass::class); // => the SomeClass INSTANCE
 ```
 
-The 1st argument of `make()` behaves exactly the same as the [2nd argument of the `set()` method](Registering-an-instance#1-use-callable-string-or-array), which means you can do the following:
+> [!NOTE]
+> A class-name string **always builds the instance**, even when the class has an `__invoke()` — it is never implicitly invoked. Use `make([SomeClass::class, '__invoke'], $args)` if you want the invoke result.
 
-```php
-class SomeClass {
-    public function __invoke(Bar $bar) {
-        return $bar;
-    }
+### Arguments
 
-    public function otherMethod(Bar $bar) {
-        return $bar;
-    }
-}
+`$args` is typed `array` (a non-array now raises a native `TypeError`). Where they land depends on the family:
 
-// Class name
-$container->make(SomeClass::class); // returns instance or the return value of `__invoke()`.
-// Method
-$container->make('SomeClass::otherMethod'); // returns the value from `otherMethod`
-$container->make(['SomeClass', 'otherMethod']); // returns the value from `otherMethod`
-$container->make([new SomeClass, 'otherMethod']); // returns the value from `otherMethod`
-```
-
-### 1. Second argument is an array of the callable's arguments
-
-Let's say we have something like this:
+| Input | `$args` goes to |
+| --- | --- |
+| a class entry — an id registered from a class name, or an unregistered class name | the **constructor** (autowiring fills whatever you skip) |
+| a `Closure`, function, `Class::method`, pair, or invokable object — whether passed directly or registered under an id | the **invocation** (`call_user_func_array` semantics, named keys included) |
+| an `EntryFactory` entry | ignored — `create($container)` takes no arguments |
 
 ```php
 class SomeClass {
     public function __invoke($value) {
         return $value;
     }
+
+    public function otherMethod($value) {
+        return $value;
+    }
 }
 
-$foo = $container->make(SomeClass::class, ['the value']); // returns 'the value'
-```
-> [!NOTE]
-> The second argument will only be passed to the callback, not the class constructor.
-
-### 2. Passing a closure as a condition
-
-By default, it will try to call the `__invoke()` method if available. However, in cases where we need to perform checks and call another method if a certain condition is met, we can do the following:
-
-```php
-use Psr\Http\Server\RequestHandlerInterface;
-
-$container->make(SomeClass::class, function ($instance) {
-    if ($instance instanceof RequestHandlerInterface) {
-        return [$instance, 'handle'];
-    }
-
-    return null; // Accepts a falsy value or the $instance of the class
-});
-```
-Returning an array as a class-method pair means the return value of `make()` will be the return value of the defined method.
-
-> [!NOTE]
-> The `Closure` on the last argument will only work if the first argument is a string class name or an object.
-
-### 3. Combining the two options
-
-In case we need to change the default callback and pass arguments, we can do the following:
-
-```php
-$container->make(SomeClass::class, ['the value'], function ($instance) {
-    return [$instance, 'handle'];
-});
+$container->make(SomeClass::class, ['the value']);                // feeds __construct() — NOT __invoke()
+$container->make([SomeClass::class, '__invoke'], ['the value']);  // feeds __invoke()
+$container->make([SomeClass::class, 'otherMethod'], ['the value']);
+$container->make([new SomeClass, 'otherMethod'], ['the value']);
 ```
 
-See [#11](https://github.com/projek-xyz/container/pull/11) & [#12](https://github.com/projek-xyz/container/pull/12) for details.
+## Error handling
+
+`make()` runs through the **same error boundary as `get()`**:
+
+- a missing autowired dependency surfaces as a `Projek\Container\NotFoundException` naming the **missing** id;
+- package/resolver failures are wrapped as `Projek\Container\ResolutionException` with a `Failed to resolve "%s": %s` message;
+- your own exceptions and native `\Error`s propagate **untouched**;
+- input that matches none of the four families throws `Projek\Container\InvalidArgumentException` (`Cannot make from "%s": %s`).
+
+## Migrating from v1.x
+
+- **The `$condition` parameter is gone.** Conditional method selection is now spelled as a pair:
+  ```php
+  // v1
+  $container->make(SomeClass::class, $args, fn ($instance) => [$instance, 'handle']);
+  // v2
+  $container->make([SomeClass::class, 'handle'], $args);
+  ```
+- **`$args` must be an `array`** — passing a `Closure` (the old condition form) or any non-array is now a `TypeError`.
+- **`make(SomeClass::class, $args)` feeds the constructor**, not `__invoke()` (v1 invoked `__invoke($args)` for invokable classes):
+  ```php
+  // v1
+  $container->make(SomeClass::class, ['the value']);
+  // v2
+  $container->make([SomeClass::class, '__invoke'], ['the value']);
+  ```
+- **The acceptance contract is strict**: unknown strings (e.g. an unregistered interface name) used to be attempted blindly and now throw `InvalidArgumentException`.
+- **Plain objects now throw** (v1 returned them as-is): wrap them — `make(fn () => $instance)` — or just use the object directly.

@@ -26,9 +26,10 @@ Define your `services.php` file:
 ```php
 return [
     /**
-     * Let's say you have your own config factory class, you can register it as a class instance.
+     * Let's say you have your own config factory class, you can register the instance it returns through a closure
+     * (plain objects are not factories — wrap them in `fn () => ...` or `new EntryFactory(...)`).
      */
-    My\ConfigInterface::class => My\ConfigFactory::loadFile('path/to/config.php'),
+    My\ConfigInterface::class => fn (): My\ConfigInterface => My\ConfigFactory::loadFile('path/to/config.php'),
 
     /**
      * Then you want to configure your logger based on the configuration file you already loaded. 
@@ -85,6 +86,9 @@ This means it has the `get($id)` and `has($id)` methods as required by the [PSR-
 
 The library provides the following custom exceptions under the `Projek\Container` namespace:
 
-- `NotFoundException`: Thrown when a service ID is not found in the container (implements `Psr\Container\NotFoundExceptionInterface`).
-- `InvalidArgumentException`: Thrown when an invalid argument is passed to a container method.
-- `Exception`: A general exception for container-related errors (implements `Psr\Container\ContainerExceptionInterface`).
+- `NotFoundException`: Thrown when a service ID is not found in the container — `extends \RuntimeException` and `implements Psr\Container\NotFoundExceptionInterface`.
+- `ResolutionException`: Thrown when a registered entry, a `make()` class-string, or a callable could not be built or resolved — `extends \RuntimeException` and `implements Psr\Container\ContainerExceptionInterface` (message convention: `Failed to resolve "%s": %s`).
+- `InvalidArgumentException`: Thrown on API misuse — an invalid factory, a duplicate id, invalid `extend()` or `make()` input — `extends \InvalidArgumentException` (it does not implement a PSR marker).
+
+> [!NOTE]
+> The former `Projek\Container\Exception`, `Projek\Container\Resolver`, and `Projek\Container\UnresolvableArgumentException` no longer exist: general resolution failures are `ResolutionException`, and package resolver failures are wrapped by the container's error boundary before they reach you.

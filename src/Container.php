@@ -9,6 +9,20 @@ use Projek\Callable\Handler;
 use Projek\Callable\Resolver;
 use Projek\Callable\ResolverExceptionInterface;
 use Projek\Callable\ResolverInterface;
+use Projek\Container\ContainerAware;
+use Projek\Container\Entry\AliasEntry;
+use Projek\Container\Entry\CallableEntry;
+use Projek\Container\Entry\ClassNameEntry;
+use Projek\Container\Entry\FactoryEntry;
+use Projek\Container\Entry\MethodPairEntry;
+use Projek\Container\EntryCollector;
+use Projek\Container\EntryFactory;
+use Projek\Container\Events\Dispatcher;
+use Projek\Container\Events\EntryRegistered;
+use Projek\Container\Events\EntryResolved;
+use Projek\Container\InvalidArgumentException;
+use Projek\Container\NotFoundException;
+use Projek\Container\ResolutionException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -27,9 +41,9 @@ use ReflectionNamedType;
 class Container implements ContainerInterface
 {
     /**
-     * @var Container\EntryCollector Internal storage for registered entries.
+     * @var EntryCollector Internal storage for registered entries.
      */
-    private Container\EntryCollector $entries;
+    private EntryCollector $entries;
 
     /**
      * @var Handler|null Shared handler, built lazily against this container.
@@ -69,17 +83,17 @@ class Container implements ContainerInterface
         array $entries = [],
         ?EventDispatcherInterface $eventDispatcher = null,
     ) {
-        $this->entries = new Container\EntryCollector;
+        $this->entries = new EntryCollector;
 
         $defaults = [
             self::class => fn (): self => $this,
             ContainerInterface::class => fn (): ContainerInterface => $this,
             ResolverInterface::class => fn (ContainerInterface $c): ResolverInterface => new Resolver($c),
-            EventDispatcherInterface::class => fn (): EventDispatcherInterface => $eventDispatcher ?? new Container\Events\Dispatcher($this),
+            EventDispatcherInterface::class => fn (): EventDispatcherInterface => $eventDispatcher ?? new Dispatcher($this),
         ];
 
         foreach ($defaults as $id => $factory) {
-            $this->entries[$id] = new Container\Entry\CallableEntry($id, $factory, auto: true);
+            $this->entries[$id] = new CallableEntry($id, $factory, auto: true);
         }
 
         foreach ($entries as $id => $factory) {
@@ -95,7 +109,7 @@ class Container implements ContainerInterface
      */
     public function __clone()
     {
-        $entries = new Container\EntryCollector;
+        $entries = new EntryCollector;
 
         foreach ($this->entries as $id => $entry) {
             $entries[$id] = clone $entry;
@@ -107,11 +121,11 @@ class Container implements ContainerInterface
         foreach ([self::class, ContainerInterface::class, EventDispatcherInterface::class] as $id) {
             $entry = $this->entries->offsetExists($id) ? $this->entries->offsetGet($id) : null;
 
-            if ($entry instanceof Container\Entry\CallableEntry && $entry->auto) {
+            if ($entry instanceof CallableEntry && $entry->auto) {
                 // Recreate the factory closure against the clone; rebinding
                 // keeps any captured value (the ctor-provided dispatcher)
                 // while re-pointing the captured container.
-                $this->entries[$id] = new Container\Entry\CallableEntry(
+                $this->entries[$id] = new CallableEntry(
                     $id,
                     Closure::bind($entry->factory, $this, self::class),
                     auto: true,
@@ -145,7 +159,7 @@ class Container implements ContainerInterface
      */
     final public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): self
     {
-        $entry = new Container\Entry\CallableEntry(
+        $entry = new CallableEntry(
             EventDispatcherInterface::class,
             fn (): EventDispatcherInterface => $eventDispatcher,
         );
@@ -153,7 +167,7 @@ class Container implements ContainerInterface
         $this->entries[EventDispatcherInterface::class] = $entry;
 
         $this->dispatch(
-            new Container\Events\EntryRegistered($entry)
+            new EntryRegistered($entry)
         );
 
         return $this;
@@ -175,8 +189,8 @@ class Container implements ContainerInterface
      *
      * @link https://github.com/projek-xyz/container/wiki/event-lifecycle Event Lifecycle Wiki
      *
-     * @throws Container\NotFoundException If the entry is not found.
-     * @throws Container\ResolutionException If the entry cannot be built.
+     * @throws NotFoundException If the entry is not found.
+     * @throws ResolutionException If the entry cannot be built.
      */
     public function get(string $id)
     {
@@ -224,8 +238,8 @@ class Container implements ContainerInterface
                 // may re-enter get() for this very id.
                 $entry->cache($value);
 
-                if (! $entry->auto && ! $entry instanceof Container\Entry\AliasEntry && \is_object($value)) {
-                    $this->dispatch(new Container\Events\EntryResolved($id, $value));
+                if (! $entry->auto && ! $entry instanceof AliasEntry && \is_object($value)) {
+                    $this->dispatch(new EntryResolved($id, $value));
                 }
 
                 if ($isDispatcher) {
@@ -273,15 +287,12 @@ class Container implements ContainerInterface
      * @param  string  $id  The entry identifier.
      * @param  mixed  $factory  A factory closure, callable, class name, pair, or EntryFactory.
      *
-     * @throws Container\InvalidArgumentException If the id is a duplicate or the factory is invalid.
+     * @throws InvalidArgumentException If the id is a duplicate or the factory is invalid.
      */
     public function set(string $id, mixed $factory): static
     {
         if ($this->entries->offsetExists($id) && ! $this->entries->offsetGet($id)->auto) {
-            throw new Container\InvalidArgumentException(\sprintf(
-                'Cannot register entry "%s": already registered.',
-                $id
-            ));
+            throw InvalidArgumentException::alreadyRegistered($id);
         }
 
         // The wrapping parens are load-bearing: Kahlan only records a
@@ -292,44 +303,30 @@ class Container implements ContainerInterface
             // naming an invokable class must fall through to the ClassName
             // arm (build, never invoke).
             $factory instanceof Closure
-                || (\is_object($factory) && \method_exists($factory, '__invoke')) => new Container\Entry\CallableEntry($id, $factory),
-            $factory instanceof Container\EntryFactory => new Container\Entry\FactoryEntry($id, $factory),
-            \is_string($factory) && \str_contains($factory, '::') => new Container\Entry\MethodPairEntry($id, $factory),
+                || (\is_object($factory) && \method_exists($factory, '__invoke')) => new CallableEntry($id, $factory),
+            $factory instanceof EntryFactory => new FactoryEntry($id, $factory),
+            \is_string($factory) && \str_contains($factory, '::') => new MethodPairEntry($id, $factory),
             \is_string($factory) && \class_exists($factory)
-                && (new ReflectionClass($factory))->isInstantiable() => new Container\Entry\ClassNameEntry($id, $factory),
-            \is_string($factory) && \function_exists($factory) => new Container\Entry\CallableEntry($id, $factory),
+                && (new ReflectionClass($factory))->isInstantiable() => new ClassNameEntry($id, $factory),
+            \is_string($factory) && \function_exists($factory) => new CallableEntry($id, $factory),
             // any other string — incl. non-buildable type symbols (interface,
             // trait, abstract class, enum): must name a pre-registered entry
             // (the typo catcher).
             \is_string($factory) => $this->has($factory)
-                ? new Container\Entry\AliasEntry($id, $factory)
-                : throw new Container\InvalidArgumentException(\sprintf(
-                    'Cannot register entry "%s": "%s" is neither a registered entry, an instantiable class, nor a function.',
-                    $id,
-                    $factory,
-                )),
-            \is_array($factory) => new Container\Entry\MethodPairEntry($id, $factory),   // pair validation in its ctor (row 4)
+                ? new AliasEntry($id, $factory)
+                : throw InvalidArgumentException::unresolvableString($id, $factory),
+            \is_array($factory) => new MethodPairEntry($id, $factory),   // pair validation in its ctor (row 4)
             // row 5 — plain objects only; invokables matched row 1 above.
             // (\is_object, not `instanceof object` — the latter always
             // evaluates false: `object` is parsed as a class name.)
-            \is_object($factory) => throw new Container\InvalidArgumentException(\sprintf(
-                'Cannot register entry "%s": plain object %s is not a factory — register instances as "fn () => $instance" or "new EntryFactory(...)"',
-                $id,
-                \get_debug_type($factory),
-            )),
+            \is_object($factory) => throw InvalidArgumentException::plainObjectNotAFactory($id, $factory),
             // row 6 — invalid factory of type %s.
-            default => throw new Container\InvalidArgumentException(\sprintf(
-                'Cannot register entry "%s": invalid factory of type %s',
-                $id,
-                \get_debug_type($factory),
-            )),
+            default => throw InvalidArgumentException::invalidFactoryType($id, $factory),
         });
 
         $this->entries[$id] = $entry;
 
-        $this->dispatch(
-            new Container\Events\EntryRegistered($entry)
-        );
+        $this->dispatch(new EntryRegistered($entry));
 
         return $this;
     }
@@ -347,8 +344,8 @@ class Container implements ContainerInterface
      * @param  array|callable|object|string  $instance  Registered id, class name, or callable shape.
      * @param  array<mixed>  $args  Positional/named arguments for the invocation or constructor.
      *
-     * @throws Container\InvalidArgumentException If the input matches no family.
-     * @throws Container\ResolutionException If a package call fails to resolve.
+     * @throws InvalidArgumentException If the input matches no family.
+     * @throws ResolutionException If a package call fails to resolve.
      */
     public function make(array|callable|object|string $instance, array $args = []): mixed
     {
@@ -359,7 +356,7 @@ class Container implements ContainerInterface
                 $aliases = [];
                 $current = $this->entries->offsetGet($instance);
 
-                while ($current instanceof Container\Entry\AliasEntry) {
+                while ($current instanceof AliasEntry) {
                     $aliases[] = $current;
                     $current = $this->entries->offsetGet($current->factory);
                 }
@@ -405,7 +402,7 @@ class Container implements ContainerInterface
                 && \class_exists($instance)
                 && (new ReflectionClass($instance))->isInstantiable()
             ) {
-                $value = (new Container\Entry\ClassNameEntry($instance, $instance))
+                $value = (new ClassNameEntry($instance, $instance))
                     ->build($this->getHandler(), $this, $args);
 
                 return $this->injectContainer($value);
@@ -433,13 +430,9 @@ class Container implements ContainerInterface
 
             // row 4 — thrown from inside the boundary: the InvalidArgumentException
             // passes it untouched (§13 rule 4).
-            throw new Container\InvalidArgumentException(\sprintf(
-                'Cannot make from "%s": %s',
-                $this->describeTarget($instance),
-                \is_object($instance)
-                    ? 'plain object has no __invoke — make() accepts a registered entry id, an instantiable class-string, or a callable; pass "fn () => …" instead.'
-                    : 'make() accepts a registered entry id, an instantiable class-string, or a callable.',
-            ));
+            throw \is_object($instance)
+                ? InvalidArgumentException::cannotMakePlainObject($this->describeTarget($instance))
+                : InvalidArgumentException::cannotMakeUnsupported($this->describeTarget($instance));
         } catch (\Throwable $e) {
             throw $this->boundary($e, $this->describeTarget($instance));
         }
@@ -457,8 +450,8 @@ class Container implements ContainerInterface
      * @param  string  $id  Identifier of the existing entry.
      * @param  Closure  $callback  Decorator declaring an explicit single class return type.
      *
-     * @throws Container\NotFoundException If the entry id is absent.
-     * @throws Container\InvalidArgumentException If the target or the callback return type is invalid.
+     * @throws NotFoundException If the entry id is absent.
+     * @throws InvalidArgumentException If the target or the callback return type is invalid.
      */
     public function extend(string $id, Closure $callback): static
     {
@@ -467,29 +460,19 @@ class Container implements ContainerInterface
         $target = $entry->extensionTarget($this->entries);
 
         if ($target === null) {
-            throw new Container\InvalidArgumentException(\sprintf(
-                'Cannot extend entry "%s": extension target type is not derivable.',
-                $id
-            ));
+            throw InvalidArgumentException::extensionTargetNotDerivable($id);
         }
 
         $returnType = (new ReflectionFunction($callback))->getReturnType();
 
         if (! $returnType instanceof ReflectionNamedType || $returnType->isBuiltin()) {
-            throw new Container\InvalidArgumentException(\sprintf(
-                'Cannot extend entry "%s": callback must declare an explicit, non-union, named return type.',
-                $id
-            ));
+            throw InvalidArgumentException::callbackReturnTypeInvalid($id);
         }
 
         $declared = $returnType->getName();
 
         if ($target !== 'object' && ! \is_a($declared, $target, true)) {
-            throw new Container\InvalidArgumentException(\sprintf(
-                'Cannot extend entry "%s": callback must return "%s"',
-                $id,
-                $target
-            ));
+            throw InvalidArgumentException::callbackReturnMismatch($id, $target);
         }
 
         if ($entry->isBuilt()) {
@@ -538,12 +521,12 @@ class Container implements ContainerInterface
             }
         }
 
-        if ($e instanceof Container\ResolutionException) {
+        if ($e instanceof ResolutionException) {
             return $e;
         }
 
         if ($e instanceof ResolverExceptionInterface || $e instanceof ContainerExceptionInterface) {
-            return new Container\ResolutionException(
+            return new ResolutionException(
                 \sprintf('Failed to resolve "%s": %s', $label, $e->getMessage()),
                 $e
             );
@@ -579,7 +562,7 @@ class Container implements ContainerInterface
      */
     private function injectContainer(mixed $value): mixed
     {
-        if ($value instanceof Container\ContainerAware && $value->getContainer() === null) {
+        if ($value instanceof ContainerAware && $value->getContainer() === null) {
             $value->setContainer($this);
         }
 

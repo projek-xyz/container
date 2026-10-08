@@ -96,8 +96,6 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
      */
     public function offsetUnset(mixed $id): void
     {
-        throw new InvalidArgumentException(
-            \sprintf('Removing registered entry "%s" is not supported.', (string) $id)
-        );
+        throw InvalidArgumentException::removalNotSupported($id);
     }
 }

@@ -31,11 +31,7 @@ class ClassNameEntry extends Entry
     public function __construct(string $id, public readonly string $factory, bool $auto = false)
     {
         if (! \class_exists($factory) || ! (new ReflectionClass($factory))->isInstantiable()) {
-            throw new InvalidArgumentException(\sprintf(
-                'Cannot register entry "%s": "%s" is not an instantiable class.',
-                $id,
-                $factory
-            ));
+            throw InvalidArgumentException::notInstantiable($id, $factory);
         }
 
         $reflection = new ReflectionClass($factory);

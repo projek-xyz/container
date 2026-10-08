@@ -26,20 +26,13 @@ class MethodPairEntry extends Entry
     {
         if (\is_string($factory)) {
             if (! \str_contains($factory, '::')) {
-                throw new InvalidArgumentException(\sprintf(
-                    'Cannot register entry "%s": "%s" is not a "Class::method" string.',
-                    $id,
-                    $factory
-                ));
+                throw InvalidArgumentException::notClassMethodString($id, $factory);
             }
 
             [$class, $method] = \explode('::', $factory, 2);
         } else {
             if (\count($factory) !== 2 || ! isset($factory[0], $factory[1])) {
-                throw new InvalidArgumentException(\sprintf(
-                    'Cannot register entry "%s": method pair must contain exactly two elements [class, method].',
-                    $id
-                ));
+                throw InvalidArgumentException::invalidPairSize($id);
             }
 
             [$class, $method] = [$factory[0], $factory[1]];
@@ -50,31 +43,17 @@ class MethodPairEntry extends Entry
         }
 
         if (! \is_string($class) || ! \class_exists($class)) {
-            throw new InvalidArgumentException(\sprintf(
-                'Cannot register entry "%s": class "%s" does not exist.',
-                $id,
-                \is_string($class) ? $class : \get_debug_type($class)
-            ));
+            throw InvalidArgumentException::pairClassNotFound($id, $class);
         }
 
         if (! \is_string($method) || ! \method_exists($class, $method)) {
-            throw new InvalidArgumentException(\sprintf(
-                'Cannot register entry "%s": method "%s::%s()" does not exist.',
-                $id,
-                $class,
-                \is_string($method) ? $method : \get_debug_type($method)
-            ));
+            throw InvalidArgumentException::pairMethodNotFound($id, $class, $method);
         }
 
         $reflection = new ReflectionMethod($class, $method);
 
         if (! $reflection->isPublic()) {
-            throw new InvalidArgumentException(\sprintf(
-                'Cannot register entry "%s": method "%s::%s()" is not public.',
-                $id,
-                $class,
-                $method
-            ));
+            throw InvalidArgumentException::pairMethodNotPublic($id, $class, $method);
         }
 
         [$parameters, $returnType] = self::extractMetadata($reflection);

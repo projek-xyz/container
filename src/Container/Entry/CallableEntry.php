@@ -30,22 +30,14 @@ class CallableEntry extends Entry
             $reflection = new ReflectionFunction($factory);
         } elseif (\is_object($factory)) {
             if (! \method_exists($factory, '__invoke')) {
-                throw new InvalidArgumentException(\sprintf(
-                    'Cannot register entry "%s": plain object %s is not a factory — register instances as "fn () => $instance" or "new EntryFactory(...)"',
-                    $id,
-                    \get_debug_type($factory)
-                ));
+                throw InvalidArgumentException::plainObjectNotAFactory($id, $factory);
             }
 
             $reflection = new ReflectionMethod($factory, '__invoke');
         } elseif (\function_exists($factory)) {
             $reflection = new ReflectionFunction($factory);
         } else {
-            throw new InvalidArgumentException(\sprintf(
-                'Cannot register entry "%s": "%s" is not a function.',
-                $id,
-                $factory
-            ));
+            throw InvalidArgumentException::notAFunction($id, $factory);
         }
 
         foreach ($reflection->getParameters() as $parameter) {

@@ -41,12 +41,14 @@
     },
     "require": {
         "php": ">=8.4",
+        "projek-xyz/callable": "^0.3",
         "psr/container": "^2.0",
         "psr/event-dispatcher": "^1.0"
     },
     "require-dev": {
         "kahlan/kahlan": "^6.1",
-        "laravel/pint": "^1.32"
+        "laravel/pint": "^1.32",
+        "php-di/php-di": "^7.1"
     },
     "provide": {
         "psr/container-implementation": "^2.0"

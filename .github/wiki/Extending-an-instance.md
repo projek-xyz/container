@@ -71,4 +71,4 @@ $container->extend('db', function (Database $db): Logger {
 > [!NOTE]
 > - The callback does **not** have to return the same instance it received — returning the target type or any subclass of it is fine (that is the decorator pattern).
 > - At apply time the declared return type is enforced natively by PHP: a `TypeError` means your callback returned the wrong thing and propagates untouched.
-> - For an already-built entry, a throwing or type-mismatched decorator leaves the entry exactly as it was — fix the callback and call `extend()` again.
+> - For an already-built entry, a throwing or type-mismatched decorator is not appended and does not replace the cached reference. Mutations made to the cached object before the failure are not rolled back — fix the callback and call `extend()` again.

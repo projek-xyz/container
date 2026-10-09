@@ -62,7 +62,7 @@ final class ClassNameEntry extends Entry
         $this->resolver = $container->get(ResolverInterface::class);
 
         if ($args === []) {
-            $this->resolver->resolveInstance($this->factory);
+            return $this->resolver->resolveInstance($this->factory);
         }
 
         // Bind and construct one instance: empty $args delegates to the package's

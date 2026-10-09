@@ -15,29 +15,27 @@ use Stubs\TheDispatcher;
 use function Kahlan\context;
 use function Kahlan\describe;
 use function Kahlan\expect;
-use function Kahlan\given;
 use function Kahlan\it;
 
 describe(ContainerAware::class, function () {
-    given('container', function () {
-        return new Container;
-    });
-
-    given('stub', function () {
-        return new class implements ContainerAware
+    it('should returns null if no container assigned', function () {
+        $stub = new class implements ContainerAware
         {
             use HasContainer;
         };
-    });
 
-    it('should returns null if no container assigned', function () {
-        expect($this->stub->getContainer())->toBeNull();
+        expect($stub->getContainer())->toBeNull();
     });
 
     it('should assign container', function () {
-        $this->stub->setContainer($this->container);
+        $stub = new class implements ContainerAware
+        {
+            use HasContainer;
+        };
 
-        expect($this->stub->getContainer())->toBeAnInstanceOf(ContainerInterface::class);
+        $stub->setContainer(new Container);
+
+        expect($stub->getContainer())->toBeAnInstanceOf(ContainerInterface::class);
     });
 
     context('injection', function () {

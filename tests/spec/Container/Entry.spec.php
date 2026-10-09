@@ -83,12 +83,16 @@ describe(Entry::class, function () {
         $handler = new Handler(new Resolver(new StubContainer([])));
 
         expect($entry->build($handler, $container))->toBe('produced');
+        /** @disregard */
         expect($entry->lastHandler)->toBe($handler);
+        /** @disregard */
         expect($entry->lastContainer)->toBe($container);
+        /** @disregard */
         expect($entry->lastArgs)->toBe([]);
 
         $entry->build($handler, $container, ['seed' => 'value']);
 
+        /** @disregard */
         expect($entry->lastArgs)->toBe(['seed' => 'value']);
     });
 
@@ -233,6 +237,7 @@ describe(Entry::class, function () {
             return 'x';
         };
 
+        /** @disregard */
         [$parameters, $returnType] = $entry::metadata(new ReflectionFunction($closure));
 
         expect($parameters)->toBe([
@@ -250,6 +255,7 @@ describe(Entry::class, function () {
         // the function lives in Dummy.php — trigger the class autoload first
         \class_exists(Dummy::class);
 
+        /** @disregard */
         [$parameters, $returnType] = $entry::metadata(new ReflectionFunction('Stubs\dummyLorem'));
 
         expect($parameters)->toBe(['foo' => 'Stubs\AbstractFoo']);
@@ -259,6 +265,7 @@ describe(Entry::class, function () {
     it('extracts method metadata against the declaring class scope', function () use ($subject) {
         $entry = $subject();
 
+        /** @disregard */
         [$parameters, $returnType] = $entry::metadata(new ReflectionMethod(MultiParamStub::class, 'chain'));
 
         expect($parameters)->toBe(['next' => 'Stubs\MultiParamStub']);
@@ -274,6 +281,7 @@ describe(Entry::class, function () {
              */
             public function selfClosure()
             {
+                /** @disregard */
                 return function (): self {};
             }
 
@@ -282,6 +290,7 @@ describe(Entry::class, function () {
              */
             public function staticClosure()
             {
+                /** @disregard */
                 return function (): static {};
             }
 
@@ -290,6 +299,7 @@ describe(Entry::class, function () {
              */
             public function parentClosure()
             {
+                /** @disregard */
                 return function (): parent {};
             }
 
@@ -302,9 +312,13 @@ describe(Entry::class, function () {
             }
         };
 
+        /** @disregard */
         [, $self] = $entry::metadata(new ReflectionFunction($scope->selfClosure()));
+        /** @disregard */
         [, $static] = $entry::metadata(new ReflectionFunction($scope->staticClosure()));
+        /** @disregard */
         [, $parent] = $entry::metadata(new ReflectionFunction($scope->parentClosure()));
+        /** @disregard */
         [$parameters] = $entry::metadata(new ReflectionFunction($scope->selfParamClosure()));
 
         expect($self)->toBe(\get_class($scope));

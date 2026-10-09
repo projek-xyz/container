@@ -10,23 +10,19 @@ use Projek\Container\NotFoundException;
 
 use function Kahlan\describe;
 use function Kahlan\expect;
-use function Kahlan\given;
 use function Kahlan\it;
 
 describe(EntryCollector::class, function () {
-    given('collector', function () {
-        return new EntryCollector;
-    });
-
     it('should store and return an Entry by id', function () {
+        $collector = new EntryCollector;
         $entry = new CallableEntry('foo', fn () => 'bar');
 
-        $this->collector['foo'] = $entry;
+        $collector['foo'] = $entry;
 
-        expect($this->collector['foo'])->toBe($entry);
-        expect($this->collector['foo'])->toBeAnInstanceOf(Entry::class);
-        expect(isset($this->collector['foo']))->toBeTruthy();
-        expect(isset($this->collector['baz']))->toBeFalsy();
+        expect($collector['foo'])->toBe($entry);
+        expect($collector['foo'])->toBeAnInstanceOf(Entry::class);
+        expect(isset($collector['foo']))->toBeTruthy();
+        expect(isset($collector['baz']))->toBeFalsy();
     });
 
     it('should accept initial Entry storage through the constructor', function () {
@@ -56,19 +52,16 @@ describe(EntryCollector::class, function () {
 
     it('should throw NotFoundException for missing entries', function () {
         expect(
-            fn () => $this->collector['not-exists']
-        )->toThrow(
-            new NotFoundException('not-exists')
-        );
+            fn () => (new EntryCollector)['not-exists']
+        )->toThrow(new NotFoundException('not-exists'));
     });
 
     it('should not allow entry removal', function () {
-        $this->collector['foo'] = new CallableEntry('foo', fn () => 'bar');
+        $collector = new EntryCollector;
+        $collector['foo'] = new CallableEntry('foo', fn () => 'bar');
 
-        expect(function () {
-            unset($this->collector['foo']);
-        })->toThrow(
-            InvalidArgumentException::removalNotSupported('foo')
-        );
+        expect(function () use ($collector) {
+            unset($collector['foo']);
+        })->toThrow(InvalidArgumentException::removalNotSupported('foo'));
     });
 });

@@ -326,6 +326,8 @@ class Container implements ContainerInterface
 
             try {
                 $value = $entry->build($handler, $this, $args);
+            } catch (Throwable $e) {
+                throw $this->boundary($e, $instance);
             } finally {
                 $entry->endBuild();
             }
@@ -342,8 +344,12 @@ class Container implements ContainerInterface
         // An unregistered, instantiable class-string builds transiently through the same
         // ClassNameEntry path as set() (never stored, no cache, no events, zero decorators).
         if (ClassNameEntry::isValid($instance)) {
-            $value = (new ClassNameEntry($instance, $instance))
-                ->build($this->getHandler(), $this, $args);
+            try {
+                $value = (new ClassNameEntry($instance, $instance))
+                    ->build($this->getHandler(), $this, $args);
+            } catch (Throwable $e) {
+                throw $this->boundary($e, $instance);
+            }
 
             return $this->injectContainer($value);
         }

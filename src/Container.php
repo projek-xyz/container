@@ -197,9 +197,9 @@ class Container implements ContainerInterface
     public function get(string $id)
     {
         if ($id === ResolverInterface::class && $this->isBuilding(ResolverInterface::class) && $this->handler === null) {
-            // Bootstrap guard: the shared handler's constructor pulls this id, and that build
-            // needs the very handler being constructed. Hand it the default resolver — the same
-            // fallback Handler applies when no resolver entry exists — so the cycle terminates;
+            // Bootstrap guard: binding the shared handler pulls this id, and that build
+            // needs the very handler being constructed. Hand it the default resolver —
+            // exactly what the default entry itself builds — so the cycle terminates;
             // the outer request still builds the real entry.
             return new Resolver($this);
         }
@@ -425,7 +425,7 @@ class Container implements ContainerInterface
 
     /**
      * Send one event to the effective dispatcher. While the dispatcher entry itself is mid-build
-     * (bootstrap: its build pulls the handler, whose constructor pulls the resolver, whose
+     * (bootstrap: its build pulls the handler, whose construction pulls the resolver, whose
      * replacement entry dispatches EntryResolved) the event waits in $deferredEvents instead of
      * forcing a circular rebuild — get() flushes the queue right after caching it.
      */
@@ -507,7 +507,7 @@ class Container implements ContainerInterface
      */
     private function getHandler(): Handler
     {
-        return $this->handler ??= new Handler($this);
+        return $this->handler ??= new Handler($this->getResolver());
     }
 
     /**

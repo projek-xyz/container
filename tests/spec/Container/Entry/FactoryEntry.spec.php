@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Projek\Callable\Handler;
+use Projek\Callable\Resolver;
 use Projek\Container\Entry\FactoryEntry;
 use Projek\Container\EntryCollector;
 use Projek\Container\EntryFactory;
@@ -47,7 +48,7 @@ describe(FactoryEntry::class, function () {
         };
 
         $container = new StubContainer([]);
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new FactoryEntry('factory', $factory);
 
         $result = $entry->build($handler, $container, ['ignored' => 'args']);

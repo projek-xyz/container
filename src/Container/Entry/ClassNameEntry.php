@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Projek\Container\Entry;
 
 use Projek\Callable\Handler;
-use Projek\Callable\ParametersHelper;
 use Projek\Callable\ResolverInterface;
 use Projek\Container\Entry;
 use Projek\Container\EntryCollector;
@@ -14,16 +13,14 @@ use Psr\Container\ContainerInterface;
 use ReflectionClass;
 
 /**
- * An instantiable class-string: binds and constructs itself through
- * the package's shared ParametersHelper trait — never through the Handler, so
- * a bare class-string never reaches Handler::handle().
+ * An instantiable class-string: binds and constructs itself through the
+ * container-supplied resolver (ResolverInterface::resolveInstance()) — never
+ * through the Handler, so a bare class-string never reaches Handler::handle().
  *
  * @internal
  */
 final class ClassNameEntry extends Entry
 {
-    use ParametersHelper;
-
     /**
      * @param  class-string  $factory  class-string of an instantiable class (dispatch guarantees buildability; re-asserted defensively).
      *
@@ -59,24 +56,12 @@ final class ClassNameEntry extends Entry
      */
     protected function produce(Handler $handler, ContainerInterface $container, array $args): mixed
     {
-        $this->resolver = $container->get(ResolverInterface::class);
+        // Fetched through the container on every build so a user-supplied
+        // override flows; construction never reaches $handler.
+        /** @var ResolverInterface $resolver */
+        $resolver = $container->get(ResolverInterface::class);
 
-        if ($args === []) {
-            return $this->resolver->resolveInstance($this->factory);
-        }
-
-        // Bind and construct one instance: empty $args delegates to the package's
-        // construction path; otherwise the constructor is bound directly through
-        // the composed `ParametersHelper` — no container-side binding logic.
-        $reflection = new ReflectionClass($this->factory);
-
-        if (($constructor = $reflection->getConstructor()) === null) {
-            return $reflection->newInstance();
-        }
-
-        return $reflection->newInstanceArgs(
-            $this->buildArguments($constructor->getParameters(), $args)
-        );
+        return $resolver->resolveInstance($this->factory, $args);
     }
 
     /**

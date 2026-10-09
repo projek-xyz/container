@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Projek\Callable\Handler;
+use Projek\Callable\Resolver;
 use Projek\Container\Entry\MethodPairEntry;
 use Projek\Container\EntryCollector;
 use Projek\Container\InvalidArgumentException;
@@ -107,7 +108,7 @@ describe(MethodPairEntry::class, function () {
     it('produces by handing the pair and args to the handler', function () {
         $foo = new ConcreteBar(null);
         $container = new StubContainer([AbstractFoo::class => $foo]);
-        $handler = new Handler($container);
+        $handler = new Handler(new Resolver($container));
         $entry = new MethodPairEntry('handle', 'Stubs\SomeClass::handle');
 
         expect($entry->build($handler, $container, ['text' => 'hi']))->toBe('hi');
@@ -115,7 +116,7 @@ describe(MethodPairEntry::class, function () {
 
     it('produces from a static Class::method pair without touching the container', function () {
         $container = new StubContainer([]);
-        $handler = new Handler($container);
+        $handler = new Handler(new Resolver($container));
         $entry = new MethodPairEntry('static', 'Stubs\Dummy::staticMethod');
 
         expect($entry->build($handler, $container, ['value']))->toBe('value');
@@ -124,7 +125,7 @@ describe(MethodPairEntry::class, function () {
     it('produces from an object pair as-is', function () {
         $factory = new SomeClass;
         $container = new StubContainer([]);
-        $handler = new Handler($container);
+        $handler = new Handler(new Resolver($container));
         $entry = new MethodPairEntry('object-pair', [$factory, 'shouldCalled']);
 
         expect($entry->build($handler, $container, ['given']))->toBe('given');

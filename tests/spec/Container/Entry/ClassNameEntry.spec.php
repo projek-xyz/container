@@ -75,7 +75,7 @@ describe(ClassNameEntry::class, function () {
         $container = new StubContainer([AbstractFoo::class => new ConcreteBar(null)]);
         $spy = new SpyResolver(new Resolver($container));
         $container->entries[ResolverInterface::class] = $spy;
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new ClassNameEntry('provider', ServiceProvider::class);
 
         $instance = $entry->build($handler, $container);
@@ -87,7 +87,7 @@ describe(ClassNameEntry::class, function () {
     it('constructs the class once per build when arguments are empty', function () {
         $container = new StubContainer([]);
         $container->entries[ResolverInterface::class] = new Resolver($container);
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new ClassNameEntry('counter', ConstructorCounter::class);
 
         ConstructorCounter::$count = 0;
@@ -99,7 +99,7 @@ describe(ClassNameEntry::class, function () {
 
     it('fetches the resolver through the container on every build', function () {
         $container = new StubContainer([AbstractFoo::class => new ConcreteBar(null)]);
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new ClassNameEntry('provider', ServiceProvider::class);
 
         expect(fn () => $entry->build($handler, $container))->toThrow(
@@ -111,7 +111,7 @@ describe(ClassNameEntry::class, function () {
         [$container] = ($wired)();
         $container->entries[AbstractFoo::class] = new ConcreteBar(null);
         $positional = new ConcreteBar(null);
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new ClassNameEntry('multi', MultiParamStub::class);
 
         $instance = $entry->build($handler, $container, [$positional, 'alice']);
@@ -124,7 +124,7 @@ describe(ClassNameEntry::class, function () {
         [$container, $spy] = ($wired)();
         $fromContainer = new ConcreteBar(null);
         $container->entries[AbstractFoo::class] = $fromContainer;
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new ClassNameEntry('multi', MultiParamStub::class);
 
         $instance = $entry->build($handler, $container, ['name' => 'alice']);
@@ -136,7 +136,7 @@ describe(ClassNameEntry::class, function () {
 
     it('raises a native Error on unknown named arguments', function () use ($wired) {
         [$container] = ($wired)();
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new ClassNameEntry('multi', MultiParamStub::class);
 
         expect(fn () => $entry->build($handler, $container, ['nope' => 'value']))->toThrow(
@@ -147,7 +147,7 @@ describe(ClassNameEntry::class, function () {
     it('splices leftover arguments into a trailing variadic', function () use ($wired) {
         [$container] = ($wired)();
         $foo = new ConcreteBar(null);
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new ClassNameEntry('variadic', VariadicStub::class);
 
         $instance = $entry->build($handler, $container, [$foo, 'a', 'b']);
@@ -163,7 +163,7 @@ describe(ClassNameEntry::class, function () {
     it('falls back to declared defaults for unprovided parameters', function () use ($wired) {
         [$container] = ($wired)();
         $foo = new ConcreteBar(null);
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new ClassNameEntry('optional', DefaultParamsStub::class);
 
         $instance = $entry->build($handler, $container, ['foo' => $foo]);
@@ -179,7 +179,7 @@ describe(ClassNameEntry::class, function () {
 
     it('constructs a constructorless class natively when arguments are given', function () use ($wired) {
         [$container] = ($wired)();
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new ClassNameEntry('dummy', Dummy::class);
 
         expect($entry->build($handler, $container, ['ignored']))->toBeAnInstanceOf(Dummy::class);

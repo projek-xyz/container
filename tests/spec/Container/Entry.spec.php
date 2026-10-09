@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Projek\Callable\Handler;
+use Projek\Callable\Resolver;
 use Projek\Container\Entry;
 use Projek\Container\EntryCollector;
 use Projek\Container\ResolutionException;
@@ -70,7 +71,7 @@ describe(Entry::class, function () {
     it('builds through the produce template, forwarding handler, container and args', function () use ($subject) {
         $entry = $subject();
         $container = new StubContainer([]);
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
 
         expect($entry->build($handler, $container))->toBe('produced');
         expect($entry->lastHandler)->toBe($handler);
@@ -85,7 +86,7 @@ describe(Entry::class, function () {
     it('applies the whole decorator list from index 0 with the current value as positional argument 0', function () use ($subject) {
         $entry = $subject();
         $seen = [];
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
 
         $entry->decorate(function ($value) use (&$seen) {
             $seen[] = $value;
@@ -102,7 +103,7 @@ describe(Entry::class, function () {
         $entry = $subject();
         $foo = new ConcreteBar(null);
         $container = new StubContainer([AbstractFoo::class => $foo]);
-        $handler = new Handler($container);
+        $handler = new Handler(new Resolver($container));
 
         $entry->decorate(function ($value, AbstractFoo $injected) use ($foo): string {
             return $value.($injected === $foo ? ' wired' : ' broken');
@@ -115,7 +116,7 @@ describe(Entry::class, function () {
         $entry = $subject();
         $firstRuns = 0;
         $failing = true;
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
 
         $entry->decorate(function ($value) use (&$firstRuns) {
             $firstRuns++;
@@ -142,7 +143,7 @@ describe(Entry::class, function () {
 
     it('appends decorators without touching the cache', function () use ($subject) {
         $entry = $subject();
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
 
         $entry->cache('cached');
         $entry->decorate(fn (string $value): string => $value.'!');
@@ -192,7 +193,7 @@ describe(Entry::class, function () {
 
     it('resets cache and guard state on clone while keeping metadata and decorators', function () use ($subject) {
         $entry = $subject(['dummy' => 'Stubs\Dummy'], 'Stubs\Dummy');
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
 
         $entry->decorate(fn (string $value): string => $value.' decorated');
         $entry->cache('stale');

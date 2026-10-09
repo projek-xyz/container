@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Projek\Callable\Handler;
+use Projek\Callable\Resolver;
 use Projek\Container\Entry\AliasEntry;
 use Projek\Container\Entry\CallableEntry;
 use Projek\Container\Entry\ClassNameEntry;
@@ -29,7 +30,7 @@ describe(AliasEntry::class, function () {
 
     it('produces by resolving the target through the container', function () {
         $container = new StubContainer(['target' => 'the-value']);
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new AliasEntry('alias', 'target');
 
         expect($entry->build($handler, $container))->toBe('the-value');
@@ -37,7 +38,7 @@ describe(AliasEntry::class, function () {
 
     it('propagates a missing target as a NotFoundException', function () {
         $container = new StubContainer([]);
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new AliasEntry('alias', 'target');
 
         expect(fn () => $entry->build($handler, $container))->toThrow(new NotFoundException('target'));

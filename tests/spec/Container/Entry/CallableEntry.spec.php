@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Projek\Callable\Handler;
+use Projek\Callable\Resolver;
 use Projek\Container\Entry\CallableEntry;
 use Projek\Container\EntryCollector;
 use Projek\Container\InvalidArgumentException;
@@ -87,7 +88,7 @@ describe(CallableEntry::class, function () {
     });
 
     it('produces by handing the factory and args to the handler', function () {
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
         $container = new StubContainer([]);
         $entry = new CallableEntry('up', fn (string $value): string => \strtoupper($value));
 
@@ -100,7 +101,7 @@ describe(CallableEntry::class, function () {
 
         $foo = new ConcreteBar(null);
         $container = new StubContainer([AbstractFoo::class => $foo]);
-        $handler = new Handler($container);
+        $handler = new Handler(new Resolver($container));
         $entry = new CallableEntry('fn', 'Stubs\dummyLorem');
 
         expect($entry->build($handler, $container))->toBe('lorem');
@@ -109,7 +110,7 @@ describe(CallableEntry::class, function () {
     it('invokes a callable object as-is', function () {
         $factory = new SomeClass;
         $entry = new CallableEntry('object', $factory);
-        $handler = new Handler(new StubContainer([]));
+        $handler = new Handler(new Resolver(new StubContainer([])));
 
         expect($entry->build($handler, new StubContainer([])))->toBe($factory);
     });

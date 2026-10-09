@@ -1058,6 +1058,66 @@ describe(Container::class, function () {
             expect($c->getResolver())->toBe($custom);
         });
 
+        it('should rebind the shared handler to a resolver override registered after it was built', function () {
+            // Force the handler onto the default resolver first.
+            $this->c->get(Container::class);
+
+            $custom = new SpyResolver(new Resolver($this->c));
+            $this->c->set(ResolverInterface::class, fn (): ResolverInterface => $custom);
+
+            // the function lives in Dummy.php — trigger the class autoload first
+            \class_exists(Dummy::class);
+            $this->c->set(AbstractFoo::class, fn (): AbstractFoo => new ConcreteBar(null));
+            $this->c->set('lorem', 'Stubs\dummyLorem');
+
+            $this->c->get('lorem');
+
+            // The override rides: the handler rebound to it, so the spy
+            // recorded the auto-wired parameter.
+            expect($custom->parameters)->toBe(['foo']);
+        });
+
+        it('should build a class-string resolver entry and rebind the shared handler to it', function () {
+            // ClassNameEntry construction re-fetches ResolverInterface while
+            // the entry is mid-build — the bootstrap guard must absorb that.
+            $this->c->set(ResolverInterface::class, SpyResolver::class);
+
+            $resolver = $this->c->get(ResolverInterface::class);
+
+            expect($resolver)->toBeAnInstanceOf(SpyResolver::class);
+            expect($this->c->getResolver())->toBe($resolver);
+
+            // the function lives in Dummy.php — trigger the class autoload first
+            \class_exists(Dummy::class);
+            $this->c->set(AbstractFoo::class, fn (): AbstractFoo => new ConcreteBar(null));
+            $this->c->set('lorem', 'Stubs\dummyLorem');
+
+            expect($this->c->get('lorem'))->toBe('lorem');
+            expect($resolver->parameters)->toBe(['foo']);
+        });
+
+        it('should rebind the shared handler to a resolver decorated via extend()', function () {
+            // Resolve first so the handler is built on the undecorated resolver.
+            $this->c->get(Container::class);
+            $this->c->getResolver();
+
+            $this->c->extend(ResolverInterface::class, function (ResolverInterface $resolver): ResolverInterface {
+                return new SpyResolver($resolver);
+            });
+
+            // the function lives in Dummy.php — trigger the class autoload first
+            \class_exists(Dummy::class);
+            $this->c->set(AbstractFoo::class, fn (): AbstractFoo => new ConcreteBar(null));
+            $this->c->set('lorem', 'Stubs\dummyLorem');
+
+            expect($this->c->get('lorem'))->toBe('lorem');
+
+            $wrapper = $this->c->getResolver();
+
+            expect($wrapper)->toBeAnInstanceOf(SpyResolver::class);
+            expect($wrapper->parameters)->toBe(['foo']);
+        });
+
         it('should provide a default internal dispatcher lazily when none is given', function () {
             $c = new Container;
 

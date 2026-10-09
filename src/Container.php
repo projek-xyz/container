@@ -196,11 +196,13 @@ class Container implements ContainerInterface
      */
     public function get(string $id)
     {
-        if ($id === ResolverInterface::class && $this->isBuilding(ResolverInterface::class) && $this->handler === null) {
-            // Bootstrap guard: binding the shared handler pulls this id, and that build
-            // needs the very handler being constructed. Hand it the default resolver —
-            // exactly what the default entry itself builds — so the cycle terminates;
-            // the outer request still builds the real entry.
+        if ($id === ResolverInterface::class && $this->isBuilding(ResolverInterface::class)) {
+            // Bootstrap guard: while the resolver entry itself is building, ANY re-entry —
+            // the shared handler's construction pulling this id, a class-string resolver
+            // entry's ClassNameEntry::produce() fetching it back, or re-entrant user code —
+            // gets the uncached default new Resolver($this) (exactly what the default entry
+            // itself builds), so the cycle terminates; the outer request still builds the
+            // real entry, and the post-cache invalidation below rebinds the handler to it.
             return new Resolver($this);
         }
 
@@ -223,6 +225,12 @@ class Container implements ContainerInterface
         // Cache strictly before dispatch: an EntryResolved listener
         // may re-enter get() for this very id.
         $entry->cache($value);
+
+        if ($id === ResolverInterface::class) {
+            // A freshly cached resolver (first build or rebuild) invalidates the
+            // shared handler: the next resolution rebinds to this instance.
+            $this->handler = null;
+        }
 
         if (! $entry->auto && ! $entry instanceof AliasEntry && \is_object($value)) {
             $this->dispatch(new EntryResolved($id, $value));
@@ -284,6 +292,13 @@ class Container implements ContainerInterface
             // Invalid factory of type %s.
             default => throw InvalidArgumentException::invalidFactoryType($id, $factory),
         });
+
+        if ($id === ResolverInterface::class) {
+            // Replacing the resolver entry invalidates the shared handler before
+            // any dispatch: the next resolution binds to the new entry, never
+            // the stale one.
+            $this->handler = null;
+        }
 
         $this->dispatch(new EntryRegistered($this->entries[$id]));
 
@@ -420,6 +435,14 @@ class Container implements ContainerInterface
             $entry->decorate($callback);
         }
 
+        if ($id === ResolverInterface::class) {
+            // Decorating the resolver entry changes its effective value (an
+            // already-built one is re-cached wrapped; a pending one wraps at
+            // its next build): drop the shared handler so the next resolution
+            // rebinds — an extra rebuild is harmless, a stale binding is not.
+            $this->handler = null;
+        }
+
         return $this;
     }
 
@@ -503,7 +526,9 @@ class Container implements ContainerInterface
 
     /**
      * The shared handler, built lazily so it always rides the effective
-     * resolver of this container.
+     * resolver of this container: it is dropped whenever the resolver entry
+     * is replaced (set()), extended, or freshly cached (get()) — the next
+     * call rebinds. make() never caches, so it never rebinds.
      */
     private function getHandler(): Handler
     {

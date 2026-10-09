@@ -88,17 +88,6 @@ abstract class Entry
     }
 
     /**
-     * Build template: produce() yields the raw value, decorators always run
-     * inside build() — a value returned from build() is fully decorated.
-     *
-     * @param  array<mixed>  $args
-     */
-    final public function build(Handler $handler, ContainerInterface $container, array $args = []): mixed
-    {
-        return $this->applyDecorators($handler, $this->produce($handler, $container, $args));
-    }
-
-    /**
      * Adapt the child's factory shape and produce a raw value; never caches
      * and never dispatches events (get()/make() own that).
      *
@@ -112,9 +101,56 @@ abstract class Entry
     abstract public function extensionTarget(EntryCollector $entries): ?string;
 
     /**
+     * Build template: produce() yields the raw value, decorators always run
+     * inside build() — a value returned from build() is fully decorated.
+     *
+     * @param  array<mixed>  $args
+     */
+    final public function build(Handler $handler, ContainerInterface $container, array $args = []): mixed
+    {
+        try {
+            return $this->applyDecorators($handler, $this->produce($handler, $container, $args));
+        } finally {
+            $this->endBuild();
+        }
+    }
+
+    /**
+     * Enter the build guard; callers run endBuild() in finally.
+     *
+     * @throws ResolutionException When this entry is already being built.
+     */
+    final public function beginBuild(): void
+    {
+        if ($this->building) {
+            throw new ResolutionException(\sprintf('Failed to resolve "%s": circular reference while building.', $this->id));
+        }
+
+        $this->building = true;
+    }
+
+    final public function endBuild(): void
+    {
+        $this->building = false;
+    }
+
+    /**
+     * Whether this entry itself is mid-build.
+     */
+    final public function building(): bool
+    {
+        return $this->building;
+    }
+
+    final public function isBuilt(): bool
+    {
+        return $this->built;
+    }
+
+    /**
      * Run the whole decorator list from index 0 against the current value.
      */
-    public function applyDecorators(Handler $handler, mixed $value): mixed
+    final public function applyDecorators(Handler $handler, mixed $value): mixed
     {
         foreach ($this->decorators as $decorator) {
             $value = $handler->handle($decorator, [$value]);
@@ -126,17 +162,12 @@ abstract class Entry
     /**
      * Append a decorator (called by extend()); never touches the cache.
      */
-    public function decorate(Closure $callback): void
+    final public function decorate(Closure $callback): void
     {
         $this->decorators[] = $callback;
     }
 
-    public function isBuilt(): bool
-    {
-        return $this->built;
-    }
-
-    public function value(): mixed
+    final public function value(): mixed
     {
         return $this->value;
     }
@@ -144,29 +175,10 @@ abstract class Entry
     /**
      * Cache an already-decorated value; non-object values cache like anything else.
      */
-    public function cache(mixed $value): void
+    final public function cache(mixed $value): void
     {
         $this->value = $value;
         $this->built = true;
-    }
-
-    /**
-     * Enter the build guard; callers run endBuild() in finally.
-     *
-     * @throws ResolutionException When this entry is already being built.
-     */
-    public function beginBuild(): void
-    {
-        if ($this->building) {
-            throw new ResolutionException(\sprintf('Failed to resolve "%s": circular reference while building.', $this->id));
-        }
-
-        $this->building = true;
-    }
-
-    public function endBuild(): void
-    {
-        $this->building = false;
     }
 
     /**

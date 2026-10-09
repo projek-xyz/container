@@ -6,7 +6,7 @@ namespace Stubs;
 
 class ServiceProvider
 {
-    protected $abs;
+    protected AbstractFoo $abs;
 
     public function __construct(AbstractFoo $abs)
     {
@@ -14,7 +14,7 @@ class ServiceProvider
     }
 
     /**
-     * @param  Dummy  $d
+     * @param  Dummy  $dummy
      * @return string
      */
     public function __invoke($dummy)

@@ -7,7 +7,6 @@ namespace Projek\Container\Entry;
 use Projek\Callable\Handler;
 use Projek\Callable\ParametersHelper;
 use Projek\Callable\ResolverInterface;
-use Projek\Callable\UnresolvableCallableException;
 use Projek\Container\Entry;
 use Projek\Container\EntryCollector;
 use Projek\Container\InvalidArgumentException;
@@ -32,15 +31,14 @@ final class ClassNameEntry extends Entry
      */
     public function __construct(string $id, public readonly string $factory, bool $auto = false)
     {
-        if (! \class_exists($factory) || ! (new ReflectionClass($factory))->isInstantiable()) {
+        if (! self::isValid($factory)) {
             throw InvalidArgumentException::notInstantiable($id, $factory);
         }
 
         $reflection = new ReflectionClass($factory);
-        $constructor = $reflection->getConstructor();
         $parameters = [];
 
-        if ($constructor !== null) {
+        if ($constructor = $reflection->getConstructor()) {
             foreach ($constructor->getParameters() as $parameter) {
                 if ($parameter->isPassedByReference()) {
                     throw InvalidArgumentException::byReferenceParam($id, $parameter->getName());
@@ -67,18 +65,12 @@ final class ClassNameEntry extends Entry
             $this->resolver->resolveInstance($this->factory);
         }
 
-        // Bind and construct one instance: empty $args delegates to the
-        // package's construction path; otherwise the constructor is bound directly
-        // through the composed `ParametersHelper` — no container-side binding logic.
+        // Bind and construct one instance: empty $args delegates to the package's
+        // construction path; otherwise the constructor is bound directly through
+        // the composed `ParametersHelper` — no container-side binding logic.
         $reflection = new ReflectionClass($this->factory);
 
-        if (! $reflection->isInstantiable()) {
-            throw UnresolvableCallableException::notInstantiable($this->factory);
-        }
-
-        $constructor = $reflection->getConstructor();
-
-        if ($constructor === null) {
+        if (($constructor = $reflection->getConstructor()) === null) {
             return $reflection->newInstance();
         }
 

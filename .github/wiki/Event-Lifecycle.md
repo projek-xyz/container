@@ -56,7 +56,7 @@ public function onEntryRegistered(EntryRegistered $event): void
 }
 ```
 
-It is **never** dispatched for the infrastructure defaults the constructor inserts directly (`Container::class`, `Psr\Container\ContainerInterface::class`, the resolver, the dispatcher), nor for `extend()` — extending does not change the registration, it appends decorator state.
+It is **never** dispatched for the infrastructure defaults the constructor inserts directly (`Container::class`, `Psr\Container\ContainerInterface::class`, the dispatcher), nor for `extend()` — extending does not change the registration, it appends decorator state.
 
 ### `EntryResolved`
 

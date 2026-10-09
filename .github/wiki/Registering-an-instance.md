@@ -151,7 +151,7 @@ The target must pre-exist: registering an alias to an unknown id throws `Cannot 
 
 `set()` throws `Projek\Container\InvalidArgumentException` when:
 
-- the **id is already registered** (`Cannot register entry "%s": already registered.`) — there is no silent no-op anymore; use [`extend()`](Extending-an-instance) to modify an existing entry. The built-in infrastructure defaults (`Container::class`, `ContainerInterface::class`, resolver, dispatcher) are placeholders and *can* be replaced.
+- the **id is already registered** (`Cannot register entry "%s": already registered.`) — there is no silent no-op anymore; use [`extend()`](Extending-an-instance) to modify an existing entry. The built-in infrastructure defaults (`Container::class`, `ContainerInterface::class`, dispatcher) are placeholders and *can* be replaced.
 - the factory is a **plain object** without `__invoke()` (wrap it in a closure or `EntryFactory`, see above).
 - the factory is a **string naming neither** a registered entry, an instantiable class, a function, nor a `Class::method` pair.
 - the factory is anything else (int, float, `null`, `bool`, a malformed pair, …).

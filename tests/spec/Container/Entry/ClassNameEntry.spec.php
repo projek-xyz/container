@@ -13,6 +13,7 @@ use Stubs\AbstractFoo;
 use Stubs\ByRefStub;
 use Stubs\CertainInterface;
 use Stubs\ConcreteBar;
+use Stubs\ConstructorCounter;
 use Stubs\DefaultParamsStub;
 use Stubs\Dummy;
 use Stubs\MultiParamStub;
@@ -81,6 +82,19 @@ describe(ClassNameEntry::class, function () {
 
         expect($instance)->toBeAnInstanceOf(ServiceProvider::class);
         expect($spy->instances)->toBe(['Stubs\ServiceProvider']);
+    });
+
+    it('constructs the class once per build when arguments are empty', function () {
+        $container = new StubContainer([]);
+        $container->entries[ResolverInterface::class] = new Resolver($container);
+        $handler = new Handler(new StubContainer([]));
+        $entry = new ClassNameEntry('counter', ConstructorCounter::class);
+
+        ConstructorCounter::$count = 0;
+        $instance = $entry->build($handler, $container);
+
+        expect($instance)->toBeAnInstanceOf(ConstructorCounter::class);
+        expect(ConstructorCounter::$count)->toBe(1);
     });
 
     it('fetches the resolver through the container on every build', function () {

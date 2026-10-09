@@ -13,10 +13,12 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\EventDispatcher\ListenerProviderInterface;
 use Psr\EventDispatcher\StoppableEventInterface;
 use Stubs\AbstractFoo;
+use Stubs\BuiltinParamStub;
 use Stubs\ByRefStub;
 use Stubs\CallableClass;
 use Stubs\CertainInterface;
 use Stubs\ConcreteBar;
+use Stubs\ConstructorCounter;
 use Stubs\CouldExtends;
 use Stubs\Dummy;
 use Stubs\HasContainerClass;
@@ -25,6 +27,7 @@ use Stubs\MultiParamStub;
 use Stubs\RecordingDispatcher;
 use Stubs\SomeClass;
 use Stubs\SpyResolver;
+use Stubs\StubContainer;
 use Stubs\VariadicStub;
 
 use function Kahlan\beforeEach;
@@ -279,13 +282,34 @@ describe(Container::class, function () {
             expect($c->get('abstract-alias'))->toBeAnInstanceOf(ConcreteBar::class);
         });
 
-        it('should register an instance through the EntryFactory door', function () {
+        it('should reject an alias cycle when replacing an auto default entry', function () {
             /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874132 */
             expect(fn () => new Container([
                 'x' => ContainerInterface::class,
                 ContainerInterface::class => 'x',
             ]))->toThrow(
                 Container\InvalidArgumentException::unresolvableString(ContainerInterface::class, 'x')
+            );
+        });
+
+        it('should reject a direct self-alias when replacing an auto default entry', function () {
+            /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874132 */
+            expect(fn () => new Container([
+                ContainerInterface::class => ContainerInterface::class,
+            ]))->toThrow(
+                Container\InvalidArgumentException::unresolvableString(ContainerInterface::class, ContainerInterface::class)
+            );
+        });
+
+        it('should reject a multi-hop alias cycle when replacing an auto default entry', function () {
+            /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874132 */
+            $c = new Container([
+                'a' => ContainerInterface::class,
+                'b' => 'a',
+            ]);
+
+            expect(fn () => $c->set(ContainerInterface::class, 'b'))->toThrow(
+                Container\InvalidArgumentException::unresolvableString(ContainerInterface::class, 'b')
             );
         });
 
@@ -412,6 +436,22 @@ describe(Container::class, function () {
             $this->c->set(stdClass::class, fn () => 'registered');
 
             expect($this->c->make(stdClass::class))->toBe('registered');
+        });
+
+        it('should construct a class entry once per build when arguments are empty', function () {
+            /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874142 */
+            $c = $this->c;
+            $c->set(ConstructorCounter::class, ConstructorCounter::class);
+
+            ConstructorCounter::$count = 0;
+            $got = $c->get(ConstructorCounter::class);
+
+            expect($got)->toBeAnInstanceOf(ConstructorCounter::class);
+            expect(ConstructorCounter::$count)->toBe(1);
+
+            $made = $c->make(ConstructorCounter::class);
+            expect($made)->toBeAnInstanceOf(ConstructorCounter::class);
+            expect(ConstructorCounter::$count)->toBe(2);
         });
 
         it('should apply decorators on the registered-id path without touching the cache', function () {
@@ -642,6 +682,26 @@ describe(Container::class, function () {
             $clone = clone $c;
             expect($clone->get(CouldExtends::class))->toBeAnInstanceOf(CouldExtends::class);
         });
+
+        it('should leave mutations on the cached instance when a decorator throws after mutating', function () {
+            /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874104 */
+            $c = $this->c;
+            $got = $c->get(CouldExtends::class);
+
+            expect(fn () => $c->extend(CouldExtends::class, function (CouldExtends $entry): CouldExtends {
+                $entry->dummy = new Dummy;
+
+                throw new RuntimeException('boom');
+            }))->toThrow(new RuntimeException('boom'));
+
+            // The cached reference is not replaced and prior mutations are not rolled back.
+            expect($c->get(CouldExtends::class))->toBe($got);
+            expect($c->get(CouldExtends::class)->dummy)->toBe($got->dummy);
+
+            // The failing decorator was not appended: a clone gets a fresh unmodified instance.
+            $clone = clone $c;
+            expect($clone->get(CouldExtends::class)->dummy)->not->toBe($got->dummy);
+        });
     });
 
     context('clone', function () {
@@ -706,6 +766,33 @@ describe(Container::class, function () {
             $clone = clone $c;
 
             expect($clone->getEventDispatcher())->toBe($this->recorder);
+        });
+
+        it('should clone correctly when auto default entries are replaced with user factory shapes', function () {
+            /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874119 */
+            $c = new Container([], $this->recorder);
+            $c->set(Container::class, StubContainer::class);
+            $c->set(ContainerInterface::class, static fn (): ContainerInterface => new StubContainer([]));
+            $c->set(EventDispatcherInterface::class, static fn (): EventDispatcherInterface => new RecordingDispatcher(new Events\ListenerProvider));
+
+            $runs = 0;
+            $c->extend(Container::class, function (StubContainer $entry) use (&$runs): StubContainer {
+                $runs++;
+
+                return $entry;
+            });
+
+            $c->get(Container::class);
+            expect($runs)->toBe(1);
+
+            $clone = clone $c;
+            $cloned = $clone->get(Container::class);
+
+            expect($cloned)->toBeAnInstanceOf(StubContainer::class);
+            expect($cloned)->not->toBe($c->get(Container::class));
+            expect($runs)->toBe(2);
+            expect($clone->get(ContainerInterface::class))->toBeAnInstanceOf(StubContainer::class);
+            expect($clone->get(EventDispatcherInterface::class))->toBeAnInstanceOf(RecordingDispatcher::class);
         });
 
         it('should carry pending decorators over to the clone with a reset cache', function () {
@@ -787,11 +874,56 @@ describe(Container::class, function () {
             // A build failure never wears the NotFoundException label.
             expect($this->c->has('counter'))->toBeTruthy();
 
+            // make('counter') wraps package failures on registered-id path through boundary()
+            /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874138 */
+            expect(fn () => $this->c->make('counter'))->toThrow(new Container\ResolutionException(
+                'Failed to resolve "counter": {closure}(): Argument #1 ($count) is not resolvable'
+            ));
+
+            // make() for transient class-string wraps package failures through boundary()
+            expect(fn () => $this->c->make(BuiltinParamStub::class))->toThrow(
+                new Container\ResolutionException(
+                    'Failed to resolve "Stubs\BuiltinParamStub": Stubs\BuiltinParamStub::__construct(): Argument #1 ($count) is not resolvable'
+                )
+            );
+
             expect(fn () => $this->c->make([SomeClass::class, 'nope']))->toThrow(
                 new Container\ResolutionException(
                     'Failed to resolve "Stubs\SomeClass::nope": Method Stubs\SomeClass::nope() does not exist'
                 )
             );
+        });
+
+        it('should clear the building guard when resolution throws so retrying is allowed', function () {
+            /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874127 */
+            $c = $this->c;
+            $shouldFail = true;
+            $c->set('retryable', function () use (&$shouldFail) {
+                if ($shouldFail) {
+                    throw new RuntimeException('temporary error');
+                }
+
+                return 'recovered';
+            });
+
+            expect(fn () => $c->get('retryable'))->toThrow(new RuntimeException('temporary error'));
+
+            $shouldFail = false;
+            expect($c->get('retryable'))->toBe('recovered');
+
+            $shouldFail = true;
+            $c->set('retryable_make', function () use (&$shouldFail) {
+                if ($shouldFail) {
+                    throw new RuntimeException('temporary error in make');
+                }
+
+                return 'recovered make';
+            });
+
+            expect(fn () => $c->make('retryable_make'))->toThrow(new RuntimeException('temporary error in make'));
+
+            $shouldFail = false;
+            expect($c->make('retryable_make'))->toBe('recovered make');
         });
 
         it('should rethrow user-code throwables untouched for get() and make() (rule 4)', function () {
@@ -891,6 +1023,18 @@ describe(Container::class, function () {
             expect($registered[0]->entry->id)->toBe(ResolverInterface::class);
             expect($this->recorder->events[0])->toBe($resolved[0]);
             expect($this->recorder->events[1])->toBe($registered[0]);
+        });
+
+        it('should keep the shared handler bound to the effective resolver when built via make()', function () {
+            /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4226367668 */
+            $c = new Container;
+            $custom = new SpyResolver(new Resolver($c));
+            $c->set(ResolverInterface::class, fn (): ResolverInterface => $custom);
+
+            $resolved = $c->make(ResolverInterface::class);
+            expect($resolved)->toBe($custom);
+
+            expect($c->getResolver())->toBe($custom);
         });
 
         it('should provide a default internal dispatcher lazily when none is given', function () {

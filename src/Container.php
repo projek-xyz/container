@@ -322,15 +322,15 @@ class Container implements ContainerInterface
 
             $entry->beginBuild();
 
-            $handler = $this->getHandler();
-
             try {
-                $value = $entry->build($handler, $this, $args);
+                $value = $entry->build($this->getHandler(), $this, $args);
             } catch (Throwable $e) {
                 throw $this->boundary($e, $instance);
             } finally {
                 $entry->endBuild();
             }
+
+            $handler = $this->getHandler();
 
             // The aliases' own decorators never ran — make() bypassed
             // their build(); innermost first, mirroring get().

@@ -8,7 +8,6 @@ use Closure;
 use Projek\Callable\Handler;
 use Projek\Callable\Resolver;
 use Projek\Callable\ResolverExceptionInterface;
-use Projek\Callable\ResolverInterface;
 use Projek\Container\ContainerAware;
 use Projek\Container\Entry\AliasEntry;
 use Projek\Container\Entry\CallableEntry;
@@ -76,7 +75,6 @@ class Container implements ContainerInterface
         $defaults = [
             self::class => fn (): self => $this,
             ContainerInterface::class => fn (): ContainerInterface => $this,
-            ResolverInterface::class => fn (ContainerInterface $c): ResolverInterface => new Resolver($c),
             EventDispatcherInterface::class => fn (): EventDispatcherInterface => $eventDispatcher ?? new Dispatcher($this),
         ];
 
@@ -117,6 +115,8 @@ class Container implements ContainerInterface
         }
 
         $this->entries = $entries;
+
+        // The shared handler's bundled Resolver captured the original container.
         $this->handler = null;
     }
 
@@ -157,15 +157,6 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Retrieve the effective service resolver — a singleton resolved through
-     * the normal path, so a user override flows automatically.
-     */
-    final public function getResolver(): ResolverInterface
-    {
-        return $this->get(ResolverInterface::class);
-    }
-
-    /**
      * Check if an entry is registered in the container.
      *
      * {@inheritdoc}
@@ -196,16 +187,6 @@ class Container implements ContainerInterface
      */
     public function get(string $id)
     {
-        if ($id === ResolverInterface::class && $this->isBuilding(ResolverInterface::class)) {
-            // Bootstrap guard: while the resolver entry itself is building, ANY re-entry —
-            // the shared handler's construction pulling this id, a class-string resolver
-            // entry's ClassNameEntry::produce() fetching it back, or re-entrant user code —
-            // gets the uncached default new Resolver($this) (exactly what the default entry
-            // itself builds), so the cycle terminates; the outer request still builds the
-            // real entry, and the post-cache invalidation below rebinds the handler to it.
-            return new Resolver($this);
-        }
-
         $entry = $this->entries->offsetGet($id);
 
         if ($entry->isBuilt()) {
@@ -225,12 +206,6 @@ class Container implements ContainerInterface
         // Cache strictly before dispatch: an EntryResolved listener
         // may re-enter get() for this very id.
         $entry->cache($value);
-
-        if ($id === ResolverInterface::class) {
-            // A freshly cached resolver (first build or rebuild) invalidates the
-            // shared handler: the next resolution rebinds to this instance.
-            $this->handler = null;
-        }
 
         if (! $entry->auto && ! $entry instanceof AliasEntry && \is_object($value)) {
             $this->dispatch(new EntryResolved($id, $value));
@@ -292,13 +267,6 @@ class Container implements ContainerInterface
             // Invalid factory of type %s.
             default => throw InvalidArgumentException::invalidFactoryType($id, $factory),
         });
-
-        if ($id === ResolverInterface::class) {
-            // Replacing the resolver entry invalidates the shared handler before
-            // any dispatch: the next resolution binds to the new entry, never
-            // the stale one.
-            $this->handler = null;
-        }
 
         $this->dispatch(new EntryRegistered($this->entries[$id]));
 
@@ -435,22 +403,14 @@ class Container implements ContainerInterface
             $entry->decorate($callback);
         }
 
-        if ($id === ResolverInterface::class) {
-            // Decorating the resolver entry changes its effective value (an
-            // already-built one is re-cached wrapped; a pending one wraps at
-            // its next build): drop the shared handler so the next resolution
-            // rebinds — an extra rebuild is harmless, a stale binding is not.
-            $this->handler = null;
-        }
-
         return $this;
     }
 
     /**
      * Send one event to the effective dispatcher. While the dispatcher entry itself is mid-build
-     * (bootstrap: its build pulls the handler, whose construction pulls the resolver, whose
-     * replacement entry dispatches EntryResolved) the event waits in $deferredEvents instead of
-     * forcing a circular rebuild — get() flushes the queue right after caching it.
+     * (its build may run user code that registers further entries) the event waits in
+     * $deferredEvents instead of forcing a circular rebuild — get() flushes the queue
+     * right after caching it.
      */
     private function dispatch(object $event): void
     {
@@ -525,14 +485,13 @@ class Container implements ContainerInterface
     }
 
     /**
-     * The shared handler, built lazily so it always rides the effective
-     * resolver of this container: it is dropped whenever the resolver entry
-     * is replaced (set()), extended, or freshly cached (get()) — the next
-     * call rebinds. make() never caches, so it never rebinds.
+     * The shared handler, built lazily against the bundled Resolver bound to
+     * this container: resolver and handler are internal orchestration
+     * utilities — never entries, never overridable, nothing to rebind.
      */
     private function getHandler(): Handler
     {
-        return $this->handler ??= new Handler($this->getResolver());
+        return $this->handler ??= new Handler(new Resolver($this));
     }
 
     /**

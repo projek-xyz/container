@@ -9,9 +9,9 @@ use ReflectionClass;
 use ReflectionParameter;
 
 /**
- * Recording ResolverInterface implementation: proves ClassNameEntry fetches
- * the resolver from the container per build (user overrides flow) and that
- * all construction goes through resolveInstance().
+ * Recording ResolverInterface implementation: proves ClassNameEntry builds
+ * through the handler-bound resolver — construction goes through
+ * resolveInstance(), and the spy records what it sees along the way.
  */
 class SpyResolver implements ResolverInterface
 {

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Projek\Callable\Resolver;
 use Projek\Callable\ResolverInterface;
 use Projek\Container;
 use Projek\Container\Entry;
@@ -26,7 +25,6 @@ use Stubs\InstantiableClass;
 use Stubs\MultiParamStub;
 use Stubs\RecordingDispatcher;
 use Stubs\SomeClass;
-use Stubs\SpyResolver;
 use Stubs\StubContainer;
 use Stubs\VariadicStub;
 
@@ -446,11 +444,13 @@ describe(Container::class, function () {
             expect($this->c->make('svc'))->not->toBe($made);
         });
 
-        it('should make a fresh resolver without touching the singleton cache', function () {
-            $fresh = $this->c->make(ResolverInterface::class);
+        it('should make a fresh value from a class without touching the singleton cache', function () {
+            $got = $this->c->get('dummy');
+            $fresh = $this->c->make(Dummy::class);
 
-            expect($fresh)->toBeAnInstanceOf(Resolver::class);
-            expect($fresh)->not->toBe($this->c->get(ResolverInterface::class));
+            expect($fresh)->toBeAnInstanceOf(Dummy::class);
+            expect($fresh)->not->toBe($got);
+            expect($this->c->get('dummy'))->toBe($got);
         });
 
         it('should prefer a registered id over class or function look-alikes', function () {
@@ -1023,107 +1023,41 @@ describe(Container::class, function () {
             // Building every default dispatches nothing (auto rule).
             expect($c->get(Container::class))->toBe($c);
             expect($c->get(ContainerInterface::class))->toBe($c);
-            expect($c->get(ResolverInterface::class))->toBeAnInstanceOf(Resolver::class);
             expect($c->getEventDispatcher())->toBe($recorder);
             expect($recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(0);
             expect($recorder->eventsFor(Events\EntryRegistered::class))->toHaveLength(1);
         });
 
-        it('should expose the effective resolver through getResolver()', function () {
-            $custom = new SpyResolver(new Resolver($this->c));
+        it('should not register the resolver as an entry', function () {
+            expect($this->c->has(ResolverInterface::class))->toBeFalsy();
 
-            $this->c->set(ResolverInterface::class, fn (): ResolverInterface => $custom);
-
-            expect($this->c->getResolver())->toBe($custom);
-            expect($this->c->getResolver())->toBe($this->c->get(ResolverInterface::class));
-
-            // The resolver-replacement EntryResolved fired while the
-            // EventDispatcherInterface entry was mid-build (its build pulls
-            // the shared handler, which pulls this resolver) — it was queued
-            // and must be delivered by the FIFO flush, before the outer
-            // EntryRegistered dispatch completes.
-            $resolved = $this->recorder->eventsFor(Events\EntryResolved::class);
-            $registered = $this->recorder->eventsFor(Events\EntryRegistered::class);
-
-            expect($resolved)->toHaveLength(1);
-            expect($resolved[0]->id)->toBe(ResolverInterface::class);
-            expect($resolved[0]->instance)->toBe($custom);
-            expect($registered)->toHaveLength(1);
-            expect($registered[0]->entry->id)->toBe(ResolverInterface::class);
-            expect($this->recorder->events[0])->toBe($resolved[0]);
-            expect($this->recorder->events[1])->toBe($registered[0]);
+            expect(fn () => $this->c->get(ResolverInterface::class))->toThrow(
+                new Container\NotFoundException('Projek\Callable\ResolverInterface')
+            );
         });
 
-        it('should keep the shared handler bound to the effective resolver when built via make()', function () {
-            /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4226367668 */
-            $c = new Container;
-            $custom = new SpyResolver(new Resolver($c));
-            $c->set(ResolverInterface::class, fn (): ResolverInterface => $custom);
+        it('should queue events raised while the dispatcher entry is mid-build and flush them FIFO', function () {
+            $recorder = $this->recorder;
+            $c = $this->c;
+            $c->set('svc', fn () => new stdClass);
 
-            $resolved = $c->make(ResolverInterface::class);
-            expect($resolved)->toBe($custom);
+            $c->set(EventDispatcherInterface::class, function () use ($c, $recorder) {
+                // Registration inside the dispatcher entry's own build: the
+                // event must be queued and delivered by the FIFO flush, before
+                // the outer EntryRegistered dispatch completes.
+                $c->set('late', fn () => 'value');
 
-            expect($c->getResolver())->toBe($custom);
-        });
-
-        it('should rebind the shared handler to a resolver override registered after it was built', function () {
-            // Force the handler onto the default resolver first.
-            $this->c->get(Container::class);
-
-            $custom = new SpyResolver(new Resolver($this->c));
-            $this->c->set(ResolverInterface::class, fn (): ResolverInterface => $custom);
-
-            // the function lives in Dummy.php — trigger the class autoload first
-            \class_exists(Dummy::class);
-            $this->c->set(AbstractFoo::class, fn (): AbstractFoo => new ConcreteBar(null));
-            $this->c->set('lorem', 'Stubs\dummyLorem');
-
-            $this->c->get('lorem');
-
-            // The override rides: the handler rebound to it, so the spy
-            // recorded the auto-wired parameter.
-            expect($custom->parameters)->toBe(['foo']);
-        });
-
-        it('should build a class-string resolver entry and rebind the shared handler to it', function () {
-            // ClassNameEntry construction re-fetches ResolverInterface while
-            // the entry is mid-build — the bootstrap guard must absorb that.
-            $this->c->set(ResolverInterface::class, SpyResolver::class);
-
-            $resolver = $this->c->get(ResolverInterface::class);
-
-            expect($resolver)->toBeAnInstanceOf(SpyResolver::class);
-            expect($this->c->getResolver())->toBe($resolver);
-
-            // the function lives in Dummy.php — trigger the class autoload first
-            \class_exists(Dummy::class);
-            $this->c->set(AbstractFoo::class, fn (): AbstractFoo => new ConcreteBar(null));
-            $this->c->set('lorem', 'Stubs\dummyLorem');
-
-            expect($this->c->get('lorem'))->toBe('lorem');
-            expect($resolver->parameters)->toBe(['foo']);
-        });
-
-        it('should rebind the shared handler to a resolver decorated via extend()', function () {
-            // Resolve first so the handler is built on the undecorated resolver.
-            $this->c->get(Container::class);
-            $this->c->getResolver();
-
-            $this->c->extend(ResolverInterface::class, function (ResolverInterface $resolver): ResolverInterface {
-                return new SpyResolver($resolver);
+                return $recorder;
             });
 
-            // the function lives in Dummy.php — trigger the class autoload first
-            \class_exists(Dummy::class);
-            $this->c->set(AbstractFoo::class, fn (): AbstractFoo => new ConcreteBar(null));
-            $this->c->set('lorem', 'Stubs\dummyLorem');
+            expect($c->getEventDispatcher())->toBe($recorder);
 
-            expect($this->c->get('lorem'))->toBe('lorem');
+            $registered = $recorder->eventsFor(Events\EntryRegistered::class);
 
-            $wrapper = $this->c->getResolver();
-
-            expect($wrapper)->toBeAnInstanceOf(SpyResolver::class);
-            expect($wrapper->parameters)->toBe(['foo']);
+            expect($registered)->toHaveLength(3);
+            expect($registered[0]->entry->id)->toBe('svc');
+            expect($registered[1]->entry->id)->toBe('late');
+            expect($registered[2]->entry->id)->toBe(EventDispatcherInterface::class);
         });
 
         it('should provide a default internal dispatcher lazily when none is given', function () {

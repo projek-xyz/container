@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Projek\Container\Entry;
 
 use Projek\Callable\Handler;
-use Projek\Callable\ResolverInterface;
 use Projek\Container\Entry;
 use Projek\Container\EntryCollector;
 use Projek\Container\InvalidArgumentException;
@@ -14,8 +13,8 @@ use ReflectionClass;
 
 /**
  * An instantiable class-string: binds and constructs itself through the
- * container-supplied resolver (ResolverInterface::resolveInstance()) — never
- * through the Handler, so a bare class-string never reaches Handler::handle().
+ * handler-bound resolver (Handler::$resolver, callable >= 0.4.1) — a bare
+ * class-string is always built, never invoked: it never reaches Handler::handle().
  *
  * @internal
  */
@@ -51,17 +50,13 @@ final class ClassNameEntry extends Entry
     /**
      * {@inheritdoc}
      *
-     * The resolver is fetched through the container on every build so a
-     * user-supplied override flows; class construction never reaches $handler.
+     * Construction delegates to the handler-bound resolver through Handler's
+     * public readonly $resolver property (callable >= 0.4.1): it never reaches
+     * Handler::handle() and never queries container entries.
      */
     protected function produce(Handler $handler, ContainerInterface $container, array $args): mixed
     {
-        // Fetched through the container on every build so a user-supplied
-        // override flows; construction never reaches $handler.
-        /** @var ResolverInterface $resolver */
-        $resolver = $container->get(ResolverInterface::class);
-
-        return $resolver->resolveInstance($this->factory, $args);
+        return $handler->resolver->resolveInstance($this->factory, $args);
     }
 
     /**

@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 use Projek\Callable\Handler;
 use Projek\Callable\Resolver;
-use Projek\Callable\ResolverInterface;
 use Projek\Container\Entry\ClassNameEntry;
 use Projek\Container\EntryCollector;
 use Projek\Container\InvalidArgumentException;
-use Projek\Container\NotFoundException;
 use Stubs\AbstractFoo;
 use Stubs\ByRefStub;
 use Stubs\CertainInterface;
@@ -28,12 +26,11 @@ use function Kahlan\it;
 
 describe(ClassNameEntry::class, function () {
     /**
-     * Build a container wired with a recording resolver (per-build fetch).
+     * Build a StubContainer and a recording resolver wrapping it.
      */
     $wired = function (): array {
         $container = new StubContainer([]);
         $spy = new SpyResolver(new Resolver($container));
-        $container->entries[ResolverInterface::class] = $spy;
 
         return [$container, $spy];
     };
@@ -71,11 +68,10 @@ describe(ClassNameEntry::class, function () {
         );
     });
 
-    it('delegates empty-args construction to the container-supplied resolver', function () {
+    it('delegates construction to the handler-bound resolver', function () {
         $container = new StubContainer([AbstractFoo::class => new ConcreteBar(null)]);
         $spy = new SpyResolver(new Resolver($container));
-        $container->entries[ResolverInterface::class] = $spy;
-        $handler = new Handler(new Resolver(new StubContainer([])));
+        $handler = new Handler($spy);
         $entry = new ClassNameEntry('provider', ServiceProvider::class);
 
         $instance = $entry->build($handler, $container);
@@ -86,7 +82,6 @@ describe(ClassNameEntry::class, function () {
 
     it('constructs the class once per build when arguments are empty', function () {
         $container = new StubContainer([]);
-        $container->entries[ResolverInterface::class] = new Resolver($container);
         $handler = new Handler(new Resolver(new StubContainer([])));
         $entry = new ClassNameEntry('counter', ConstructorCounter::class);
 
@@ -95,16 +90,6 @@ describe(ClassNameEntry::class, function () {
 
         expect($instance)->toBeAnInstanceOf(ConstructorCounter::class);
         expect(ConstructorCounter::$count)->toBe(1);
-    });
-
-    it('fetches the resolver through the container on every build', function () {
-        $container = new StubContainer([AbstractFoo::class => new ConcreteBar(null)]);
-        $handler = new Handler(new Resolver(new StubContainer([])));
-        $entry = new ClassNameEntry('provider', ServiceProvider::class);
-
-        expect(fn () => $entry->build($handler, $container))->toThrow(
-            new NotFoundException('Projek\Callable\ResolverInterface')
-        );
     });
 
     it('binds positional arguments by order', function () use ($wired) {
@@ -124,7 +109,7 @@ describe(ClassNameEntry::class, function () {
         [$container, $spy] = ($wired)();
         $fromContainer = new ConcreteBar(null);
         $container->entries[AbstractFoo::class] = $fromContainer;
-        $handler = new Handler(new Resolver(new StubContainer([])));
+        $handler = new Handler($spy);
         $entry = new ClassNameEntry('multi', MultiParamStub::class);
 
         $instance = $entry->build($handler, $container, ['name' => 'alice']);

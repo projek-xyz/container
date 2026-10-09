@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "projek-xyz/callable",
-            "version": "v0.4.0",
+            "version": "v0.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/projek-xyz/callable.git",
-                "reference": "a13e511ccf518f95c8f5fc8df539bb1b7dd1e98d"
+                "reference": "ef46618a537e330dd7a6c2582840aa8c3361d165"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/projek-xyz/callable/zipball/a13e511ccf518f95c8f5fc8df539bb1b7dd1e98d",
-                "reference": "a13e511ccf518f95c8f5fc8df539bb1b7dd1e98d",
+                "url": "https://api.github.com/repos/projek-xyz/callable/zipball/ef46618a537e330dd7a6c2582840aa8c3361d165",
+                "reference": "ef46618a537e330dd7a6c2582840aa8c3361d165",
                 "shasum": ""
             },
             "require": {
@@ -62,7 +62,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-09T07:57:05+00:00"
+            "time": "2026-10-09T11:25:27+00:00"
         },
         {
             "name": "psr/container",

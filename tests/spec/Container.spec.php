@@ -279,6 +279,16 @@ describe(Container::class, function () {
             expect($c->get('abstract-alias'))->toBeAnInstanceOf(ConcreteBar::class);
         });
 
+        it('should register an instance through the EntryFactory door', function () {
+            /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874132 */
+            expect(fn () => new Container([
+                'x' => ContainerInterface::class,
+                ContainerInterface::class => 'x',
+            ]))->toThrow(
+                Container\InvalidArgumentException::unresolvableString(ContainerInterface::class, 'x')
+            );
+        });
+
         it('should reject invalid factories with the shared validation messages', function () {
             $c = $this->c;
 

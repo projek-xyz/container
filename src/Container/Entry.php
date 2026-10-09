@@ -19,6 +19,8 @@ use ReflectionType;
  * own the factory — the class is the kind.
  *
  * @internal
+ *
+ * @property mixed $factory
  */
 abstract class Entry
 {

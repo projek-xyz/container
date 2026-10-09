@@ -275,7 +275,7 @@ class Container implements ContainerInterface
             MethodPairEntry::isValid($factory) => new MethodPairEntry($id, $factory),
             // any other string — incl. non-buildable type symbols (interface, trait, abstract
             // class, enum): must name a pre-registered entry (the typo catcher).
-            \is_string($factory) => $this->has($factory)
+            \is_string($factory) => $this->has($factory) && ! $this->isAliasReaches($factory, $id)
                 ? new AliasEntry($id, $factory)
                 : throw InvalidArgumentException::unresolvableString($id, $factory),
             // Plain objects only; invokables matched the arm above. (\is_object, not
@@ -518,5 +518,25 @@ class Container implements ContainerInterface
     private function isBuilding(string $id): bool
     {
         return $this->entries[$id]->building();
+    }
+
+    /**
+     * @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874132
+     */
+    private function isAliasReaches(string $target, string $id): bool
+    {
+        while (true) {
+            if ($target === $id) {
+                return true;
+            }
+
+            $entry = $this->entries->offsetGet($target);
+
+            if (! $entry instanceof AliasEntry) {
+                return false;
+            }
+
+            $target = $entry->factory;
+        }
     }
 }

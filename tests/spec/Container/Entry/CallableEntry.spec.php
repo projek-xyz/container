@@ -39,6 +39,13 @@ describe(CallableEntry::class, function () {
         expect($entry->factory)->toBe($factory);
     });
 
+    it('captures nullable class types with the ? marker in their metadata', function () {
+        $entry = new CallableEntry('nullable-class', fn (?AbstractFoo $abs = null): ?ConcreteBar => null);
+
+        expect($entry->parameters)->toBe(['abs' => '?Stubs\AbstractFoo']);
+        expect($entry->returnType)->toBe('?Stubs\ConcreteBar');
+    });
+
     it('recognises a function-string factory and captures its metadata', function () {
         // the function lives in Dummy.php — trigger the class autoload first
         \class_exists(Dummy::class);

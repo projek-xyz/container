@@ -215,14 +215,12 @@ abstract class Entry
             $name = $type->getName();
 
             if ($name === 'self' || $name === 'static') {
-                return $scope?->getName() ?? $name;
+                $name = $scope?->getName() ?? $name;
+            } elseif ($name === 'parent' && ($parent = $scope?->getParentClass())) {
+                $name = $parent->getName();
             }
 
-            if ($name === 'parent' && ($parent = $scope?->getParentClass())) {
-                return $parent->getName();
-            }
-
-            return $name;
+            return $type->allowsNull() ? '?'.$name : $name;
         };
 
         $parameters = [];

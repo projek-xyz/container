@@ -628,6 +628,14 @@ describe(Container::class, function () {
             );
         });
 
+        it('should reject a nullable-class return — nullability survives extraction', function () {
+            $this->c->set('nullable', fn (): ?ConcreteBar => null);
+
+            expect(fn () => $this->c->extend('nullable', fn (ConcreteBar $c): ConcreteBar => $c))->toThrow(
+                Container\InvalidArgumentException::extensionTargetNotDerivable('nullable')
+            );
+        });
+
         it('should reject callbacks without an explicit single class return type', function () {
             $id = CouldExtends::class;
 

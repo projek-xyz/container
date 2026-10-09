@@ -100,7 +100,7 @@ class Container implements ContainerInterface
         $defaults = [self::class, ContainerInterface::class, EventDispatcherInterface::class];
 
         foreach ($this->entries as $id => $entry) {
-            if (! in_array($id, $defaults, true)) {
+            if (! $entry->auto || ! in_array($id, $defaults, true)) {
                 $entries[$id] = clone $entry;
 
                 continue;

@@ -108,11 +108,7 @@ abstract class Entry
      */
     final public function build(Handler $handler, ContainerInterface $container, array $args = []): mixed
     {
-        try {
-            return $this->applyDecorators($handler, $this->produce($handler, $container, $args));
-        } finally {
-            $this->endBuild();
-        }
+        return $this->applyDecorators($handler, $this->produce($handler, $container, $args));
     }
 
     /**

@@ -216,6 +216,8 @@ class Container implements ContainerInterface
             $value = $entry->build($this->getHandler(), $this);
         } catch (Throwable $e) {
             throw $this->boundary($e, $id);
+        } finally {
+            $entry->endBuild();
         }
 
         // Cache strictly before dispatch: an EntryResolved listener
@@ -311,21 +313,25 @@ class Container implements ContainerInterface
         // A registered id wins even when it also looks like a class or a function.
         if (\is_string($instance) && $this->entries->offsetExists($instance)) {
             $aliases = [];
-            $current = $this->entries->offsetGet($instance);
+            $entry = $this->entries->offsetGet($instance);
 
-            while ($current instanceof AliasEntry) {
-                $aliases[] = $current;
-                $current = $this->entries->offsetGet($current->factory);
+            while ($entry instanceof AliasEntry) {
+                $aliases[] = $entry;
+                $entry = $this->entries->offsetGet($entry->factory);
             }
 
-            $current->beginBuild();
+            $entry->beginBuild();
 
-            $value = $current->build($this->getHandler(), $this, $args);
+            $handler = $this->getHandler();
+
+            try {
+                $value = $entry->build($handler, $this, $args);
+            } finally {
+                $entry->endBuild();
+            }
 
             // The aliases' own decorators never ran — make() bypassed
             // their build(); innermost first, mirroring get().
-            $handler = $this->getHandler();
-
             foreach (\array_reverse($aliases) as $alias) {
                 $value = $alias->applyDecorators($handler, $value);
             }

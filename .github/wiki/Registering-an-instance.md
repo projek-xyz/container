@@ -1,17 +1,22 @@
 # Register an instance
 
 ```php
-$container->set(string $id, $entry): static
+$container->set(string $id, mixed $factory): static
 ```
 
 | Parameters | Type | Description |
 | --- | --- | --- |
 | `$id` | `string` | Name of the service |
-| `$factory` | `Closure`, `callable`, `string`, `object` | Factory closure, callable, class name, or object instance |
+| `$factory` | `Closure`, `string`, `array`, `object`, `EntryFactory` | What builds the entry — see [Accepted factory shapes](#accepted-factory-shapes) |
 
-## Usage
+Registration is **lazy**: `set()` only classifies and stores the factory as an internal `Entry`. Nothing is constructed, no dependency is resolved, and no `ContainerAware` injection happens at registration time — all of that happens on first resolution (see [How resolution works](#how-resolution-works)).
 
-There are a few ways to register your services to the container, as follows:
+Validation on the other hand is eager: an invalid factory, a duplicate id, or an unknown alias target throws `Projek\Container\InvalidArgumentException` right away, with a `Cannot register entry "%s": …` message. Nothing has been stored when that happens.
+
+> [!NOTE]
+> Since `set()` never builds anything, registration order between entries does not matter — only resolution order does — except for aliases, whose target must already be registered.
+
+## Accepted factory shapes
 
 ### 1. Use [`callable`](https://www.php.net/manual/en/language.types.callable.php) string or array
 
@@ -51,27 +56,78 @@ $container->set(CertainInterface::class, [new SomeClass, 'staticMethod']); // OR
 $container->set(CertainInterface::class, [new SomeClass, 'nonStaticMethod']);
 ```
 
-### 2. Use an instance or name of a class
+The class part of a pair must be an **existing class** (validated at registration: class exists, method exists and is public). A static pair is called statically; a non-static pair resolves the class through the container first (registered entry if any, otherwise a freshly autowired instance).
+
+> [!NOTE]
+> You cannot use a registered *entry id* as the class part of a pair (`'foo::method'` where `foo` is an id, not a class, throws at registration). To call a method on an already registered entry, use [`make([id, 'method'])`](Create-an-instance).
+
+### 2. Use closures, function names, or callable objects
 
 ```php
-// Instance of class
-$container->set('myService', new SomeClass);
+// Closure — the recommended Swiss-army factory: autowire through its parameters
+$container->set('myService', function (SomeDependency $dep): MyService {
+    return new MyService($dep);
+});
 
-// String of class name
+// Plain function name
+$container->set('id', 'someFunction');
+```
+
+**Callable objects** (any object with `__invoke()`) are factories too: they are stored **as-is** and invoked as-is on resolution — never re-instantiated, so their state is preserved:
+
+```php
+$container->set('id', new InvokableFactory($config));
+```
+
+### 3. Use a name of a class
+
+```php
+// String of an instantiable class name
 $container->set('myService', SomeFactoryClass::class);
 ```
 
-### 3. Use an existing entry (as an alias)
+The entry is still lazy — `SomeFactoryClass` is constructed on the first `get()`, with its constructor parameters autowired. A class-name factory **always builds an instance**: even when the class is invokable, `__invoke()` is never implicitly called (see [Things you should be aware of](#things-you-should-be-aware-of)).
 
-You can use the name of the registered service as the `$factory` parameter.
+### 4. Use an instance (as a factory)
+
+Plain objects are **not** factories — the container cannot "produce" a value from a value, so `$container->set('myService', new SomeClass)` throws `InvalidArgumentException`. Register the instance through a closure, or implement the `Projek\Container\EntryFactory` interface for the explicit door:
+
+```php
+// Or the explicit EntryFactory door
+use Projek\Container\EntryFactory;
+use Psr\Container\ContainerInterface;
+
+$instance = new SomeClass($config);
+
+// Closure wrapper
+$container->set('myService', fn (): SomeClass => $instance);
+
+$configFactory = new class($config) implements EntryFactory {
+    public function __construct(private array $config) {}
+
+    public function create(ContainerInterface $container): Config
+    {
+        return Config::fromArray($this->config);
+    }
+};
+
+$container->set(Config::class, $configFactory);
+```
+
+> [!TIP]
+> A closure that simply returns a pre-built object (`fn () => $instance`) also gets `ContainerAware` injection applied to that object when the entry is first resolved.
+
+### 5. Use an existing entry (as an alias)
+
+You can use the name of an **already registered** service as the `$factory` parameter.
 
 ```php
 // Based on the example above
-$container->set(CertainInterface::class, function () {
+$container->set(CertainInterface::class, function (): SomeClass {
     return new SomeClass;
 });
 
-$container->set(AnotherInterface::class, CertainInterface::class);
+$container->set(AnotherInterface::class, CertainInterface::class); // OR
 $container->set('someClass', CertainInterface::class);
 
 // So you could access the instance of SomeClass with the following:
@@ -80,45 +136,51 @@ $container->get(AnotherInterface::class); // OR
 $container->get('someClass');
 ```
 
-That said, we also have the option to register a method from an existing container entry, as follows:
+An alias may target any string that is not itself a buildable factory — including **interface names, traits, abstract classes, and enums**, as long as that id is already registered:
 
 ```php
-class SomeClass implements CertainInterface
-{
-    public function theMethod() {
-        return 'a value';
-    }
-}
+$container->set('driver', MySQLDriver::class);
+$container->set(DriverInterface::class, 'driver'); // alias → 'driver'
 
-$container->set(CertainInterface::class, SomeClass::class);
-$container->set('foo', function (CertainInterface $bar) {
-    return $bar;
-});
-
-// Because the container 'foo' technically returns the instance of CertainInterface
-$container->set('bar', 'foo::theMethod');                       // => returns 'a value'
-
-// Because the CertainInterface is registered as a container entry
-$container->set('baz', [CertainInterface::class, 'theMethod']); // => returns 'a value'
+$container->get(DriverInterface::class); // => the MySQLDriver instance
 ```
+
+The target must pre-exist: registering an alias to an unknown id throws `Cannot register entry "%s": "%s" is neither a registered entry, an instantiable class, nor a function.` — that message is the typo catcher for interface names and misspelled ids.
+
+### 6. What is rejected
+
+`set()` throws `Projek\Container\InvalidArgumentException` when:
+
+- the **id is already registered** (`Cannot register entry "%s": already registered.`) — there is no silent no-op anymore; use [`extend()`](Extending-an-instance) to modify an existing entry. The built-in infrastructure defaults (`Container::class`, `ContainerInterface::class`, dispatcher) are placeholders and *can* be replaced.
+- the factory is a **plain object** without `__invoke()` (wrap it in a closure or `EntryFactory`, see above).
+- the factory is a **string naming neither** a registered entry, an instantiable class, a function, nor a `Class::method` pair.
+- the factory is anything else (int, float, `null`, `bool`, a malformed pair, …).
+- a **by-reference parameter** is declared by a closure, function, callable object, or class constructor — such parameters must be provided by the caller and cannot be autowired.
 
 ## How resolution works
 
 ### Autowiring
 
-The container automatically resolves dependencies for constructors and callables. This is known as autowiring.
+The container automatically resolves parameters that the factory did not receive explicitly. For each missing parameter, in order:
 
-1.  **Class-based dependencies**: If a parameter is type-hinted with a class or interface name, the container will try to fetch that service from itself.
-2.  **Named dependencies**: If a parameter is a builtin type (e.g., `string`, `int`) or untyped, the container will use the **parameter name** as the service identifier to fetch from the container.
+1. **Class type-hints**: fetched from the container by type name (`get(Foo::class)`). If the type is not registered and the parameter has a default value, the default is used; if it has neither, resolution fails with a `NotFoundException` naming the missing type.
+2. **Default values**: used whenever the container cannot provide the parameter (see step 1) — including builtin-typed parameters.
+3. **Untyped parameters**: looked up in the container by their **parameter name** used as the service id.
+4. Otherwise the resolution fails with a `ResolutionException` (or the `NotFoundException` of the missing class type).
 
 ```php
-$container->set('dbHost', 'localhost');
+$container->set('dbHost', fn (): string => 'localhost');
 
-$container->set('db', function (string $dbHost) {
-    // $dbHost will be 'localhost' because it matches the parameter name
+$container->set('db', function ($dbHost) {
+    // $dbHost is untyped → looked up as the entry id 'dbHost' → 'localhost'
     return new Database($dbHost);
 });
 ```
+
+> [!NOTE]
+> Builtin-typed parameters (`string $dbHost`, `int $count`, …) are **not** looked up by parameter name — they resolve through their default value only (so `fn (int $count = 3)` keeps `3` instead of being shadowed by an unrelated entry named `count`). Use an *untyped* parameter for name-based lookup.
+>
+> By-reference parameters are never autowired: they must be provided explicitly.
 
 ### Caching (Shared Instances)
 
@@ -133,16 +195,29 @@ $two = $container->get('session');
 var_dump($one === $two); // bool(true)
 ```
 
+[`make()`](Create-an-instance) bypasses this cache entirely, and [`extend()`](Extending-an-instance) never invalidates it — decorators are applied against (or before) the cached value, not by rebuilding it.
+
 ## Cloning the Container
 
-When you clone a `Container` instance, it creates a fresh `Resolver` instance. However, it **shares** the same internal entries and factories. This is useful for creating a child container that inherits the existing services but can have its own resolution context if needed.
+Cloning a `Container` **copies the registrations** into a fresh collector — it does not share it:
+
+- Every entry is cloned: ids, factories, decorators, and metadata carry over, but each clone's **singleton cache is reset**, so the clone rebuilds its entries on first use.
+- The self-referential infrastructure defaults (`Container::class`, `Psr\Container\ContainerInterface::class`, `Psr\EventDispatcher\EventDispatcherInterface::class`) are re-pointed to the clone — auto-wiring and `ContainerAware` injection bind the **clone**, not the original.
+- The shared handler is rebuilt lazily against the clone.
+- Later `set()` / `extend()` calls on the clone do **not** affect the original (and vice versa).
+
+> [!WARNING]
+> Objects captured **inside** your factory closures are shared by reference — cloning rewrites entries, never closure bindings. A factory that `use`d the original container keeps capturing the original:
+
+```php
+$container->set('legacy', function () use ($container) {
+    return new Thing($container); // still the ORIGINAL container after clone
+});
+```
 
 ## Things you should be aware of
 
-* By registering an entry this way, the container will check whether it's a callable class or not.
-* If it's a callable class, then the `Container::get()` method will return the value returned by the `__invoke()` method instead of the instance of the class.
-
-Let's say you have the following class:
+* A class-name factory **always builds the class instance** — `get()` never implicitly invokes `__invoke()`, even for invokable classes:
 
 ```php
 class FooBar {
@@ -163,23 +238,14 @@ class FooBar {
 $container->set(FooBar::class, FooBar::class);
 
 // What you'll get:
-$container->get(FooBar::class); // => returns void
+$container->get(FooBar::class); // => a FooBar instance, NOT void
 ```
 
-That said, it's possible to have an entry that returns an unexpected value. This will lead to an error when you try to register a new entry and require the _invalid_ entry as a dependency.
+* If you want the `__invoke()` result as the entry value, register a closure factory (or call `make([FooBar::class, '__invoke'], $args)` for a one-off).
+* Entry values must be usable as their declared dependencies: if a factory returns something its consumers do not type-hint, resolution of *those* entries fails with a `TypeError` from their own signatures — returning an unexpected value no longer corrupts other entries silently, but it is still worth registering a `Closure` that declares what it returns:
 
 ```php
-$container->set('foo', function (FooBar $foobar) {
-    // the codes.
-});
-```
-
-When the container tries to resolve the `foo` entry, it will fetch the `FooBar` entry and inject it into the callback, so a `TypeError` will be thrown.
-
-So it is recommended to always use a `Closure` as an entry factory and inject the required dependencies through its arguments.
-
-```php
-$container->set('foobar', function (Foo $foo, Bar $bar) {
+$container->set('foobar', function (Foo $foo, Bar $bar): FooBar {
     return new FooBar($foo, $bar);
 });
 ```

@@ -6,17 +6,13 @@ namespace Projek\Container\Events;
 
 use Projek\Container\ContainerAware;
 use Projek\Container\HasContainer;
-use Psr\Container\ContainerInterface;
 use Psr\EventDispatcher\ListenerProviderInterface;
 
 /**
  * Event listener provider for container events.
  *
- * This class provides listeners for container lifecycle events:
- * - BeforeRegistration: Before a service is registered.
- * - AfterRegistration: After a service is registered.
- * - BeforeResolution: Before a service is resolved.
- * - AfterResolution: After a service is resolved (handles ContainerAware injection).
+ * Maps only EntryResolved to the container-aware injection listener;
+ * EntryRegistered has no internal listener — it is a user-facing notification.
  *
  * @internal This class is for internal use by the Container.
  */
@@ -33,57 +29,26 @@ final class ListenerProvider implements ContainerAware, ListenerProviderInterfac
     public function getListenersForEvent(object $event): iterable
     {
         $listeners = [
-            BeforeRegistration::class => ['beforeRegistration'],
-            AfterRegistration::class => ['afterRegistration'],
-            BeforeResolution::class => ['beforeResolution'],
-            AfterResolution::class => ['afterResolution'],
+            EntryResolved::class => ['entryResolved'],
         ];
 
-        return array_map(
+        return \array_map(
             fn ($listener) => [$this, $listener],
-            $listeners[get_class($event)] ?? [],
+            $listeners[\get_class($event)] ?? [],
         );
     }
 
     /**
-     * Handle BeforeRegistration event.
-     */
-    public function beforeRegistration(BeforeRegistration $event): BeforeRegistration
-    {
-        return $event;
-    }
-
-    /**
-     * Handle AfterRegistration event.
-     */
-    public function afterRegistration(AfterRegistration $event): AfterRegistration
-    {
-        return $event;
-    }
-
-    /**
-     * Handle BeforeResolution event.
-     */
-    public function beforeResolution(BeforeResolution $event): BeforeResolution
-    {
-        return $event;
-    }
-
-    /**
-     * Handle AfterResolution event.
+     * Handle EntryResolved event.
      *
-     * Injects the container into ContainerAware instances after resolution.
+     * Injects the container into a ContainerAware instance resolved through a
+     * fresh get() build (no id guard needed: self/ContainerInterface entries
+     * are auto and never dispatch).
      */
-    public function afterResolution(AfterResolution $event): AfterResolution
+    public function entryResolved(EntryResolved $event): EntryResolved
     {
-        $entry = $event->getEntry();
-
-        if (
-            $entry instanceof ContainerAware &&
-            $event->id !== ContainerInterface::class &&
-            $entry->getContainer() === null
-        ) {
-            $entry->setContainer($this->getContainer());
+        if ($event->instance instanceof ContainerAware && $event->instance->getContainer() === null) {
+            $event->instance->setContainer($this->getContainer());
         }
 
         return $event;

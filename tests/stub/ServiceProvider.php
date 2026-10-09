@@ -6,15 +6,18 @@ namespace Stubs;
 
 class ServiceProvider
 {
-    protected $abs;
+    protected AbstractFoo $abs;
 
+    /**
+     * Keep the collaborator __invoke() passes into Dummy::lorem().
+     */
     public function __construct(AbstractFoo $abs)
     {
         $this->abs = $abs;
     }
 
     /**
-     * @param  Dummy  $d
+     * @param  Dummy  $dummy
      * @return string
      */
     public function __invoke($dummy)

@@ -9,7 +9,7 @@ use Psr\Container\NotFoundExceptionInterface;
 /**
  * Exception thrown when a requested entry is not found in the container.
  */
-class NotFoundException extends \InvalidArgumentException implements NotFoundExceptionInterface
+class NotFoundException extends \RuntimeException implements NotFoundExceptionInterface
 {
     /**
      * Create a new NotFoundException instance.

@@ -27,13 +27,15 @@ class MyService implements ContainerAware
 
 ## How it works (Zero-Config)
 
-As of version 1.x, Container Awareness is powered by the **PSR-14 Event System**. 
+Container Awareness is powered by the **PSR-14 Event System** for `get()`, and by direct injection for `make()`.
 
-Automatic injection works **out-of-the-box** using a minimalist internal event dispatcher. When a service is resolved, the container dispatches an `AfterResolution` event. An internal `ListenerProvider` listens for this event and calls `setContainer($this)` on any instance implementing the `ContainerAware` interface.
+When an entry is resolved through `get()` for the **first time**, the container dispatches an `EntryResolved` event (after the value is cached). The internal `ListenerProvider` listens for this event and calls `setContainer($this)` on any instance implementing the `ContainerAware` interface. Cache hits dispatch no events — but the instance already carries its container from the first resolution.
+
+Results from [`make()`](Create-an-instance) are injected **directly**, without dispatching any event — `make()` is deliberately event-free, and its injection works no matter which dispatcher (if any) is configured.
 
 ### Using a Custom Dispatcher
 
-If you provide your own PSR-14 `EventDispatcher`, you must ensure that the container's internal `ListenerProvider` is registered if you want to keep automatic `ContainerAware` injection working:
+If you provide your own PSR-14 `EventDispatcher`, you must ensure that the container's internal `ListenerProvider` is registered if you want to keep automatic `ContainerAware` injection working for `get()`:
 
 ```php
 use Projek\Container\Events\ListenerProvider;
@@ -43,6 +45,9 @@ $provider->setContainer($container);
 
 // Add $provider to your custom dispatcher's listener stack...
 ```
+
+> [!WARNING]
+> Without this wiring, a custom dispatcher silently drops the injection listener — `ContainerAware` instances resolved through `get()` keep a `null` container. (`make()` injection is unaffected.)
 
 ## The `getContainer()` method
 

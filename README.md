@@ -12,10 +12,10 @@ This tiny library aims to provide a dead-simple PSR-11 implementation with flexi
 
 - **PSR-11 Compliant**: Fully implements the PSR-11 `ContainerInterface`.
 - **Autowiring**: Automatically resolves dependencies for constructors and callables using type-hints or parameter names.
-- **Flexible Registration**: Register services using closures, class names, instances, or even class-method pairs.
+- **Flexible Registration**: Register services using closures, class names, functions, invokable objects, or class-method pairs — pre-built instances go in through `fn () => $instance` or an `EntryFactory`.
 - **Service Extension**: Easily modify or wrap existing services using the `extend()` method.
-- **On-the-fly Resolution**: Create instances without adding them to the container stack using `make()`.
-- **PSR-14 Event Lifecycle**: Fully supports PSR-14 event dispatching for intercepting and filtering container operations.
+- **On-the-fly Resolution**: Build fresh, uncached values from a registered entry, a class name, or any callable using `make()` — nothing is stored and no events fire.
+- **PSR-14 Event Lifecycle**: Dispatches readonly, observe-only `EntryRegistered` and `EntryResolved` events through PSR-14 interfaces, with a minimalist built-in dispatcher for zero-config `ContainerAware` injection.
 - **Container Awareness**: Automatically inject the container into services that implement `ContainerAware`.
 - **Lightweight**: Minimal dependencies (only PSR-11 and PSR-14 interfaces) and a small footprint.
 

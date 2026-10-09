@@ -5,59 +5,82 @@ declare(strict_types=1);
 namespace Projek;
 
 use Closure;
+use Projek\Callable\Handler;
+use Projek\Callable\Resolver;
+use Projek\Callable\ResolverExceptionInterface;
+use Projek\Container\ContainerAware;
+use Projek\Container\Entry\AliasEntry;
+use Projek\Container\Entry\CallableEntry;
+use Projek\Container\Entry\ClassNameEntry;
+use Projek\Container\Entry\FactoryEntry;
+use Projek\Container\Entry\MethodPairEntry;
+use Projek\Container\EntryCollector;
+use Projek\Container\EntryFactory;
+use Projek\Container\Events\Dispatcher;
+use Projek\Container\Events\EntryRegistered;
+use Projek\Container\Events\EntryResolved;
+use Projek\Container\InvalidArgumentException;
+use Projek\Container\NotFoundException;
+use Projek\Container\ResolutionException;
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use ReflectionFunction;
+use ReflectionNamedType;
+use Throwable;
 
 /**
  * PSR-11 Dependency Injection Container implementation.
  *
- * This class handles service registration, resolution, and autowiring
- * of dependencies using reflection.
+ * Registrations are lazy `Entry` objects: `set()` classifies and stores,
+ * `get()` builds singletons through the error boundary, `make()` always builds
+ * fresh, and `extend()` appends decorators.
  */
 class Container implements ContainerInterface
 {
     /**
-     * @var Container\EntryCollector Internal storage for registered and resolved entries.
+     * @var EntryCollector Internal storage for registered entries.
      */
-    private Container\EntryCollector $entries;
+    private EntryCollector $entries;
 
     /**
-     * @var array<string, Closure|callable|string> Registry of service factories or class names.
+     * @var Handler|null Shared handler, built lazily against this container.
      */
-    private $factories = [];
+    private ?Handler $handler = null;
 
     /**
-     * @var array<string|class-string<object>, mixed|object> Cache of resolved singleton instances.
+     * @var list<object> Events raised while the dispatcher was mid-build,
+     *                   flushed right after it is cached.
      */
-    private $handledEntries = [];
-
-    /**
-     * @var Container\Resolver Service resolver for autowiring and factory execution.
-     */
-    private Container\Resolver $resolver;
+    private array $deferredEvents = [];
 
     /**
      * Create a new Container instance.
      *
-     * @param  array<string, Closure|callable|string>  $entries  Initial service entries.
+     * Infrastructure defaults are inserted directly (no events); user entries
+     * are registered through set(), which fires EntryRegistered.
+     *
+     * @template T of object
+     *
+     * @param  array<string, array{class-string<T>|T,string}|callable|string|EntryFactory>  $entries  Initial service entries.
      * @param  null|EventDispatcherInterface  $eventDispatcher  Optional PSR-14 event dispatcher implementation.
      */
     public function __construct(
         array $entries = [],
         ?EventDispatcherInterface $eventDispatcher = null,
     ) {
-        $this->resolver = new Container\Resolver($this);
+        $this->entries = new EntryCollector;
 
         $defaults = [
-            self::class => $this,
-            ContainerInterface::class => $this,
+            self::class => fn (): self => $this,
+            ContainerInterface::class => fn (): ContainerInterface => $this,
+            EventDispatcherInterface::class => fn (): EventDispatcherInterface => $eventDispatcher ?? new Dispatcher($this),
         ];
 
-        if ($eventDispatcher) {
-            $defaults[EventDispatcherInterface::class] = $eventDispatcher;
+        foreach ($defaults as $id => $factory) {
+            $this->entries[$id] = new CallableEntry($id, $factory, auto: true);
         }
-
-        $this->entries = new Container\EntryCollector($defaults);
 
         foreach ($entries as $id => $factory) {
             $this->set($id, $factory);
@@ -65,50 +88,55 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Clone the container with a new resolver instance.
-     *
-     * Ensures that cloned containers have their own isolated state
-     * while sharing the same initial entries.
+     * Clone the container: every entry is cloned (singleton caches reset, registrations/
+     * decorators/metadata carry over) and the three self-referential auto defaults
+     * are re-pointed to the clone — their factory closures capture $this.
      */
     public function __clone()
     {
-        $this->resolver = new Container\Resolver($this);
-        $this->entries = new Container\EntryCollector($this->entries);
+        $entries = new EntryCollector;
+        $defaults = [self::class, ContainerInterface::class, EventDispatcherInterface::class];
+
+        foreach ($this->entries as $id => $entry) {
+            if (! $entry->auto || ! in_array($id, $defaults, true)) {
+                $entries[$id] = clone $entry;
+
+                continue;
+            }
+
+            // Recreate the factory closure against the clone; rebinding keeps any captured
+            // value (the ctor-provided dispatcher) while re-pointing the captured container.
+            /** @var CallableEntry $entry */
+            $entries[$id] = new CallableEntry(
+                $id,
+                Closure::bind($entry->factory, $this, self::class),
+                auto: $entry->auto,
+            );
+        }
+
+        $this->entries = $entries;
+
+        // The shared handler's bundled Resolver captured the original container.
+        $this->handler = null;
     }
 
     /**
      * Retrieve a PSR-14 event dispatcher instance.
      *
-     * If no implementation is provided by the developer, a minimalist
-     * internal implementation is returned to keep core hooks functional.
+     * When no implementation is provided by the developer, a minimalist
+     * internal implementation is built lazily on first use.
      */
     final public function getEventDispatcher(): EventDispatcherInterface
     {
-        $dispatcher = $this->handledEntries[EventDispatcherInterface::class] ?? null;
-
-        if ($dispatcher instanceof EventDispatcherInterface) {
-            return $dispatcher;
-        }
-
-        if (! $this->entries->offsetExists(EventDispatcherInterface::class)) {
-            $this->entries->offsetSet(
-                EventDispatcherInterface::class,
-                new Container\Events\Dispatcher($this)
-            );
-        }
-
-        /** @var EventDispatcherInterface $dispatcher */
-        $dispatcher = $this->entries->offsetGet(EventDispatcherInterface::class);
-
-        return $this->handledEntries[EventDispatcherInterface::class] = $dispatcher;
+        return $this->get(EventDispatcherInterface::class);
     }
 
     /**
      * Assign a PSR-14 event dispatcher implementation.
      *
-     * This library provides lifecycle events and a ListenerProvider for internal
-     * features, but the actual EventDispatcherInterface implementation (e.g.
-     * Symfony EventDispatcher) must be provided by the developer.
+     * Dispatcher swapping is an infrastructure setter: it force-replaces the entry
+     * (bypassing duplicate strictness) and fires EntryRegistered like any other
+     * registration. The closure wrapper is mandatory — objects are not factories.
      *
      * @link https://github.com/projek-xyz/container/wiki/event-lifecycle Event Lifecycle Wiki
      *
@@ -116,45 +144,16 @@ class Container implements ContainerInterface
      */
     final public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): self
     {
-        $this->entries->offsetSet(EventDispatcherInterface::class, $eventDispatcher);
-        $this->handledEntries[EventDispatcherInterface::class] = $eventDispatcher;
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * Note: If the resolved entry is a callable object (has an `__invoke` method),
-     * this method will return the result of the invocation rather than the object itself.
-     *
-     * @throws Container\NotFoundException If the entry is not found.
-     * @throws Container\Exception If the entry cannot be resolved.
-     */
-    public function get(string $id)
-    {
-        $this->getEventDispatcher()->dispatch(
-            $pre = new Container\Events\BeforeResolution($id)
+        $entry = new CallableEntry(
+            EventDispatcherInterface::class,
+            fn (): EventDispatcherInterface => $eventDispatcher,
         );
 
-        // Allows service redirection via event.
-        $id = $pre->id;
+        $this->entries[EventDispatcherInterface::class] = $entry;
 
-        if (isset($this->handledEntries[$id])) {
-            return $this->handledEntries[$id];
-        }
+        $this->dispatch(new EntryRegistered($entry));
 
-        $resolved = $this->resolver->handle($this->entries[$id]);
-
-        if (\is_object($resolved) || \is_callable($resolved)) {
-            $this->getEventDispatcher()->dispatch(
-                $after = new Container\Events\AfterResolution($resolved, $id)
-            );
-
-            $resolved = $after->getEntry();
-        }
-
-        return $this->handledEntries[$id] = $resolved;
+        return $this;
     }
 
     /**
@@ -164,7 +163,7 @@ class Container implements ContainerInterface
      *
      * @see ContainerInterface::has()
      *
-     * @param  string  $id  The entry identifier.
+     * @param  class-string|string  $id  The entry identifier.
      */
     public function has(string $id): bool
     {
@@ -172,44 +171,104 @@ class Container implements ContainerInterface
     }
 
     /**
+     * Resolve a registered entry, building and caching it on first use.
+     *
+     * {@inheritdoc}
+     *
+     * @link https://github.com/projek-xyz/container/wiki/event-lifecycle Event Lifecycle Wiki
+     *
+     * @template T of object
+     *
+     * @param  class-string<T>|string  $id  The entry identifier.
+     * @return ($id is class-string<T> ? T : mixed)
+     *
+     * @throws NotFoundException If the entry is not found.
+     * @throws ResolutionException If the entry cannot be built.
+     */
+    public function get(string $id)
+    {
+        $entry = $this->entries->offsetGet($id);
+
+        if ($entry->isBuilt()) {
+            return $entry->value();
+        }
+
+        $entry->beginBuild();
+
+        try {
+            $value = $entry->build($this->getHandler(), $this);
+        } catch (Throwable $e) {
+            throw $this->boundary($e, $id);
+        } finally {
+            $entry->endBuild();
+        }
+
+        // Cache strictly before dispatch: an EntryResolved listener
+        // may re-enter get() for this very id.
+        $entry->cache($value);
+
+        if (! $entry->auto && ! $entry instanceof AliasEntry && \is_object($value)) {
+            $this->dispatch(new EntryResolved($id, $value));
+        }
+
+        if ($id === EventDispatcherInterface::class) {
+            // Flush events raised while this dispatcher was being built (its own build completes
+            // before the first dispatch, so the lookup below is always a cache hit).
+            $deferred = $this->deferredEvents;
+            $this->deferredEvents = [];
+
+            foreach ($deferred as $event) {
+                $this->dispatch($event);
+            }
+        }
+
+        return $entry->value();
+    }
+
+    /**
      * Register a new service factory or class in the container.
      *
-     * If the ID is already registered, the new factory will be ignored.
-     * Use the `extend()` method to modify existing services.
-     *
-     * Note: If a class name or object is provided that has an `__invoke` method,
-     * it will be treated as a factory, and `get()` will return the result of that invocation.
+     * The factory is classified but never built — registration is lazy.
+     * Duplicate user registrations throw; infrastructure (auto) defaults may be replaced.
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance Registering an Instance Wiki
      *
-     * @param  string  $id  The entry identifier.
-     * @param  Closure|callable|string|object  $factory  A factory closure, callable, class name, or object instance.
+     * @template T of object
+     *
+     * @param  class-string<T>|string  $id  The entry identifier.
+     * @param  array{class-string<T>|T,string}|callable|string|EntryFactory  $factory  A factory closure, callable, class name, pair, or EntryFactory.
+     *
+     * @throws InvalidArgumentException If the id is a duplicate or the factory is invalid.
      */
-    public function set(string $id, $factory): static
+    public function set(string $id, mixed $factory): static
     {
-        if ($this->entries->offsetExists($id)) {
-            return $this;
+        if ($this->entries->offsetExists($id) && ! $this->entries->offsetGet($id)->auto) {
+            throw InvalidArgumentException::alreadyRegistered($id);
         }
 
-        $this->factories[$id] = \is_object($factory) && ! ($factory instanceof Closure)
-            ? \get_class($factory)
-            : $factory;
+        // The wrapping parens are load-bearing: Kahlan only records a statement's
+        // begin line when a paren group survives to the `;` — without them
+        // the closing `});` line can never be marked covered.
+        $this->entries[$id] = (match (true) {
+            // Invokable shapes first — the is_object guard is load-bearing: a class-string naming
+            // an invokable class must fall through to the ClassName arm (build, never invoke).
+            FactoryEntry::isValid($factory) => new FactoryEntry($id, $factory),
+            CallableEntry::isValid($factory) => new CallableEntry($id, $factory),
+            ClassNameEntry::isValid($factory) => new ClassNameEntry($id, $factory),
+            MethodPairEntry::isValid($factory) => new MethodPairEntry($id, $factory),
+            // any other string — incl. non-buildable type symbols (interface, trait, abstract
+            // class, enum): must name a pre-registered entry (the typo catcher).
+            \is_string($factory) => $this->has($factory) && ! $this->isAliasReaches($factory, $id)
+                ? new AliasEntry($id, $factory)
+                : throw InvalidArgumentException::unresolvableString($id, $factory),
+            // Plain objects only; invokables matched the arm above. (\is_object, not
+            // `instanceof object` — the latter always evaluates false: `object` is parsed as a class name.)
+            \is_object($factory) => throw InvalidArgumentException::plainObjectNotAFactory($id, $factory),
+            // Invalid factory of type %s.
+            default => throw InvalidArgumentException::invalidFactoryType($id, $factory),
+        });
 
-        $this->getEventDispatcher()->dispatch(
-            $registration = new Container\Events\BeforeRegistration($this->factories[$id], $id)
-        );
-
-        $this->entries[$id] = $this->resolver->resolve($registration->getFactory());
-
-        if (isset($this->handledEntries[$id])) {
-            unset($this->handledEntries[$id]);
-        }
-
-        $this->getEventDispatcher()->dispatch(
-            $registered = new Container\Events\AfterRegistration($this->entries[$id], $id)
-        );
-
-        $this->entries[$id] = $registered->getEntry();
+        $this->dispatch(new EntryRegistered($this->entries[$id]));
 
         return $this;
     }
@@ -217,124 +276,251 @@ class Container implements ContainerInterface
     /**
      * Create a new instance without registering it as a singleton.
      *
-     * This method resolves dependencies on-the-fly and allows passing
-     * additional arguments or conditions for the resolution process.
-     *
-     * Note: The `$args` are used for constructor resolution for normal class instantiation.
-     * For invokable classes (e.g. `__invoke` or a method identified by `$condition`),
-     * constructor args are ignored and `$args` are passed to the callable handler.
-     *
-     * ```php
-     * // Pass arguments directly
-     * $container->make(SomeClass::class, ['a value'])
-     *
-     * // Use a condition to determine the method to call
-     * $container->make(SomeClass::class, function ($instance) {
-     *     return $instance instanceof CertainInterface ? [$instance, 'theMethod'] : null;
-     * })
-     * ```
-     *
-     * @template TObj of object
-     * @template TArgs of array<int, mixed>
+     * Accepts exactly four families: a registered id, an unregistered instantiable
+     * class-string, a callable shape, or nothing else (throws). Results are never
+     * cached and no events are dispatched — ContainerAware injection is direct.
      *
      * @link https://github.com/projek-xyz/container/wiki/create-an-instance Creating an Instance Wiki
      *
-     * @param  Closure|callable|string|object  $instance  Class name, factory, or object instance.
-     * @param  TArgs|Closure(TObj):?TObj  $args  Optional arguments or a condition closure.
-     * @param  null|Closure(TObj):?TObj  $condition  Optional condition closure if $args is an array.
+     * @template T of object
      *
-     * @throws Container\InvalidArgumentException If arguments are invalid.
-     * @throws Container\Exception If resolution fails.
+     * @param  array{class-string<T>|T,string}|callable|callable-string  $instance  Registered id, class name, or callable shape.
+     * @param  array<mixed>  $args  Positional/named arguments for the invocation or constructor.
+     * @return ($instance is class-string<T> ? T : mixed)
+     *
+     * @throws InvalidArgumentException If the input matches no family.
+     * @throws ResolutionException If a package call fails to resolve.
      */
-    public function make($instance, $args = [], ?Closure $condition = null): mixed
+    public function make(array|callable|object|string $instance, array $args = []): mixed
     {
-        if ($condition === null && $args instanceof Closure) {
-            $condition = $args;
-            $args = [];
+        // A registered id wins even when it also looks like a class or a function.
+        if (\is_string($instance) && $this->entries->offsetExists($instance)) {
+            $aliases = [];
+            $entry = $this->entries->offsetGet($instance);
+
+            while ($entry instanceof AliasEntry) {
+                $aliases[] = $entry;
+                $entry = $this->entries->offsetGet($entry->factory);
+            }
+
+            $entry->beginBuild();
+
+            try {
+                $value = $entry->build($this->getHandler(), $this, $args);
+            } catch (Throwable $e) {
+                throw $this->boundary($e, $instance);
+            } finally {
+                $entry->endBuild();
+            }
+
+            $handler = $this->getHandler();
+
+            // The aliases' own decorators never ran — make() bypassed
+            // their build(); innermost first, mirroring get().
+            foreach (\array_reverse($aliases) as $alias) {
+                $value = $alias->applyDecorators($handler, $value);
+            }
+
+            return $this->injectContainer($value);
         }
 
-        if (! is_array($args)) {
-            throw new Container\InvalidArgumentException(\sprintf(
-                'Argument #2 must be an %s, %s given',
-                ($condition === null ? 'array or instance of closure' : 'array'),
-                \gettype($args)
-            ));
+        // An unregistered, instantiable class-string builds transiently through the same
+        // ClassNameEntry path as set() (never stored, no cache, no events, zero decorators).
+        if (ClassNameEntry::isValid($instance)) {
+            try {
+                $value = (new ClassNameEntry($instance, $instance))
+                    ->build($this->getHandler(), $this, $args);
+            } catch (Throwable $e) {
+                throw $this->boundary($e, $instance);
+            }
+
+            return $this->injectContainer($value);
         }
 
-        $id = \is_string($instance) ? $instance : null;
-
-        if ($id) {
-            $this->getEventDispatcher()->dispatch(
-                $pre = new Container\Events\BeforeResolution($id)
-            );
-
-            $instance = $pre->id;
-            $id = $instance;
+        // Structural callable shape only; contents are validated by the package
+        // (an invokable class-string can never land here — the class-string arm
+        // runs first: build, never invoke).
+        if (CallableEntry::isValid($instance) || MethodPairEntry::isValid($instance)) {
+            try {
+                /** @var callable $instance */
+                return $this->injectContainer(
+                    $this->getHandler()->handle($instance, $args)
+                );
+            } catch (Throwable $e) {
+                throw $this->boundary($e, $this->describeTarget($instance));
+            }
         }
 
-        $instance = $this->resolver->resolve(
-            \is_string($instance) && isset($this->factories[$instance])
-                ? $this->factories[$instance]
-                : $instance,
-            $args
-        );
-
-        if ($condition) {
-            $instance = $condition($instance) ?: $instance;
-        }
-
-        $resolved = $this->resolver->handle($instance, $args);
-
-        if ($id && (\is_object($resolved) || \is_callable($resolved))) {
-            $this->getEventDispatcher()->dispatch(
-                $after = new Container\Events\AfterResolution($resolved, $id)
-            );
-
-            $resolved = $after->getEntry();
-        }
-
-        return $resolved;
+        throw \is_object($instance)
+            ? InvalidArgumentException::cannotMakePlainObject($this->describeTarget($instance))
+            : InvalidArgumentException::cannotMakeUnsupported($this->describeTarget($instance));
     }
 
     /**
-     * Extend an existing service with additional functionality.
+     * Extend an existing service with a decorator.
      *
-     * This method retrieves an existing entry and passes it to the provided
-     * callback. The callback must return the modified or wrapped instance.
-     *
-     * Note: The callback must return an object instance that is of the same
-     * type or a subclass of the original service.
+     * Never forces a build: a pending decorator joins the entry's list and applies inside
+     * the next build; an already-built entry is decorated immediately (apply-then-append) and re-cached.
      *
      * @link https://github.com/projek-xyz/container/wiki/extending-an-instance Extending an Instance Wiki
      *
-     * @param  string  $id  Identifier of the existing entry.
-     * @param  Closure(object):object  $callback  Callback to extend the service.
-     * @return object Returns the extended object instance.
+     * @template T of object
      *
-     * @throws Container\NotFoundException If the entry ID is not found.
-     * @throws Container\Exception If trying to extend a non-object or callable.
+     * @param  class-string<T>|string  $id  Identifier of the existing entry.
+     * @param  Closure(T $instance, mixed ...$args):T  $callback  Decorator declaring an explicit single class return type.
+     *
+     * @throws NotFoundException If the entry id is absent.
+     * @throws InvalidArgumentException If the target or the callback return type is invalid.
      */
-    public function extend(string $id, Closure $callback): object
+    public function extend(string $id, Closure $callback): static
     {
-        $entry = $this->get($id);
+        $entry = $this->entries->offsetGet($id);
+        $target = $entry->extensionTarget($this->entries);
 
-        // We treat any callable as a factory function which is might be returns
-        // a different instance when it get invoked. So we should only extend an object.
-        if (! \is_object($entry) || \method_exists($entry, '__invoke')) {
-            throw new Container\Exception(
-                \sprintf('Cannot extending a non-object or a callable entry of "%s"', $id)
+        if ($target === null) {
+            throw InvalidArgumentException::extensionTargetNotDerivable($id);
+        }
+
+        $returnType = (new ReflectionFunction($callback))->getReturnType();
+
+        if (! $returnType instanceof ReflectionNamedType || $returnType->isBuiltin()) {
+            throw InvalidArgumentException::callbackReturnTypeInvalid($id);
+        }
+
+        if ($target !== 'object' && ! \is_a($returnType->getName(), $target, true)) {
+            throw InvalidArgumentException::callbackReturnMismatch($id, $target);
+        }
+
+        if ($entry->isBuilt()) {
+            // Apply-then-append: the callback joins the list only after it ran
+            // successfully, then the result replaces the cached value — list
+            // and cache can never drift.
+            $value = $this->getHandler()->handle($callback, [$entry->value()]);
+
+            $entry->decorate($callback);
+            $entry->cache($value);
+        } else {
+            $entry->decorate($callback);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Send one event to the effective dispatcher. While the dispatcher entry itself is mid-build
+     * (its build may run user code that registers further entries) the event waits in
+     * $deferredEvents instead of forcing a circular rebuild — get() flushes the queue
+     * right after caching it.
+     */
+    private function dispatch(object $event): void
+    {
+        if ($this->isBuilding(EventDispatcherInterface::class)) {
+            $this->deferredEvents[] = $event;
+
+            return;
+        }
+
+        $this->getEventDispatcher()->dispatch($event);
+    }
+
+    /**
+     * The error boundary shared by get() and make(): walk the previous chain
+     * for the genuine missing-id witness, keep an existing ResolutionException
+     * as-is, wrap package failures, rethrow user code untouched.
+     */
+    private function boundary(Throwable $e, string $label): Throwable
+    {
+        for ($cause = $e; $cause !== null; $cause = $cause->getPrevious()) {
+            if ($cause instanceof NotFoundExceptionInterface) {
+                return $cause;
+            }
+        }
+
+        if ($e instanceof ResolutionException) {
+            return $e;
+        }
+
+        if ($e instanceof ResolverExceptionInterface || $e instanceof ContainerExceptionInterface) {
+            return new ResolutionException(
+                \sprintf('Failed to resolve "%s": %s', $label, $e->getMessage()),
+                $e
             );
         }
 
-        $extended = $this->make($callback, [$entry]);
-        $class = \get_class($entry);
+        return $e;
+    }
 
-        if (! \is_object($extended) || ! \is_a($extended, $class)) {
-            throw new Container\Exception(
-                \sprintf('Argument #2 callback must be returns of type "%s"', $class)
+    /**
+     * Label a make() target for boundary messages: the id/string as-is, a
+     * pair as Class::method, otherwise the debug type.
+     */
+    private function describeTarget(mixed $instance): string
+    {
+        if (\is_string($instance)) {
+            return $instance;
+        }
+
+        if (\is_array($instance) && isset($instance[0], $instance[1])) {
+            return \sprintf(
+                '%s::%s',
+                \is_string($instance[0]) ? $instance[0] : \get_debug_type($instance[0]),
+                \is_string($instance[1]) ? $instance[1] : \get_debug_type($instance[1]),
             );
         }
 
-        return $this->entries[$id] = $extended;
+        return \get_debug_type($instance);
+    }
+
+    /**
+     * Direct ContainerAware injection for make() results — option B: no event
+     * dispatch from make().
+     */
+    private function injectContainer(mixed $value): mixed
+    {
+        if ($value instanceof ContainerAware && $value->getContainer() === null) {
+            $value->setContainer($this);
+        }
+
+        return $value;
+    }
+
+    /**
+     * The shared handler, built lazily against the bundled Resolver bound to
+     * this container: resolver and handler are internal orchestration
+     * utilities — never entries, never overridable, nothing to rebind.
+     */
+    private function getHandler(): Handler
+    {
+        return $this->handler ??= new Handler(new Resolver($this));
+    }
+
+    /**
+     * Whether the entry $id is mid-build.
+     *
+     * @see Entry::building()
+     */
+    private function isBuilding(string $id): bool
+    {
+        return $this->entries[$id]->building();
+    }
+
+    /**
+     * @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874132
+     */
+    private function isAliasReaches(string $target, string $id): bool
+    {
+        while (true) {
+            if ($target === $id) {
+                return true;
+            }
+
+            $entry = $this->entries->offsetGet($target);
+
+            if (! $entry instanceof AliasEntry) {
+                return false;
+            }
+
+            $target = $entry->factory;
+        }
     }
 }

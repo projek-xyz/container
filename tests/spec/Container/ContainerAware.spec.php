@@ -81,6 +81,9 @@ describe(ContainerAware::class, function () {
         it('should stop injecting through a custom dispatcher that does not wire the ListenerProvider', function () {
             $emptyProvider = new class implements ListenerProviderInterface
             {
+                /**
+                 * An empty provider: no listeners for any event.
+                 */
                 public function getListenersForEvent(object $event): iterable
                 {
                     return [];
@@ -101,6 +104,9 @@ describe(ContainerAware::class, function () {
         it('should still inject on make() even under such a custom dispatcher', function () {
             $emptyProvider = new class implements ListenerProviderInterface
             {
+                /**
+                 * An empty provider: no listeners for any event.
+                 */
                 public function getListenersForEvent(object $event): iterable
                 {
                     return [];

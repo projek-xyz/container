@@ -8,6 +8,9 @@ class ServiceProvider
 {
     protected AbstractFoo $abs;
 
+    /**
+     * Keep the collaborator __invoke() passes into Dummy::lorem().
+     */
     public function __construct(AbstractFoo $abs)
     {
         $this->abs = $abs;

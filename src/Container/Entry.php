@@ -127,6 +127,9 @@ abstract class Entry
         $this->building = true;
     }
 
+    /**
+     * Leave the build guard — callers pair this with beginBuild() in a finally block.
+     */
     final public function endBuild(): void
     {
         $this->building = false;
@@ -140,6 +143,9 @@ abstract class Entry
         return $this->building;
     }
 
+    /**
+     * Whether a value has been cached for this entry (written by cache() only).
+     */
     final public function isBuilt(): bool
     {
         return $this->built;
@@ -165,6 +171,9 @@ abstract class Entry
         $this->decorators[] = $callback;
     }
 
+    /**
+     * The cached value; null until cache() stores one — callers gate on isBuilt().
+     */
     final public function value(): mixed
     {
         return $this->value;

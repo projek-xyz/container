@@ -30,6 +30,9 @@ describe(Entry::class, function () {
 
             public ?ContainerInterface $lastContainer = null;
 
+            /**
+             * Record the build's handler, container and args, then hand back the canned value.
+             */
             protected function produce(Handler $handler, ContainerInterface $container, array $args): mixed
             {
                 $this->lastArgs = $args;
@@ -39,11 +42,17 @@ describe(Entry::class, function () {
                 return $this->produced;
             }
 
+            /**
+             * No derivable extension target — extend() must reject this entry.
+             */
             public function extensionTarget(EntryCollector $entries): ?string
             {
                 return null;
             }
 
+            /**
+             * Public exposure of the protected extractMetadata() helper for the metadata specs.
+             */
             public static function metadata(ReflectionFunctionAbstract $reflection): array
             {
                 return self::extractMetadata($reflection);
@@ -260,21 +269,33 @@ describe(Entry::class, function () {
         $entry = $subject();
         $scope = new class extends AbstractFoo
         {
+            /**
+             * Return a closure declaring a `self` return type.
+             */
             public function selfClosure()
             {
                 return function (): self {};
             }
 
+            /**
+             * Return a closure declaring a `static` return type.
+             */
             public function staticClosure()
             {
                 return function (): static {};
             }
 
+            /**
+             * Return a closure declaring a `parent` return type.
+             */
             public function parentClosure()
             {
                 return function (): parent {};
             }
 
+            /**
+             * Return a closure with a `self`-typed parameter.
+             */
             public function selfParamClosure()
             {
                 return function (self $me) {};

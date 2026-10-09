@@ -18,6 +18,9 @@ describe(FactoryEntry::class, function () {
     it('recognises an EntryFactory and captures the create() signature', function () {
         $factory = new class implements EntryFactory
         {
+            /**
+             * Hand back a fresh stdClass, ignoring the container.
+             */
             public function create(ContainerInterface $container): object
             {
                 return new stdClass;
@@ -39,6 +42,9 @@ describe(FactoryEntry::class, function () {
         {
             public ?ContainerInterface $received = null;
 
+            /**
+             * Record the container create() received, then hand back a fresh stdClass.
+             */
             public function create(ContainerInterface $container): object
             {
                 $this->received = $container;
@@ -60,6 +66,9 @@ describe(FactoryEntry::class, function () {
     it('derives the unrestricted extension target object', function () {
         $factory = new class implements EntryFactory
         {
+            /**
+             * Hand back a fresh stdClass, ignoring the container.
+             */
             public function create(ContainerInterface $container): object
             {
                 return new stdClass;

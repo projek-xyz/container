@@ -13,5 +13,8 @@ use Projek\Container\Entry;
  */
 final class EntryRegistered
 {
+    /**
+     * @param  Entry  $entry  The registered entry — a user registration or an infrastructure (auto) replacement.
+     */
     public function __construct(public readonly Entry $entry) {}
 }

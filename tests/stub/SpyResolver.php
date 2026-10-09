@@ -25,6 +25,9 @@ class SpyResolver implements ResolverInterface
      */
     public array $parameters = [];
 
+    /**
+     * Wrap the real resolver this spy records against.
+     */
     public function __construct(private ResolverInterface $inner)
     {
         // .

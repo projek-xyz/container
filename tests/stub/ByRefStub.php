@@ -11,16 +11,25 @@ namespace Stubs;
  */
 class ByRefStub
 {
+    /**
+     * By-reference constructor parameter: rejected at registration time.
+     */
     public function __construct(mixed &$value = null)
     {
         // .
     }
 
+    /**
+     * By-reference method parameter: method pairs deliberately do NOT reject this shape.
+     */
     public function byRefMethod(mixed &$value): void
     {
         $value = 'by-ref method called';
     }
 
+    /**
+     * By-reference __invoke parameter: rejected at registration time for callable objects.
+     */
     public function __invoke(mixed &$value): void
     {
         $value = 'by-ref invoke called';

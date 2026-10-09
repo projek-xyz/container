@@ -10,6 +10,10 @@ namespace Projek\Container\Events;
  */
 final class EntryResolved
 {
+    /**
+     * @param  string  $id  The resolved entry's identifier — the alias target for aliases.
+     * @param  object  $instance  The freshly built, already-cached value.
+     */
     public function __construct(
         public readonly string $id,
         public readonly object $instance,

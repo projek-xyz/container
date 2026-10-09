@@ -16,6 +16,9 @@ class RecordingDispatcher extends TheDispatcher
      */
     public array $events = [];
 
+    /**
+     * Record the event, then forward it to the parent's provider walk.
+     */
     public function dispatch(object $event): object
     {
         $this->events[] = $event;
@@ -32,6 +35,9 @@ class RecordingDispatcher extends TheDispatcher
         return \array_values(\array_filter($this->events, fn (object $event) => $event instanceof $class));
     }
 
+    /**
+     * Clear the recorded event stream.
+     */
     public function reset(): void
     {
         $this->events = [];

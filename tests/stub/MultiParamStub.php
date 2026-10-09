@@ -10,6 +10,9 @@ namespace Stubs;
  */
 class MultiParamStub
 {
+    /**
+     * Promote the required class-typed and builtin constructor parameters for the binding matrix.
+     */
     public function __construct(
         public AbstractFoo $foo,
         public string $name,

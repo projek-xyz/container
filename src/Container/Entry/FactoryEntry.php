@@ -19,6 +19,13 @@ use ReflectionMethod;
  */
 final class FactoryEntry extends Entry
 {
+    /**
+     * Capture the factory's create() signature as the entry's metadata.
+     *
+     * @param  string  $id  The entry identifier.
+     * @param  EntryFactory  $factory  The instance-producing factory; its create() signature becomes the entry metadata.
+     * @param  bool  $auto  Whether this is an infrastructure default (replaceable, never dispatches EntryResolved).
+     */
     public function __construct(string $id, public readonly EntryFactory $factory, bool $auto = false)
     {
         [$parameters, $returnType] = self::extractMetadata(new ReflectionMethod($factory, 'create'));

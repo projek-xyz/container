@@ -13,6 +13,9 @@ class VariadicStub
     /** @var array<mixed> */
     public array $extras;
 
+    /**
+     * First argument is the required collaborator; everything after spills into `...$extras`.
+     */
     public function __construct(public AbstractFoo $foo, ...$extras)
     {
         $this->extras = $extras;

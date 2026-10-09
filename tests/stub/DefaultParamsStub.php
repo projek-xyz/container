@@ -10,6 +10,9 @@ namespace Stubs;
  */
 class DefaultParamsStub
 {
+    /**
+     * Promote the defaulted parameters — unprovided ones fall back to their declared defaults.
+     */
     public function __construct(
         public string $name = 'default',
         public ?AbstractFoo $foo = null,

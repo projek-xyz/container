@@ -95,8 +95,14 @@ describe(Container::class, function () {
 
             $provider = new class($listener) implements ListenerProviderInterface
             {
+                /**
+                 * Hold the single listener this provider hands back for EntryResolved events.
+                 */
                 public function __construct(private mixed $listener) {}
 
+                /**
+                 * The recorded listener for EntryResolved events; nothing for any other event.
+                 */
                 public function getListenersForEvent(object $event): iterable
                 {
                     return $event instanceof Events\EntryResolved ? [$this->listener] : [];
@@ -122,8 +128,14 @@ describe(Container::class, function () {
 
             $provider = new class($boom) implements ListenerProviderInterface
             {
+                /**
+                 * Hold the exception the throwing listener raises.
+                 */
                 public function __construct(private RuntimeException $boom) {}
 
+                /**
+                 * An EntryResolved listener that always throws; nothing for any other event.
+                 */
                 public function getListenersForEvent(object $event): iterable
                 {
                     return $event instanceof Events\EntryResolved
@@ -229,6 +241,9 @@ describe(Container::class, function () {
             $c->set('function', 'strlen');
             $c->set('factory', new class implements EntryFactory
             {
+                /**
+                 * Hand back a fresh stdClass, ignoring the container.
+                 */
                 public function create(ContainerInterface $container): object
                 {
                     return new stdClass;
@@ -393,8 +408,14 @@ describe(Container::class, function () {
 
             $this->c->set('instance', new class($instance) implements EntryFactory
             {
+                /**
+                 * Hold the pre-built instance create() hands back.
+                 */
                 public function __construct(private object $instance) {}
 
+                /**
+                 * Hand back the captured instance, ignoring the container.
+                 */
                 public function create(ContainerInterface $container): object
                 {
                     return $this->instance;
@@ -1071,6 +1092,9 @@ describe(Container::class, function () {
             {
                 public $count = 0;
 
+                /**
+                 * Two counting listeners; the first flags the event as propagation-stopped.
+                 */
                 public function getListenersForEvent(object $event): iterable
                 {
                     return [
@@ -1091,6 +1115,9 @@ describe(Container::class, function () {
             {
                 public $stop = false;
 
+                /**
+                 * Whether a listener has flagged this event as stopped.
+                 */
                 public function isPropagationStopped(): bool
                 {
                     return $this->stop;

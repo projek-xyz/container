@@ -28,28 +28,39 @@ use Stubs\SomeClass;
 use Stubs\StubContainer;
 use Stubs\VariadicStub;
 
-use function Kahlan\beforeEach;
 use function Kahlan\context;
 use function Kahlan\describe;
 use function Kahlan\expect;
 use function Kahlan\it;
 
 describe(Container::class, function () {
-    beforeEach(function () {
-        $this->provider = new Events\ListenerProvider;
-        $this->recorder = new RecordingDispatcher($this->provider);
-        $this->c = new Container([], $this->recorder);
-        $this->provider->setContainer($this->c);
-    });
+    /**
+     * Build a container wired to a recording dispatcher.
+     *
+     * Returns the container plus the recorder (and its provider) the event
+     * specs assert against, so every it() gets a fresh, isolated trio.
+     *
+     * @var Closure(array<string,array{class-string<object>|object,string}|callable|string|EntryFactory>=[]):array{Container,RecordingDispatcher,Events\ListenerProvider}
+     */
+    $wired = function (array $entries = []): array {
+        $provider = new Events\ListenerProvider;
+        $recorder = new RecordingDispatcher($provider);
+        $container = new Container($entries, $recorder);
+        $provider->setContainer($container);
 
-    it('should only expose registered entries through its debug info', function () {
+        return [$container, $recorder, $provider];
+    };
+
+    it('should only expose registered entries through its debug info', function () use ($wired) {
+        [$container] = $wired();
+
         // Only the Container itself and ContainerInterface are hidden — the
         // replaceable EventDispatcherInterface default still counts as an entry.
-        expect(array_keys($this->c->__debugInfo()))->toBe([EventDispatcherInterface::class]);
+        expect(array_keys($container->__debugInfo()))->toBe([EventDispatcherInterface::class]);
 
-        $this->c->set('foo', fn () => new stdClass);
+        $container->set('foo', fn () => new stdClass);
 
-        expect(array_keys($this->c->__debugInfo()))->toBe([EventDispatcherInterface::class, 'foo']);
+        expect(array_keys($container->__debugInfo()))->toBe([EventDispatcherInterface::class, 'foo']);
     });
 
     it('should only show entries as properties on var_dump', function () {
@@ -65,37 +76,40 @@ describe(Container::class, function () {
         );
     });
 
-    context('::get', function () {
-        it('should resolve a registered entry and cache it as a singleton', function () {
+    context('::get', function () use ($wired) {
+        it('should resolve a registered entry and cache it as a singleton', function () use ($wired) {
+            [$container] = $wired();
             $calls = 0;
-            $this->c->set('foo', function () use (&$calls) {
+            $container->set('foo', function () use (&$calls) {
                 $calls++;
 
                 return new stdClass;
             });
 
-            $first = $this->c->get('foo');
-            $second = $this->c->get('foo');
+            $first = $container->get('foo');
+            $second = $container->get('foo');
 
             expect($first)->toBeAnInstanceOf(stdClass::class);
             expect($first)->toBe($second);
             expect($calls)->toBe(1);
         });
 
-        it('should auto-wire registered dependencies', function () {
-            $this->c->set(Dummy::class, Dummy::class);
-            $this->c->set('svc', fn (Dummy $dummy) => $dummy);
+        it('should auto-wire registered dependencies', function () use ($wired) {
+            [$container] = $wired();
+            $container->set(Dummy::class, Dummy::class);
+            $container->set('svc', fn (Dummy $dummy) => $dummy);
 
-            expect($this->c->get('svc'))->toBe($this->c->get(Dummy::class));
+            expect($container->get('svc'))->toBe($container->get(Dummy::class));
         });
 
-        it('should dispatch EntryResolved once — cache hits dispatch nothing', function () {
-            $this->c->set('foo', fn () => new stdClass);
+        it('should dispatch EntryResolved once — cache hits dispatch nothing', function () use ($wired) {
+            [$container, $recorder] = $wired();
+            $container->set('foo', fn () => new stdClass);
 
-            $one = $this->c->get('foo');
-            $two = $this->c->get('foo');
+            $one = $container->get('foo');
+            $two = $container->get('foo');
 
-            $resolved = $this->recorder->eventsFor(Events\EntryResolved::class);
+            $resolved = $recorder->eventsFor(Events\EntryResolved::class);
 
             expect($two)->toBe($one);
             expect($resolved)->toHaveLength(1);
@@ -197,32 +211,35 @@ describe(Container::class, function () {
             expect($recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(1);
         });
 
-        it('should cache non-object results without dispatching', function () {
-            $this->c->set('void', fn () => null);
+        it('should cache non-object results without dispatching', function () use ($wired) {
+            [$container, $recorder] = $wired();
+            $container->set('void', fn () => null);
 
-            expect($this->c->get('void'))->toBeNull();
-            expect($this->c->get('void'))->toBeNull();
-            expect($this->recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(0);
+            expect($container->get('void'))->toBeNull();
+            expect($container->get('void'))->toBeNull();
+            expect($recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(0);
         });
 
-        it('should dispatch a single EntryResolved carrying the target id for aliases', function () {
-            $this->c->set('impl', fn () => new stdClass);
-            $this->c->set('alias', 'impl');
+        it('should dispatch a single EntryResolved carrying the target id for aliases', function () use ($wired) {
+            [$container, $recorder] = $wired();
+            $container->set('impl', fn () => new stdClass);
+            $container->set('alias', 'impl');
 
-            $value = $this->c->get('alias');
+            $value = $container->get('alias');
 
-            $resolved = $this->recorder->eventsFor(Events\EntryResolved::class);
+            $resolved = $recorder->eventsFor(Events\EntryResolved::class);
 
             expect($resolved)->toHaveLength(1);
             expect($resolved[0]->id)->toBe('impl');
             expect($resolved[0]->instance)->toBe($value);
         });
 
-        it('should throw NotFoundException naming an id that is absent', function () {
+        it('should throw NotFoundException naming an id that is absent', function () use ($wired) {
+            [$container] = $wired();
             $error = null;
 
             try {
-                $this->c->get('missing');
+                $container->get('missing');
             } catch (Container\NotFoundException $e) {
                 $error = $e;
             }
@@ -230,37 +247,38 @@ describe(Container::class, function () {
             expect($error)->toBeAnInstanceOf(Container\NotFoundException::class);
             expect($error->getName())->toBe('missing');
             expect($error->getMessage())->toBe('Container entry "missing" not found.');
-            expect($this->c->has('missing'))->toBeFalsy();
+            expect($container->has('missing'))->toBeFalsy();
         });
 
-        it('should surface a missing auto-wired dependency as NotFoundException naming that id', function () {
-            $this->c->set('svc', fn (Dummy $dummy) => $dummy);
+        it('should surface a missing auto-wired dependency as NotFoundException naming that id', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('svc', fn (Dummy $dummy) => $dummy);
 
-            expect(fn () => $this->c->get('svc'))->toThrow(new Container\NotFoundException('Stubs\Dummy'));
-            expect($this->c->has('Stubs\Dummy'))->toBeFalsy();
+            expect(fn () => $container->get('svc'))->toThrow(new Container\NotFoundException('Stubs\Dummy'));
+            expect($container->has('Stubs\Dummy'))->toBeFalsy();
         });
 
-        it('should guard against circular references while building', function () {
-            $c = $this->c;
-            $c->set('a', function () use ($c) {
-                return $c->get('a');
+        it('should guard against circular references while building', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('a', function () use ($container) {
+                return $container->get('a');
             });
 
-            expect(fn () => $c->get('a'))->toThrow(new Container\ResolutionException(
+            expect(fn () => $container->get('a'))->toThrow(new Container\ResolutionException(
                 'Failed to resolve "a": circular reference while building.'
             ));
         });
     });
 
-    context('::set', function () {
-        it('should classify factories into the matching Entry class', function () {
-            $c = $this->c;
+    context('::set', function () use ($wired) {
+        it('should classify factories into the matching Entry class', function () use ($wired) {
+            [$container, $recorder] = $wired();
             $invokable = new CallableClass(new Dummy);
 
-            $c->set('closure', fn () => null);
-            $c->set('invokable', $invokable);
-            $c->set('function', 'strlen');
-            $c->set('factory', new class implements EntryFactory
+            $container->set('closure', fn () => null);
+            $container->set('invokable', $invokable);
+            $container->set('function', 'strlen');
+            $container->set('factory', new class implements EntryFactory
             {
                 /**
                  * Hand back a fresh stdClass, ignoring the container.
@@ -270,15 +288,15 @@ describe(Container::class, function () {
                     return new stdClass;
                 }
             });
-            $c->set('pair-string', SomeClass::class.'::handle');
-            $c->set('pair-array', [SomeClass::class, 'handle']);
-            $c->set('class', InstantiableClass::class);
-            $c->set(CertainInterface::class, SomeClass::class);
-            $c->set('alias', CertainInterface::class);
+            $container->set('pair-string', SomeClass::class.'::handle');
+            $container->set('pair-array', [SomeClass::class, 'handle']);
+            $container->set('class', InstantiableClass::class);
+            $container->set(CertainInterface::class, SomeClass::class);
+            $container->set('alias', CertainInterface::class);
 
             $entries = [];
 
-            foreach ($this->recorder->eventsFor(Events\EntryRegistered::class) as $event) {
+            foreach ($recorder->eventsFor(Events\EntryRegistered::class) as $event) {
                 $entries[$event->entry->id] = $event->entry;
             }
 
@@ -293,29 +311,29 @@ describe(Container::class, function () {
             expect($entries['alias'])->toBeAnInstanceOf(Entry\AliasEntry::class);
         });
 
-        it('should route non-buildable symbols to an alias when the target pre-exists, reject otherwise', function () {
-            $c = $this->c;
-            $c->set('dummy', Dummy::class);
+        it('should route non-buildable symbols to an alias when the target pre-exists, reject otherwise', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('dummy', Dummy::class);
 
-            expect(fn () => $c->set('iface', CertainInterface::class))->toThrow(
+            expect(fn () => $container->set('iface', CertainInterface::class))->toThrow(
                 Container\InvalidArgumentException::unresolvableString('iface', CertainInterface::class)
             );
 
-            expect(fn () => $c->set('abs', AbstractFoo::class))->toThrow(
+            expect(fn () => $container->set('abs', AbstractFoo::class))->toThrow(
                 Container\InvalidArgumentException::unresolvableString('abs', AbstractFoo::class)
             );
 
-            expect(fn () => $c->set('trait', 'Stubs\RequireDummy'))->toThrow(
+            expect(fn () => $container->set('trait', 'Stubs\RequireDummy'))->toThrow(
                 Container\InvalidArgumentException::unresolvableString('trait', 'Stubs\RequireDummy')
             );
 
-            $c->set(CertainInterface::class, SomeClass::class);
-            $c->set(AbstractFoo::class, ConcreteBar::class);
-            $c->set('iface-alias', CertainInterface::class);
-            $c->set('abstract-alias', AbstractFoo::class);
+            $container->set(CertainInterface::class, SomeClass::class);
+            $container->set(AbstractFoo::class, ConcreteBar::class);
+            $container->set('iface-alias', CertainInterface::class);
+            $container->set('abstract-alias', AbstractFoo::class);
 
-            expect($c->get('iface-alias'))->toBeAnInstanceOf(SomeClass::class);
-            expect($c->get('abstract-alias'))->toBeAnInstanceOf(ConcreteBar::class);
+            expect($container->get('iface-alias'))->toBeAnInstanceOf(SomeClass::class);
+            expect($container->get('abstract-alias'))->toBeAnInstanceOf(ConcreteBar::class);
         });
 
         it('should reject an alias cycle when replacing an auto default entry', function () {
@@ -349,11 +367,11 @@ describe(Container::class, function () {
             );
         });
 
-        it('should reject invalid factories with the shared validation messages', function () {
-            $c = $this->c;
+        it('should reject invalid factories with the shared validation messages', function () use ($wired) {
+            [$container] = $wired();
 
-            $reject = function (mixed $factory, Container\InvalidArgumentException $expected) use ($c): void {
-                expect(fn () => $c->set('bad', $factory))->toThrow($expected);
+            $reject = function (mixed $factory, Container\InvalidArgumentException $expected) use ($container): void {
+                expect(fn () => $container->set('bad', $factory))->toThrow($expected);
             };
 
             // Plain objects.
@@ -376,58 +394,62 @@ describe(Container::class, function () {
             $reject(ByRefStub::class, Container\InvalidArgumentException::byReferenceParam('bad', 'value'));
 
             // nothing was stored by any of the failures.
-            expect($c->has('bad'))->toBeFalsy();
+            expect($container->has('bad'))->toBeFalsy();
         });
 
-        it('should throw on duplicate registration of a user entry', function () {
-            $this->c->set('std', stdClass::class);
+        it('should throw on duplicate registration of a user entry', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('std', stdClass::class);
 
-            expect(fn () => $this->c->set('std', fn () => null))->toThrow(
+            expect(fn () => $container->set('std', fn () => null))->toThrow(
                 Container\InvalidArgumentException::alreadyRegistered('std')
             );
         });
 
-        it('should permit replacing an infrastructure (auto) entry', function () {
-            $c = $this->c;
+        it('should permit replacing an infrastructure (auto) entry', function () use ($wired) {
+            [$container, $recorder] = $wired();
 
-            $c->set(ContainerInterface::class, fn (): ContainerInterface => $c);
+            $container->set(ContainerInterface::class, fn (): ContainerInterface => $container);
 
-            $registered = $this->recorder->eventsFor(Events\EntryRegistered::class);
+            $registered = $recorder->eventsFor(Events\EntryRegistered::class);
 
             expect($registered)->toHaveLength(1);
             expect($registered[0]->entry->auto)->toBeFalsy();
-            expect($c->get(ContainerInterface::class))->toBe($c);
+            expect($container->get(ContainerInterface::class))->toBe($container);
         });
 
-        it('should register lazily and dispatch EntryRegistered with the entry payload', function () {
+        it('should register lazily and dispatch EntryRegistered with the entry payload', function () use ($wired) {
+            [$container, $recorder] = $wired();
             $factory = function (): void {
                 throw new RuntimeException('must not run at registration');
             };
 
-            $this->c->set('lazy', $factory);
+            $container->set('lazy', $factory);
 
-            $registered = $this->recorder->eventsFor(Events\EntryRegistered::class);
+            $registered = $recorder->eventsFor(Events\EntryRegistered::class);
 
             expect($registered)->toHaveLength(1);
             expect($registered[0]->entry->id)->toBe('lazy');
             expect($registered[0]->entry->factory)->toBe($factory);
             expect($registered[0]->entry->isBuilt())->toBeFalsy();
-            expect($this->c->has('lazy'))->toBeTruthy();
+            expect($container->has('lazy'))->toBeTruthy();
         });
 
-        it('should not resolve anything at registration time', function () {
-            $this->c->set('a', [SomeClass::class, 'handle']);
+        it('should not resolve anything at registration time', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('a', [SomeClass::class, 'handle']);
 
-            expect($this->c->has('a'))->toBeTruthy();
-            expect(fn () => $this->c->get('a'))->toThrow(
+            expect($container->has('a'))->toBeTruthy();
+            expect(fn () => $container->get('a'))->toThrow(
                 new Container\NotFoundException('Stubs\AbstractFoo')
             );
         });
 
-        it('should register an instance through the EntryFactory door', function () {
+        it('should register an instance through the EntryFactory door', function () use ($wired) {
+            [$container] = $wired();
             $instance = new stdClass;
 
-            $this->c->set('instance', new class($instance) implements EntryFactory
+            $container->set('instance', new class($instance) implements EntryFactory
             {
                 /**
                  * Hold the pre-built instance create() hands back.
@@ -443,166 +465,180 @@ describe(Container::class, function () {
                 }
             });
 
-            expect($this->c->get('instance'))->toBe($instance);
+            expect($container->get('instance'))->toBe($instance);
         });
     });
 
-    context('::make', function () {
-        beforeEach(function () {
-            $this->c->set('dummy', Dummy::class);
-            $this->c->set(AbstractFoo::class, ConcreteBar::class);
-        });
+    context('::make', function () use ($wired) {
+        /**
+         * A container pre-seeded with the entries the make() specs rely on.
+         *
+         * @return array{Container, RecordingDispatcher, Events\ListenerProvider}
+         */
+        $seeded = fn (array $entries = []): array => $wired([
+            'dummy' => Dummy::class,
+            AbstractFoo::class => ConcreteBar::class,
+            ...$entries,
+        ]);
 
-        it('should make a fresh value from a registered id — never cached, no events', function () {
-            $this->c->set('svc', fn () => new stdClass);
+        it('should make a fresh value from a registered id — never cached, no events', function () use ($seeded) {
+            [$container, $recorder] = $seeded();
+            $container->set('svc', fn () => new stdClass);
 
-            $made = $this->c->make('svc');
+            $made = $container->make('svc');
 
             expect($made)->toBeAnInstanceOf(stdClass::class);
-            expect($this->recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(0);
+            expect($recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(0);
 
-            $got = $this->c->get('svc');
+            $got = $container->get('svc');
 
             expect($got)->not->toBe($made);
-            expect($this->c->make('svc'))->not->toBe($made);
+            expect($container->make('svc'))->not->toBe($made);
         });
 
-        it('should make a fresh value from a class without touching the singleton cache', function () {
-            $got = $this->c->get('dummy');
-            $fresh = $this->c->make(Dummy::class);
+        it('should make a fresh value from a class without touching the singleton cache', function () use ($seeded) {
+            [$container] = $seeded();
+            $got = $container->get('dummy');
+            $fresh = $container->make(Dummy::class);
 
             expect($fresh)->toBeAnInstanceOf(Dummy::class);
             expect($fresh)->not->toBe($got);
-            expect($this->c->get('dummy'))->toBe($got);
+            expect($container->get('dummy'))->toBe($got);
         });
 
-        it('should prefer a registered id over class or function look-alikes', function () {
-            $this->c->set(stdClass::class, fn () => 'registered');
+        it('should prefer a registered id over class or function look-alikes', function () use ($seeded) {
+            [$container] = $seeded();
+            $container->set(stdClass::class, fn () => 'registered');
 
-            expect($this->c->make(stdClass::class))->toBe('registered');
+            expect($container->make(stdClass::class))->toBe('registered');
         });
 
-        it('should construct a class entry once per build when arguments are empty', function () {
+        it('should construct a class entry once per build when arguments are empty', function () use ($seeded) {
             /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874142 */
-            $c = $this->c;
-            $c->set(ConstructorCounter::class, ConstructorCounter::class);
+            [$container] = $seeded();
+            $container->set(ConstructorCounter::class, ConstructorCounter::class);
 
             ConstructorCounter::$count = 0;
-            $got = $c->get(ConstructorCounter::class);
+            $got = $container->get(ConstructorCounter::class);
 
             expect($got)->toBeAnInstanceOf(ConstructorCounter::class);
             expect(ConstructorCounter::$count)->toBe(1);
 
-            $made = $c->make(ConstructorCounter::class);
+            $made = $container->make(ConstructorCounter::class);
             expect($made)->toBeAnInstanceOf(ConstructorCounter::class);
             expect(ConstructorCounter::$count)->toBe(2);
         });
 
-        it('should apply decorators on the registered-id path without touching the cache', function () {
-            $c = $this->c;
-            $c->set(CouldExtends::class, CouldExtends::class);
+        it('should apply decorators on the registered-id path without touching the cache', function () use ($seeded) {
+            [$container] = $seeded();
+            $container->set(CouldExtends::class, CouldExtends::class);
 
             $applied = 0;
-            $c->extend(CouldExtends::class, function (CouldExtends $entry) use (&$applied): CouldExtends {
+            $container->extend(CouldExtends::class, function (CouldExtends $entry) use (&$applied): CouldExtends {
                 $applied++;
 
                 return $entry;
             });
 
-            $made = $c->make(CouldExtends::class);
+            $made = $container->make(CouldExtends::class);
 
             expect($applied)->toBe(1);
             expect($made)->toBeAnInstanceOf(CouldExtends::class);
 
-            $got = $c->get(CouldExtends::class);
+            $got = $container->get(CouldExtends::class);
 
             expect($got)->not->toBe($made);
             expect($applied)->toBe(2);
         });
 
-        it('should unwrap aliases, running target decorators then alias decorators', function () {
-            $c = $this->c;
+        it('should unwrap aliases, running target decorators then alias decorators', function () use ($seeded) {
+            [$container] = $seeded();
             // A class-string registers as a class entry — an
             // alias needs a non-buildable target id.
-            $c->set('target', CouldExtends::class);
-            $c->set('alias', 'target');
+            $container->set('target', CouldExtends::class);
+            $container->set('alias', 'target');
 
             $order = [];
-            $c->extend('target', function (CouldExtends $entry) use (&$order): CouldExtends {
+            $container->extend('target', function (CouldExtends $entry) use (&$order): CouldExtends {
                 $order[] = 'target';
 
                 return $entry;
             });
-            $c->extend('alias', function (CouldExtends $entry) use (&$order): CouldExtends {
+            $container->extend('alias', function (CouldExtends $entry) use (&$order): CouldExtends {
                 $order[] = 'alias';
 
                 return $entry;
             });
 
-            $made = $c->make('alias');
+            $made = $container->make('alias');
 
             expect($made)->toBeAnInstanceOf(CouldExtends::class);
             expect($order)->toBe(['target', 'alias']);
         });
 
-        it('should build an unregistered instantiable class-string transiently', function () {
-            expect($this->c->has(InstantiableClass::class))->toBeFalsy();
+        it('should build an unregistered instantiable class-string transiently', function () use ($seeded) {
+            [$container] = $seeded();
+            expect($container->has(InstantiableClass::class))->toBeFalsy();
 
-            $one = $this->c->make(InstantiableClass::class);
-            $two = $this->c->make(InstantiableClass::class);
+            $one = $container->make(InstantiableClass::class);
+            $two = $container->make(InstantiableClass::class);
 
             expect($one)->toBeAnInstanceOf(InstantiableClass::class);
             expect($one)->not->toBe($two);
-            expect($this->c->has(InstantiableClass::class))->toBeFalsy();
+            expect($container->has(InstantiableClass::class))->toBeFalsy();
         });
 
-        it('should feed $args to the constructor of a transient class-string', function () {
+        it('should feed $args to the constructor of a transient class-string', function () use ($seeded) {
+            [$container, $recorder] = $seeded();
             $dep = new ConcreteBar(new Dummy);
 
-            expect($this->c->has(VariadicStub::class))->toBeFalsy();
+            expect($container->has(VariadicStub::class))->toBeFalsy();
 
-            $made = $this->c->make(VariadicStub::class, [$dep]);
+            $made = $container->make(VariadicStub::class, [$dep]);
 
             expect($made)->toBeAnInstanceOf(VariadicStub::class);
             expect($made->foo)->toBe($dep);
 
             // Row 2 stays transient: never registered, never cached, no events.
-            expect($this->c->has(VariadicStub::class))->toBeFalsy();
-            expect($this->recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(0);
+            expect($container->has(VariadicStub::class))->toBeFalsy();
+            expect($recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(0);
         });
 
-        it('should accept every callable shape', function () {
-            $c = $this->c;
+        it('should accept every callable shape', function () use ($seeded) {
+            [$container] = $seeded();
             class_exists(Dummy::class); // loads Stubs\dummyLorem
 
             // Closure.
-            expect($c->make(fn (string $value): string => $value, ['value']))->toBe('value');
+            expect($container->make(fn (string $value): string => $value, ['value']))->toBe('value');
 
             // Invokable object — invoked, not returned.
-            expect($c->make(new CallableClass($c->get('dummy'))))->toBeAnInstanceOf(AbstractFoo::class);
+            expect($container->make(new CallableClass($container->get('dummy'))))->toBeAnInstanceOf(AbstractFoo::class);
 
             // Function-name string.
-            expect($c->make('Stubs\dummyLorem'))->toBe('lorem');
+            expect($container->make('Stubs\dummyLorem'))->toBe('lorem');
 
             // Class::method string.
-            expect($c->make(SomeClass::class.'::shouldCalled', ['value']))->toBe('value');
+            expect($container->make(SomeClass::class.'::shouldCalled', ['value']))->toBe('value');
 
             // Pair with class-string slot.
-            expect($c->make([SomeClass::class, 'shouldCalled'], ['value']))->toBe('value');
+            expect($container->make([SomeClass::class, 'shouldCalled'], ['value']))->toBe('value');
 
             // Pair with object slot.
-            expect($c->make([new SomeClass, 'shouldCalled'], ['value']))->toBe('value');
+            expect($container->make([new SomeClass, 'shouldCalled'], ['value']))->toBe('value');
         });
 
-        it('should inject the container directly into make() results without events', function () {
-            $instance = $this->c->make(HasContainerClass::class);
+        it('should inject the container directly into make() results without events', function () use ($seeded) {
+            [$container, $recorder] = $seeded();
+            $instance = $container->make(HasContainerClass::class);
 
-            expect($instance->getContainer())->toBe($this->c);
-            expect($this->recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(0);
+            expect($instance->getContainer())->toBe($container);
+            expect($recorder->eventsFor(Events\EntryResolved::class))->toHaveLength(0);
         });
 
-        it('should throw a native TypeError for a non-array $args', function () {
-            expect(fn () => $this->c->make(SomeClass::class, 'not-an-array'))->toThrow(new TypeError);
+        it('should throw a native TypeError for a non-array $args', function () use ($seeded) {
+            [$container] = $seeded();
+
+            expect(fn () => $container->make(SomeClass::class, 'not-an-array'))->toThrow(new TypeError);
         });
 
         it('should reject inputs outside the four accepted families', function () {
@@ -626,64 +662,78 @@ describe(Container::class, function () {
         });
     });
 
-    context('::extend', function () {
-        beforeEach(function () {
-            $this->c->set('dummy', Dummy::class);
-            $this->c->set(CouldExtends::class, CouldExtends::class);
-        });
+    context('::extend', function () use ($wired) {
+        /**
+         * A container pre-seeded with the entries the extend() specs rely on.
+         *
+         * @return array{Container, RecordingDispatcher, Events\ListenerProvider}
+         */
+        $seeded = fn (array $entries = []): array => $wired([
+            'dummy' => Dummy::class,
+            CouldExtends::class => CouldExtends::class,
+            ...$entries,
+        ]);
 
-        it('should throw NotFoundException for an absent id', function () {
-            expect(fn () => $this->c->extend('missing', fn (object $entry): object => $entry))->toThrow(
+        it('should throw NotFoundException for an absent id', function () use ($seeded) {
+            [$container] = $seeded();
+
+            expect(fn () => $container->extend('missing', fn (object $entry): object => $entry))->toThrow(
                 new Container\NotFoundException('missing')
             );
         });
 
-        it('should reject a non-derivable extension target', function () {
-            $this->c->set('cb', fn () => null);
-            $this->c->set('str', fn (): string => 'value');
+        it('should reject a non-derivable extension target', function () use ($seeded) {
+            [$container] = $seeded();
+            $container->set('cb', fn () => null);
+            $container->set('str', fn (): string => 'value');
 
-            expect(fn () => $this->c->extend('cb', fn (object $entry): object => $entry))->toThrow(
+            expect(fn () => $container->extend('cb', fn (object $entry): object => $entry))->toThrow(
                 Container\InvalidArgumentException::extensionTargetNotDerivable('cb')
             );
 
-            expect(fn () => $this->c->extend('str', fn (object $entry): object => $entry))->toThrow(
+            expect(fn () => $container->extend('str', fn (object $entry): object => $entry))->toThrow(
                 Container\InvalidArgumentException::extensionTargetNotDerivable('str')
             );
         });
 
-        it('should reject a nullable-class return — nullability survives extraction', function () {
-            $this->c->set('nullable', fn (): ?ConcreteBar => null);
+        it('should reject a nullable-class return — nullability survives extraction', function () use ($seeded) {
+            [$container] = $seeded();
+            $container->set('nullable', fn (): ?ConcreteBar => null);
 
-            expect(fn () => $this->c->extend('nullable', fn (ConcreteBar $c): ConcreteBar => $c))->toThrow(
+            expect(fn () => $container->extend('nullable', fn (ConcreteBar $c): ConcreteBar => $c))->toThrow(
                 Container\InvalidArgumentException::extensionTargetNotDerivable('nullable')
             );
         });
 
-        it('should reject callbacks without an explicit single class return type', function () {
+        it('should reject callbacks without an explicit single class return type', function () use ($seeded) {
+            [$container] = $seeded();
             $id = CouldExtends::class;
 
-            expect(fn () => $this->c->extend($id, fn ($entry) => $entry))->toThrow(
+            expect(fn () => $container->extend($id, fn ($entry) => $entry))->toThrow(
                 Container\InvalidArgumentException::callbackReturnTypeInvalid($id)
             );
 
-            expect(fn () => $this->c->extend($id, fn ($entry): mixed => $entry))->toThrow(
+            expect(fn () => $container->extend($id, fn ($entry): mixed => $entry))->toThrow(
                 Container\InvalidArgumentException::callbackReturnTypeInvalid($id)
             );
 
-            expect(fn () => $this->c->extend($id, fn ($entry): CouldExtends|stdClass => $entry))->toThrow(
+            expect(fn () => $container->extend($id, fn ($entry): CouldExtends|stdClass => $entry))->toThrow(
                 Container\InvalidArgumentException::callbackReturnTypeInvalid($id)
             );
         });
 
-        it('should reject callbacks whose return type is not the target type', function () {
-            expect(fn () => $this->c->extend(CouldExtends::class, fn ($entry): stdClass => $entry))->toThrow(
+        it('should reject callbacks whose return type is not the target type', function () use ($seeded) {
+            [$container] = $seeded();
+
+            expect(fn () => $container->extend(CouldExtends::class, fn ($entry): stdClass => $entry))->toThrow(
                 Container\InvalidArgumentException::callbackReturnMismatch(CouldExtends::class, CouldExtends::class)
             );
         });
 
-        it('should apply a pending decorator on the first build only', function () {
+        it('should apply a pending decorator on the first build only', function () use ($seeded) {
+            [$container] = $seeded();
             $applied = 0;
-            $this->c->extend(CouldExtends::class, function (CouldExtends $entry) use (&$applied): CouldExtends {
+            $container->extend(CouldExtends::class, function (CouldExtends $entry) use (&$applied): CouldExtends {
                 $applied++;
 
                 return $entry;
@@ -691,21 +741,21 @@ describe(Container::class, function () {
 
             expect($applied)->toBe(0);
 
-            $got = $this->c->get(CouldExtends::class);
+            $got = $container->get(CouldExtends::class);
 
             expect($applied)->toBe(1);
-            expect($this->c->get(CouldExtends::class))->toBe($got);
+            expect($container->get(CouldExtends::class))->toBe($got);
             expect($applied)->toBe(1);
         });
 
-        it('should apply an already-built entry immediately and return the container for chaining', function () {
-            $c = $this->c;
-            $c->set(SomeClass::class, SomeClass::class);
-            $got = $c->get(CouldExtends::class);
+        it('should apply an already-built entry immediately and return the container for chaining', function () use ($seeded) {
+            [$container] = $seeded();
+            $container->set(SomeClass::class, SomeClass::class);
+            $got = $container->get(CouldExtends::class);
 
-            expect($got->dummy)->toBe($c->get('dummy'));
+            expect($got->dummy)->toBe($container->get('dummy'));
 
-            $extended = $c->extend(CouldExtends::class, function (CouldExtends $entry, SomeClass $other): CouldExtends {
+            $extended = $container->extend(CouldExtends::class, function (CouldExtends $entry, SomeClass $other): CouldExtends {
                 // The second parameter auto-wires from the container — continuity
                 // with the old extend() → make($callback, [$entry]) semantics.
                 $entry->dummy = $other;
@@ -713,84 +763,85 @@ describe(Container::class, function () {
                 return $entry;
             });
 
-            expect($extended)->toBe($c);
-            expect($got->dummy)->toBe($c->get(SomeClass::class));
-            expect($c->get(CouldExtends::class))->toBe($got);
-            expect($got->dummy)->toBe($c->get(SomeClass::class));
+            expect($extended)->toBe($container);
+            expect($got->dummy)->toBe($container->get(SomeClass::class));
+            expect($container->get(CouldExtends::class))->toBe($got);
+            expect($got->dummy)->toBe($container->get(SomeClass::class));
         });
 
-        it('should leave the cached value and the decorator list untouched when a decorator throws', function () {
-            $c = $this->c;
-            $got = $c->get(CouldExtends::class);
+        it('should leave the cached value and the decorator list untouched when a decorator throws', function () use ($seeded) {
+            [$container] = $seeded();
+            $got = $container->get(CouldExtends::class);
 
-            expect(fn () => $c->extend(CouldExtends::class, function (CouldExtends $entry): CouldExtends {
+            expect(fn () => $container->extend(CouldExtends::class, function (CouldExtends $entry): CouldExtends {
                 throw new RuntimeException('boom');
             }))->toThrow(new RuntimeException('boom'));
 
             // The cached value stands.
-            expect($c->get(CouldExtends::class))->toBe($got);
+            expect($container->get(CouldExtends::class))->toBe($got);
 
             // Nothing was appended: a fresh rebuild does not re-run the failure.
-            $clone = clone $c;
+            $clone = clone $container;
             expect($clone->get(CouldExtends::class))->toBeAnInstanceOf(CouldExtends::class);
         });
 
-        it('should leave mutations on the cached instance when a decorator throws after mutating', function () {
+        it('should leave mutations on the cached instance when a decorator throws after mutating', function () use ($seeded) {
             /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874104 */
-            $c = $this->c;
-            $got = $c->get(CouldExtends::class);
+            [$container] = $seeded();
+            $got = $container->get(CouldExtends::class);
 
-            expect(fn () => $c->extend(CouldExtends::class, function (CouldExtends $entry): CouldExtends {
+            expect(fn () => $container->extend(CouldExtends::class, function (CouldExtends $entry): CouldExtends {
                 $entry->dummy = new Dummy;
 
                 throw new RuntimeException('boom');
             }))->toThrow(new RuntimeException('boom'));
 
             // The cached reference is not replaced and prior mutations are not rolled back.
-            expect($c->get(CouldExtends::class))->toBe($got);
-            expect($c->get(CouldExtends::class)->dummy)->toBe($got->dummy);
+            expect($container->get(CouldExtends::class))->toBe($got);
+            expect($container->get(CouldExtends::class)->dummy)->toBe($got->dummy);
 
             // The failing decorator was not appended: a clone gets a fresh unmodified instance.
-            $clone = clone $c;
+            $clone = clone $container;
             expect($clone->get(CouldExtends::class)->dummy)->not->toBe($got->dummy);
         });
     });
 
-    context('clone', function () {
-        it('should reset singleton caches without disturbing the original', function () {
-            $c = $this->c;
-            $c->set('svc', fn () => new stdClass);
+    context('clone', function () use ($wired) {
+        it('should reset singleton caches without disturbing the original', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('svc', fn () => new stdClass);
 
-            $before = $c->get('svc');
-            $clone = clone $c;
+            $before = $container->get('svc');
+            $clone = clone $container;
             $after = $clone->get('svc');
 
             expect($after)->not->toBe($before);
-            expect($c->get('svc'))->toBe($before);
+            expect($container->get('svc'))->toBe($before);
         });
 
-        it('should copy registrations — later changes do not cross over', function () {
-            $c = $this->c;
-            $c->set('before', fn () => 'before');
+        it('should copy registrations — later changes do not cross over', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('before', fn () => 'before');
 
-            $clone = clone $c;
+            $clone = clone $container;
 
-            $c->set('on-original', fn () => 'original');
+            $container->set('on-original', fn () => 'original');
             $clone->set('on-clone', fn () => 'clone');
 
             expect($clone->has('before'))->toBeTruthy();
             expect($clone->has('on-original'))->toBeFalsy();
-            expect($c->has('on-clone'))->toBeFalsy();
-            expect($c->has('on-original'))->toBeTruthy();
+            expect($container->has('on-clone'))->toBeFalsy();
+            expect($container->has('on-original'))->toBeTruthy();
         });
 
-        it('should re-point the self-referential auto defaults to the clone', function () {
-            $clone = clone $this->c;
+        it('should re-point the self-referential auto defaults to the clone', function () use ($wired) {
+            [$container] = $wired();
+            $clone = clone $container;
 
             expect($clone->get(Container::class))->toBe($clone);
             expect($clone->get(ContainerInterface::class))->toBe($clone);
-            expect($this->c->get(Container::class))->toBe($this->c);
-            expect($this->c->get(ContainerInterface::class))->toBe($this->c);
+            expect($container->get(Container::class))->toBe($container);
+            expect($container->get(ContainerInterface::class))->toBe($container);
         });
 
         it('should bind the clone — not the original — into instances resolved from it', function () {
@@ -803,26 +854,29 @@ describe(Container::class, function () {
             expect($c->get(HasContainerClass::class)->getContainer())->toBe($c);
         });
 
-        it('should keep a constructor-provided dispatcher captured in the default factory', function () {
-            $c = new Container([], $this->recorder);
+        it('should keep a constructor-provided dispatcher captured in the default factory', function () use ($wired) {
+            [, $recorder] = $wired();
+            $c = new Container([], $recorder);
 
             $clone = clone $c;
 
-            expect($clone->getEventDispatcher())->toBe($this->recorder);
+            expect($clone->getEventDispatcher())->toBe($recorder);
         });
 
-        it('should leave user-replaced infrastructure entries exactly as registered', function () {
+        it('should leave user-replaced infrastructure entries exactly as registered', function () use ($wired) {
+            [, $recorder] = $wired();
             $c = new Container;
-            $c->setEventDispatcher($this->recorder);
+            $c->setEventDispatcher($recorder);
 
             $clone = clone $c;
 
-            expect($clone->getEventDispatcher())->toBe($this->recorder);
+            expect($clone->getEventDispatcher())->toBe($recorder);
         });
 
-        it('should clone correctly when auto default entries are replaced with user factory shapes', function () {
+        it('should clone correctly when auto default entries are replaced with user factory shapes', function () use ($wired) {
             /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874119 */
-            $c = new Container([], $this->recorder);
+            [, $recorder] = $wired();
+            $c = new Container([], $recorder);
             $c->set(Container::class, StubContainer::class);
             $c->set(ContainerInterface::class, static fn (): ContainerInterface => new StubContainer([]));
             $c->set(EventDispatcherInterface::class, static fn (): EventDispatcherInterface => new RecordingDispatcher(new Events\ListenerProvider));
@@ -847,110 +901,111 @@ describe(Container::class, function () {
             expect($clone->get(EventDispatcherInterface::class))->toBeAnInstanceOf(RecordingDispatcher::class);
         });
 
-        it('should carry pending decorators over to the clone with a reset cache', function () {
-            $c = $this->c;
-            $c->set('dummy', Dummy::class);
-            $c->set(CouldExtends::class, CouldExtends::class);
+        it('should carry pending decorators over to the clone with a reset cache', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('dummy', Dummy::class);
+            $container->set(CouldExtends::class, CouldExtends::class);
 
             $runs = 0;
-            $c->extend(CouldExtends::class, function (CouldExtends $entry) use (&$runs): CouldExtends {
+            $container->extend(CouldExtends::class, function (CouldExtends $entry) use (&$runs): CouldExtends {
                 $runs++;
 
                 return $entry;
             });
 
-            $c->get(CouldExtends::class);
+            $container->get(CouldExtends::class);
             expect($runs)->toBe(1);
 
-            $clone = clone $c;
+            $clone = clone $container;
             $cloned = $clone->get(CouldExtends::class);
 
             expect($runs)->toBe(2);
-            expect($cloned)->not->toBe($c->get(CouldExtends::class));
+            expect($cloned)->not->toBe($container->get(CouldExtends::class));
         });
 
-        it('should reset the shared handler so the clone rides its own resolver', function () {
-            $c = $this->c;
-            $c->set(Dummy::class, Dummy::class);
-            $c->set('svc', fn (Dummy $dummy) => $dummy);
+        it('should reset the shared handler so the clone rides its own resolver', function () use ($wired) {
+            [$container] = $wired();
+            $container->set(Dummy::class, Dummy::class);
+            $container->set('svc', fn (Dummy $dummy) => $dummy);
 
-            $original = $c->get('svc');   // the original's shared handler is built here
+            $original = $container->get('svc');   // the original's shared handler is built here
 
-            $clone = clone $c;
+            $clone = clone $container;
             $fresh = $clone->get('svc');
 
             // A still-shared handler resolves Dummy through the ORIGINAL
             // container and would hand back the original's cached instance.
             expect($fresh)->not->toBe($original);
             expect($fresh)->toBe($clone->get(Dummy::class));
-            expect($original)->toBe($c->get(Dummy::class));
+            expect($original)->toBe($container->get(Dummy::class));
         });
     });
 
-    context('boundary', function () {
-        it('should rethrow a genuine NotFoundException raw — the deepest missing id wins (rule 1)', function () {
-            $c = $this->c;
-            $c->set('svc', fn (Dummy $dummy) => $dummy);
+    context('boundary', function () use ($wired) {
+        it('should rethrow a genuine NotFoundException raw — the deepest missing id wins (rule 1)', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('svc', fn (Dummy $dummy) => $dummy);
 
             $error = null;
 
             try {
-                $c->get('svc');
+                $container->get('svc');
             } catch (Container\NotFoundException $e) {
                 $error = $e;
             }
 
             expect($error)->toBeAnInstanceOf(Container\NotFoundException::class);
             expect($error->getName())->toBe('Stubs\Dummy');
-            expect($c->has('Stubs\Dummy'))->toBeFalsy();
+            expect($container->has('Stubs\Dummy'))->toBeFalsy();
         });
 
-        it('should not double-wrap an existing ResolutionException (rule 2)', function () {
-            $c = $this->c;
-            $c->set('a', function () use ($c) {
-                return $c->get('a');
+        it('should not double-wrap an existing ResolutionException (rule 2)', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('a', function () use ($container) {
+                return $container->get('a');
             });
 
-            expect(fn () => $c->get('a'))->toThrow(new Container\ResolutionException(
+            expect(fn () => $container->get('a'))->toThrow(new Container\ResolutionException(
                 'Failed to resolve "a": circular reference while building.'
             ));
         });
 
-        it('should wrap package failures as ResolutionException for get() and make() (rule 3)', function () {
-            $this->c->set('counter', fn (int $count) => $count);
+        it('should wrap package failures as ResolutionException for get() and make() (rule 3)', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('counter', fn (int $count) => $count);
 
-            expect(fn () => $this->c->get('counter'))->toThrow(new Container\ResolutionException(
+            expect(fn () => $container->get('counter'))->toThrow(new Container\ResolutionException(
                 'Failed to resolve "counter": {closure}(): Argument #1 ($count) is not resolvable'
             ));
 
             // A build failure never wears the NotFoundException label.
-            expect($this->c->has('counter'))->toBeTruthy();
+            expect($container->has('counter'))->toBeTruthy();
 
             // make('counter') wraps package failures on registered-id path through boundary()
             /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874138 */
-            expect(fn () => $this->c->make('counter'))->toThrow(new Container\ResolutionException(
+            expect(fn () => $container->make('counter'))->toThrow(new Container\ResolutionException(
                 'Failed to resolve "counter": {closure}(): Argument #1 ($count) is not resolvable'
             ));
 
             // make() for transient class-string wraps package failures through boundary()
-            expect(fn () => $this->c->make(BuiltinParamStub::class))->toThrow(
+            expect(fn () => $container->make(BuiltinParamStub::class))->toThrow(
                 new Container\ResolutionException(
                     'Failed to resolve "Stubs\BuiltinParamStub": Stubs\BuiltinParamStub::__construct(): Argument #1 ($count) is not resolvable'
                 )
             );
 
-            expect(fn () => $this->c->make([SomeClass::class, 'nope']))->toThrow(
+            expect(fn () => $container->make([SomeClass::class, 'nope']))->toThrow(
                 new Container\ResolutionException(
                     'Failed to resolve "Stubs\SomeClass::nope": Method Stubs\SomeClass::nope() does not exist'
                 )
             );
         });
 
-        it('should clear the building guard when resolution throws so retrying is allowed', function () {
+        it('should clear the building guard when resolution throws so retrying is allowed', function () use ($wired) {
             /** @link https://github.com/projek-xyz/container/pull/94#discussion_r4225874127 */
-            $c = $this->c;
+            [$container] = $wired();
             $shouldFail = true;
-            $c->set('retryable', function () use (&$shouldFail) {
+            $container->set('retryable', function () use (&$shouldFail) {
                 if ($shouldFail) {
                     throw new RuntimeException('temporary error');
                 }
@@ -958,13 +1013,13 @@ describe(Container::class, function () {
                 return 'recovered';
             });
 
-            expect(fn () => $c->get('retryable'))->toThrow(new RuntimeException('temporary error'));
+            expect(fn () => $container->get('retryable'))->toThrow(new RuntimeException('temporary error'));
 
             $shouldFail = false;
-            expect($c->get('retryable'))->toBe('recovered');
+            expect($container->get('retryable'))->toBe('recovered');
 
             $shouldFail = true;
-            $c->set('retryable_make', function () use (&$shouldFail) {
+            $container->set('retryable_make', function () use (&$shouldFail) {
                 if ($shouldFail) {
                     throw new RuntimeException('temporary error in make');
                 }
@@ -972,23 +1027,23 @@ describe(Container::class, function () {
                 return 'recovered make';
             });
 
-            expect(fn () => $c->make('retryable_make'))->toThrow(new RuntimeException('temporary error in make'));
+            expect(fn () => $container->make('retryable_make'))->toThrow(new RuntimeException('temporary error in make'));
 
             $shouldFail = false;
-            expect($c->make('retryable_make'))->toBe('recovered make');
+            expect($container->make('retryable_make'))->toBe('recovered make');
         });
 
-        it('should rethrow user-code throwables untouched for get() and make() (rule 4)', function () {
-            $c = $this->c;
+        it('should rethrow user-code throwables untouched for get() and make() (rule 4)', function () use ($wired) {
+            [$container] = $wired();
             $boom = new RuntimeException('user boom');
-            $c->set('bad', function () use ($boom) {
+            $container->set('bad', function () use ($boom) {
                 throw $boom;
             });
 
             $error = null;
 
             try {
-                $c->get('bad');
+                $container->get('bad');
             } catch (Throwable $e) {
                 $error = $e;
             }
@@ -998,7 +1053,7 @@ describe(Container::class, function () {
             $error = null;
 
             try {
-                $c->make('bad');
+                $container->make('bad');
             } catch (Throwable $e) {
                 $error = $e;
             }
@@ -1006,32 +1061,34 @@ describe(Container::class, function () {
             expect($error)->toBe($boom);
 
             // make()'s own input rejection passes the boundary untouched.
-            expect(fn () => $c->make('nope'))->toThrow(
+            expect(fn () => $container->make('nope'))->toThrow(
                 Container\InvalidArgumentException::cannotMakeUnsupported('nope')
             );
         });
 
-        it('should catch make() re-entering its own registered entry as circular', function () {
-            $c = $this->c;
-            $c->set('circular', function () use ($c) {
-                return $c->make('circular');
+        it('should catch make() re-entering its own registered entry as circular', function () use ($wired) {
+            [$container] = $wired();
+            $container->set('circular', function () use ($container) {
+                return $container->make('circular');
             });
 
-            expect(fn () => $c->make('circular'))->toThrow(new Container\ResolutionException(
+            expect(fn () => $container->make('circular'))->toThrow(new Container\ResolutionException(
                 'Failed to resolve "circular": circular reference while building.'
             ));
         });
 
-        it('should unwrap a nested NotFoundException raised inside make() (rule 1)', function () {
-            expect(fn () => $this->c->make(['NotRegistered', 'method']))->toThrow(
+        it('should unwrap a nested NotFoundException raised inside make() (rule 1)', function () use ($wired) {
+            [$container] = $wired();
+
+            expect(fn () => $container->make(['NotRegistered', 'method']))->toThrow(
                 new Container\NotFoundException('NotRegistered')
             );
 
-            expect($this->c->has('NotRegistered'))->toBeFalsy();
+            expect($container->has('NotRegistered'))->toBeFalsy();
         });
     });
 
-    context('wiring', function () {
+    context('wiring', function () use ($wired) {
         it('should insert the infrastructure defaults directly, without events', function () {
             $provider = new Events\ListenerProvider;
             $recorder = new RecordingDispatcher($provider);
@@ -1051,29 +1108,30 @@ describe(Container::class, function () {
             expect($recorder->eventsFor(Events\EntryRegistered::class))->toHaveLength(1);
         });
 
-        it('should not register the resolver as an entry', function () {
-            expect($this->c->has(ResolverInterface::class))->toBeFalsy();
+        it('should not register the resolver as an entry', function () use ($wired) {
+            [$container] = $wired();
 
-            expect(fn () => $this->c->get(ResolverInterface::class))->toThrow(
+            expect($container->has(ResolverInterface::class))->toBeFalsy();
+
+            expect(fn () => $container->get(ResolverInterface::class))->toThrow(
                 new Container\NotFoundException('Projek\Callable\ResolverInterface')
             );
         });
 
-        it('should queue events raised while the dispatcher entry is mid-build and flush them FIFO', function () {
-            $recorder = $this->recorder;
-            $c = $this->c;
-            $c->set('svc', fn () => new stdClass);
+        it('should queue events raised while the dispatcher entry is mid-build and flush them FIFO', function () use ($wired) {
+            [$container, $recorder] = $wired();
+            $container->set('svc', fn () => new stdClass);
 
-            $c->set(EventDispatcherInterface::class, function () use ($c, $recorder) {
+            $container->set(EventDispatcherInterface::class, function () use ($container, $recorder) {
                 // Registration inside the dispatcher entry's own build: the
                 // event must be queued and delivered by the FIFO flush, before
                 // the outer EntryRegistered dispatch completes.
-                $c->set('late', fn () => 'value');
+                $container->set('late', fn () => 'value');
 
                 return $recorder;
             });
 
-            expect($c->getEventDispatcher())->toBe($recorder);
+            expect($container->getEventDispatcher())->toBe($recorder);
 
             $registered = $recorder->eventsFor(Events\EntryRegistered::class);
 
@@ -1090,20 +1148,21 @@ describe(Container::class, function () {
             expect($c->getEventDispatcher())->toBe($c->getEventDispatcher());
         });
 
-        it('should force-replace the dispatcher and fire EntryRegistered', function () {
-            $replacement = new RecordingDispatcher($this->provider);
+        it('should force-replace the dispatcher and fire EntryRegistered', function () use ($wired) {
+            [$container, , $provider] = $wired();
+            $replacement = new RecordingDispatcher($provider);
 
-            $this->c->setEventDispatcher($replacement);
+            $container->setEventDispatcher($replacement);
 
-            expect($this->c->getEventDispatcher())->toBe($replacement);
+            expect($container->getEventDispatcher())->toBe($replacement);
 
             $registered = $replacement->eventsFor(Events\EntryRegistered::class);
             expect($registered)->toHaveLength(1);
             expect($registered[0]->entry->id)->toBe(EventDispatcherInterface::class);
 
             $replacement->reset();
-            $this->c->set('svc', fn () => new stdClass);
-            $this->c->get('svc');
+            $container->set('svc', fn () => new stdClass);
+            $container->get('svc');
 
             expect($replacement->eventsFor(Events\EntryRegistered::class))->toHaveLength(1);
 
@@ -1112,7 +1171,8 @@ describe(Container::class, function () {
             expect($resolved[0]->id)->toBe('svc');
         });
 
-        it('should stop event propagation on a stopped stoppable event', function () {
+        it('should stop event propagation on a stopped stoppable event', function () use ($wired) {
+            [$container] = $wired();
             $provider = new class implements ListenerProviderInterface
             {
                 public $count = 0;
@@ -1134,7 +1194,7 @@ describe(Container::class, function () {
                 }
             };
 
-            $dispatcher = new Events\Dispatcher($this->c, $provider);
+            $dispatcher = new Events\Dispatcher($container, $provider);
 
             $stoppable = new class implements StoppableEventInterface
             {

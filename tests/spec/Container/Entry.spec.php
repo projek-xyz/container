@@ -81,6 +81,23 @@ describe(Entry::class, function () {
         expect($debug['value'])->toBe('cached');
     });
 
+    it('shows a cached closure value as file:line provenance instead of the closure', function () use ($subject) {
+        $entry = $subject();
+
+        $entry->cache(function (): string {
+            return 'x';
+        });
+        $value = $entry->__debugInfo()['value'];
+
+        expect($value)->toBeA('string');
+        expect($value)->toMatch('/^\{.*Entry\.spec\.php:\d+\}$/');
+
+        // Closures over internal functions report no file — fall back to their name.
+        $entry->cache(Closure::fromCallable('strlen'));
+
+        expect($entry->__debugInfo()['value'])->toBe('{strlen}');
+    });
+
     it('should only show few properties on var_dump', function () use ($subject) {
         ob_start();
         var_dump($subject(['dummy' => 'Stubs\Dummy'], 'Stubs\Dummy', true));

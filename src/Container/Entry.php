@@ -90,6 +90,33 @@ abstract class Entry
     }
 
     /**
+     * Show only these props from `var_dump()`; decorators are reported as a
+     * count and a cached closure value as its `{file:line}` provenance —
+     * dumping either closure would traverse its bound `$this` and `use`d
+     * variables into arbitrary object graphs.
+     */
+    public function __debugInfo(): array
+    {
+        $hideClosure = static function (Closure $closure): string {
+            $ref = new ReflectionFunction($closure);
+            $file = $ref->getFileName();
+
+            return $file === false
+                ? \sprintf('{%s}', $ref->getName())
+                : \sprintf('{%s:%s}', $file, $ref->getStartLine());
+        };
+
+        return [
+            'decorators' => \count($this->decorators),
+            'parameters' => $this->parameters,
+            'returnType' => $this->returnType,
+            'value' => $this->value instanceof Closure
+                ? $hideClosure($this->value)
+                : $this->value,
+        ];
+    }
+
+    /**
      * Adapt the child's factory shape and produce a raw value; never caches
      * and never dispatches events (get()/make() own that).
      *

@@ -42,6 +42,29 @@ describe(Container::class, function () {
         $this->provider->setContainer($this->c);
     });
 
+    it('should only expose registered entries through its debug info', function () {
+        // Only the Container itself and ContainerInterface are hidden — the
+        // replaceable EventDispatcherInterface default still counts as an entry.
+        expect(array_keys($this->c->__debugInfo()))->toBe([EventDispatcherInterface::class]);
+
+        $this->c->set('foo', fn () => new stdClass);
+
+        expect(array_keys($this->c->__debugInfo()))->toBe([EventDispatcherInterface::class, 'foo']);
+    });
+
+    it('should only show entries as properties on var_dump', function () {
+        ob_start();
+        var_dump(new Container([]));
+        $output = preg_replace('/\e\[[\d;]*m/', '', ob_get_clean());
+
+        // Header line only: the `object(FQCN)#N` / `class FQCN#N` shapes differ
+        // between stock and xdebug's develop-mode dumper, the handle is
+        // process-dependent, and nested output diverges further (*RECURSION*).
+        expect($output)->toMatch(
+            '/(?:object\()?'.preg_quote(Container::class, '/').'\)?#\d+ \(1\) \{\n/'
+        );
+    });
+
     context('::get', function () {
         it('should resolve a registered entry and cache it as a singleton', function () {
             $calls = 0;

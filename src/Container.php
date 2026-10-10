@@ -121,6 +121,25 @@ class Container implements ContainerInterface
     }
 
     /**
+     * Hide list only registered entries as props from `var_dump()`
+     */
+    public function __debugInfo(): array
+    {
+        $entries = [];
+        $self = [self::class, ContainerInterface::class];
+
+        foreach ($this->entries as $id => $entry) {
+            if (in_array($id, $self, true)) {
+                continue;
+            }
+
+            $entries[$id] = $entry;
+        }
+
+        return $entries;
+    }
+
+    /**
      * Retrieve a PSR-14 event dispatcher instance.
      *
      * When no implementation is provided by the developer, a minimalist

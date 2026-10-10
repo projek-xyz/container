@@ -26,6 +26,16 @@ final class AliasEntry extends Entry
     }
 
     /**
+     * Show only the target id from `var_dump()` — the inherited props are
+     * noise here: parameters and returnType are empty (no reflection at
+     * registration) and the value duplicates the target entry's.
+     */
+    public function __debugInfo(): array
+    {
+        return ['factory' => $this->factory];
+    }
+
+    /**
      * {@inheritdoc}
      *
      * get() path only: make() unwraps the alias chain first, so $args

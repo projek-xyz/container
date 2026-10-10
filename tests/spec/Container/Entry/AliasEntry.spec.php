@@ -28,6 +28,18 @@ describe(AliasEntry::class, function () {
         expect($entry->factory)->toBe('not-registered-yet');
     });
 
+    it('exposes only its target factory through its debug info', function () {
+        $entry = new AliasEntry('alias', 'target');
+
+        expect($entry->__debugInfo())->toBe(['factory' => 'target']);
+
+        // Decorators and a cached value must not leak into the dump either.
+        $entry->decorate(fn (mixed $value): mixed => $value);
+        $entry->cache('built');
+
+        expect($entry->__debugInfo())->toBe(['factory' => 'target']);
+    });
+
     it('produces by resolving the target through the container', function () {
         $container = new StubContainer(['target' => 'the-value']);
         $handler = new Handler(new Resolver(new StubContainer([])));

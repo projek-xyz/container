@@ -12,6 +12,9 @@ use Psr\EventDispatcher\StoppableEventInterface;
 /**
  * Internal minimalist PSR-14 Event Dispatcher.
  *
+ * Fallback used when no dispatcher is passed to the container: it walks the
+ * `ListenerProviderInterface` in order and honors `StoppableEventInterface`.
+ *
  * @internal
  */
 final class Dispatcher implements EventDispatcherInterface

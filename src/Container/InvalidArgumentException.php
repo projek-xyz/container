@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace Projek\Container;
 
 /**
- * Exception thrown when an invalid argument is provided during service resolution.
+ * Exception thrown when the container rejects a factory, target or callback handed to `set()`,
+ * `make()` or `extend()` — a duplicate id, an unsupported factory shape, an unresolvable string,
+ * a non-derivable extension target or a bad callback return type. These are always programming
+ * errors, never lookup misses (`NotFoundException`) or build failures (`ResolutionException`).
+ *
+ * Extends the SPL `\InvalidArgumentException` and, like it, carries no PSR container marker.
  */
 final class InvalidArgumentException extends \InvalidArgumentException
 {
     /**
-     * By-reference parameter rejection, shared byte-identically by
-     * CallableEntry and ClassNameEntry.
+     * By-reference parameter rejection, shared byte-identically by `CallableEntry` and
+     * `ClassNameEntry`.
      *
      * @internal
      */
@@ -25,7 +30,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * Duplicate registration of a non-auto entry (set()).
+     * A duplicate `set()` registration of a non-`auto` entry.
      *
      * @internal
      */
@@ -38,7 +43,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A string factory naming no registered entry, instantiable class, nor function (set()).
+     * A string factory naming no registered entry, instantiable class, nor function (`set()`).
      *
      * @internal
      */
@@ -52,7 +57,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A plain object passed as a factory (shared by set() and CallableEntry).
+     * A plain object passed as a factory (shared by `set()` and `CallableEntry`).
      *
      * @internal
      */
@@ -66,7 +71,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A factory of an unsupported type: the catch-all arm of set()'s dispatch rejects it.
+     * A factory of an unsupported type: the catch-all arm of `set()`'s dispatch rejects it.
      *
      * @internal
      */
@@ -80,7 +85,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A make() target that is a plain object without __invoke.
+     * A `make()` target that is a plain object without `__invoke()`.
      *
      * @internal
      */
@@ -94,7 +99,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A make() target outside all accepted families.
+     * A `make()` target outside all accepted families.
      *
      * @internal
      */
@@ -108,7 +113,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * An extend() target whose type is not derivable from the entry.
+     * An `extend()` target whose type is not derivable from the entry.
      *
      * @internal
      */
@@ -121,7 +126,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * An extend() callback without an explicit, non-union, named return type.
+     * An `extend()` callback without an explicit, non-union, named return type.
      *
      * @internal
      */
@@ -134,7 +139,9 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * An extend() callback whose declared return type mismatches the target.
+     * An `extend()` callback whose declared return type mismatches the target.
+     *
+     * @internal
      */
     public static function callbackReturnMismatch(string $id, string $target): static
     {
@@ -146,7 +153,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * An attempt to remove an entry through EntryCollector::offsetUnset().
+     * An attempt to remove an entry through `EntryCollector::offsetUnset()`.
      *
      * @internal
      */
@@ -159,7 +166,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A string "Class::method" or array pair "[class, method]" factory.
+     * A malformed `Class::method` string or `[class, method]` pair factory.
      *
      * @internal
      *
@@ -181,7 +188,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A pair whose class does not exist (MethodPairEntry).
+     * A `MethodPairEntry` pair whose class does not exist.
      *
      * @internal
      */
@@ -195,7 +202,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A pair whose method does not exist on the class (MethodPairEntry).
+     * A `MethodPairEntry` pair whose method does not exist on the class.
      *
      * @internal
      */
@@ -210,7 +217,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A pair naming a non-public method (MethodPairEntry).
+     * A `MethodPairEntry` pair naming a non-public method.
      *
      * @internal
      */
@@ -225,7 +232,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A class-string that is not an instantiable class (ClassNameEntry).
+     * A class-string that is not an instantiable class (`ClassNameEntry`).
      *
      * @internal
      */
@@ -239,7 +246,7 @@ final class InvalidArgumentException extends \InvalidArgumentException
     }
 
     /**
-     * A string factory that is not a function (CallableEntry).
+     * A string factory that is not a function (`CallableEntry`).
      *
      * @internal
      */

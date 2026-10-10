@@ -12,9 +12,9 @@ use Traversable;
 /**
  * Internal storage for container entries.
  *
- * Holds the registered `Entry` objects and enforces that entries cannot be
- * removed. The `offsetSet()` parameters stay `mixed` — narrowing them to
- * `Entry` violates the `ArrayAccess` parameter contravariance (fatal).
+ * Holds the registered `Entry` objects and enforces that entries cannot be removed. The
+ * `offsetSet()` parameters stay `mixed` — narrowing them to `Entry` violates the `ArrayAccess`
+ * parameter contravariance (fatal).
  *
  * @internal
  *
@@ -29,7 +29,7 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     private array $entries = [];
 
     /**
-     * Create new instance.
+     * Create a new instance, optionally pre-populated with entries.
      *
      * @param  iterable<string, Entry>  $entries
      */
@@ -61,8 +61,8 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
     }
 
     /**
-     * The only construction site of a NotFoundException: an id missing here is
-     * genuinely absent, so the label it carries is always truthful.
+     * The only construction site of `NotFoundException`: an `$id` missing here is genuinely absent,
+     * so the label the exception carries is always truthful.
      *
      * {@inheritdoc}
      *
@@ -82,7 +82,7 @@ final class EntryCollector implements ArrayAccess, IteratorAggregate
      * {@inheritdoc}
      *
      * @param  string  $id
-     * @param  mixed  $entry  The `Entry` instance registered by `Container::set()`.
+     * @param  mixed  $entry  The Entry instance registered by Container::set().
      */
     public function offsetSet(mixed $id, mixed $entry): void
     {

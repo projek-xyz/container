@@ -14,14 +14,16 @@ use ReflectionFunction;
 use ReflectionMethod;
 
 /**
- * A closure, a function-name string, or an object with __invoke — one class
- * for all three: stored and invoked as-is, never re-instantiated.
+ * A closure, a function-name string, or an object with `__invoke()` — one class for all three:
+ * stored and invoked as-is, never re-instantiated.
  *
  * @internal
  */
 final class CallableEntry extends Entry
 {
     /**
+     * Classify the callable shape, validate it, and capture its signature as entry metadata.
+     *
      * @throws InvalidArgumentException When the factory is not a supported callable shape or takes parameters by reference.
      */
     public function __construct(

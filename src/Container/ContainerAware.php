@@ -9,8 +9,12 @@ use Psr\Container\ContainerInterface;
 /**
  * Interface for services that are container-aware.
  *
- * Classes implementing this interface will have the container instance
- * automatically injected when resolved by the EntryCollector.
+ * Classes implementing this interface receive the container instance automatically when they are
+ * resolved: `Container::get()` injects through the `EntryResolved` listener (the built-in
+ * `Events\ListenerProvider`), while `Container::make()` injects directly without dispatching
+ * events. Injection only happens while `getContainer()` still returns `null` — an already-set
+ * container is never overwritten, and a custom event dispatcher without the built-in
+ * `ListenerProvider` wired in silently disables the `get()` path.
  *
  * @see HasContainer
  */
@@ -26,8 +30,8 @@ interface ContainerAware
     /**
      * Retrieve the container or a specific service from it.
      *
-     * If no parameter is provided, it returns the `ContainerInterface` instance.
-     * If a name is provided, it returns the resolved service from the container.
+     * Without a `$name` it returns the injected `ContainerInterface`; with a `$name` it resolves
+     * that service from the container (`null` until a container has been injected).
      *
      * ```php
      * $instance->getContainer(); // Returns Psr\Container\ContainerInterface

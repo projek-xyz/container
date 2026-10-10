@@ -7,10 +7,8 @@ namespace Projek\Container;
 use Psr\Container\ContainerInterface;
 
 /**
- * Trait providing implementation for the ContainerAware interface.
- *
- * This trait manages the storage and retrieval of the container instance,
- * as well as shorthand service resolution from within the implementing class.
+ * Trait providing the `ContainerAware` implementation: it stores the injected container and offers
+ * shorthand service resolution from within the implementing class.
  *
  * @see ContainerAware
  */
@@ -22,7 +20,7 @@ trait HasContainer
     protected ?ContainerInterface $container = null;
 
     /**
-     * Set the container instance.
+     * Store the container instance; returns `$this` for fluent chaining.
      *
      * {@inheritdoc}
      *
@@ -39,6 +37,9 @@ trait HasContainer
 
     /**
      * Get the container instance or a resolved service.
+     *
+     * Without a `$name` this returns the injected `ContainerInterface`; with a `$name` the service
+     * is resolved through `ContainerInterface::get()` (`null` until injection happened).
      *
      * {@inheritdoc}
      *

@@ -12,8 +12,8 @@ use Psr\Container\ContainerInterface;
 use ReflectionMethod;
 
 /**
- * A `Class::method` string or [class, method] pair: class and method are
- * validated beside the class they describe.
+ * A `Class::method` string or `[class, method]` pair: both the class and the method are validated
+ * — the class must exist, the method must exist on it and be public.
  *
  * @internal
  */

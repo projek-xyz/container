@@ -14,9 +14,9 @@ use ReflectionNamedType;
 use ReflectionType;
 
 /**
- * Abstract base owning one registration's identity, metadata, decorators and
- * singleton cache; the five concrete children under `Projek\Container\Entry\`
- * own the factory — the class is the kind.
+ * Abstract base owning one registration's identity, metadata, decorators and singleton cache; the
+ * five concrete children under `Projek\Container\Entry\` each own one factory shape — the child
+ * class is the factory kind.
  *
  * @internal
  *
@@ -25,8 +25,8 @@ use ReflectionType;
 abstract class Entry
 {
     /**
-     * Builtin type keywords: a stored return type naming one of these (or a
-     * union/intersection) is never a named class type.
+     * Builtin type keywords: a stored return type naming one of these (or a union/intersection) is
+     * never a named class type.
      */
     private const BUILTIN_TYPES = [
         'int',
@@ -54,14 +54,17 @@ abstract class Entry
     private array $decorators = [];
 
     /**
-     * Singleton cache, written by cache() only.
+     * Singleton cache, written by `cache()` only.
      */
     private bool $built = false;
 
+    /**
+     * The stored singleton itself; `null` until `cache()` writes one.
+     */
     private mixed $value = null;
 
     /**
-     * Re-entrancy guard, driven by beginBuild()/endBuild().
+     * Re-entrancy guard, driven by `beginBuild()`/`endBuild()`.
      */
     private bool $building = false;
 
@@ -79,8 +82,8 @@ abstract class Entry
     }
 
     /**
-     * Reset the singleton cache and the guard; metadata, factory and
-     * decorators copy by value (object values inside them are shared).
+     * Reset the singleton cache and the re-entrancy guard; metadata, factory and decorators copy by
+     * value (objects inside them are shared with the original).
      */
     public function __clone()
     {
@@ -90,10 +93,9 @@ abstract class Entry
     }
 
     /**
-     * Show only these props from `var_dump()`; decorators are reported as a
-     * count and a cached closure value as its `{file:line}` provenance —
-     * dumping either closure would traverse its bound `$this` and `use`d
-     * variables into arbitrary object graphs.
+     * Show only these props from `var_dump()`; decorators are reported as a count and a cached
+     * closure value as its `{file:line}` provenance — dumping either closure would traverse its
+     * bound `$this` and `use`d variables into arbitrary object graphs.
      */
     public function __debugInfo(): array
     {
@@ -117,21 +119,21 @@ abstract class Entry
     }
 
     /**
-     * Adapt the child's factory shape and produce a raw value; never caches
-     * and never dispatches events (get()/make() own that).
+     * Adapt the child's factory shape and produce a raw value; never caches and never dispatches
+     * events (`get()`/`make()` own both).
      *
      * @param  array<mixed>  $args
      */
     abstract protected function produce(Handler $handler, ContainerInterface $container, array $args): mixed;
 
     /**
-     * The class type extend() derives from this entry, or null when not derivable.
+     * The class type `extend()` derives from this entry, or `null` when not derivable.
      */
     abstract public function extensionTarget(EntryCollector $entries): ?string;
 
     /**
-     * Build template: produce() yields the raw value, decorators always run
-     * inside build() — a value returned from build() is fully decorated.
+     * Build template: `produce()` yields the raw value, decorators always run inside `build()`, so
+     * a value returned from `build()` is fully decorated.
      *
      * @param  array<mixed>  $args
      */
@@ -141,7 +143,7 @@ abstract class Entry
     }
 
     /**
-     * Enter the build guard; callers run endBuild() in finally.
+     * Enter the build guard; callers must pair this with `endBuild()` in a `finally` block.
      *
      * @throws ResolutionException When this entry is already being built.
      */
@@ -155,7 +157,7 @@ abstract class Entry
     }
 
     /**
-     * Leave the build guard — callers pair this with beginBuild() in a finally block.
+     * Leave the build guard — callers pair this with `beginBuild()` in a `finally` block.
      */
     final public function endBuild(): void
     {
@@ -171,7 +173,7 @@ abstract class Entry
     }
 
     /**
-     * Whether a value has been cached for this entry (written by cache() only).
+     * Whether a value has been cached for this entry (written by `cache()` only).
      */
     final public function isBuilt(): bool
     {
@@ -191,7 +193,7 @@ abstract class Entry
     }
 
     /**
-     * Append a decorator (called by extend()); never touches the cache.
+     * Append a decorator (called by `extend()`); never touches the cache.
      */
     final public function decorate(Closure $callback): void
     {
@@ -199,7 +201,7 @@ abstract class Entry
     }
 
     /**
-     * The cached value; null until cache() stores one — callers gate on isBuilt().
+     * The cached value; `null` until `cache()` stores one — callers gate on `isBuilt()`.
      */
     final public function value(): mixed
     {
@@ -207,7 +209,7 @@ abstract class Entry
     }
 
     /**
-     * Cache an already-decorated value; non-object values cache like anything else.
+     * Cache an already-decorated value; non-object values are cached like anything else.
      */
     final public function cache(mixed $value): void
     {
@@ -260,9 +262,8 @@ abstract class Entry
     }
 
     /**
-     * Interpret stored returnType metadata: the named class type an extend()
-     * target can be derived from, or null (nothing declared, builtin,
-     * union/intersection).
+     * Interpret stored `returnType` metadata: the named class type an `extend()` target can be
+     * derived from, or `null` (nothing declared, builtin, union/intersection).
      */
     final protected static function namedClassType(?string $type): ?string
     {

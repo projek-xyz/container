@@ -33,9 +33,11 @@ use Throwable;
 /**
  * PSR-11 Dependency Injection Container implementation.
  *
- * Registrations are lazy `Entry` objects: `set()` classifies and stores,
- * `get()` builds singletons through the error boundary, `make()` always builds
- * fresh, and `extend()` appends decorators.
+ * Registrations are lazy `Entry` objects: `set()` classifies and stores without building, `get()`
+ * builds and caches one singleton per entry behind a single error boundary, `make()` always builds
+ * fresh (never cached, no events), and `extend()` appends decorators to an existing entry. Missing
+ * ids raise `NotFoundException`, failed builds raise `ResolutionException`, and rejected
+ * registrations raise `InvalidArgumentException`.
  */
 final class Container implements ContainerInterface
 {
@@ -50,16 +52,16 @@ final class Container implements ContainerInterface
     private ?Handler $handler = null;
 
     /**
-     * @var list<object> Events raised while the dispatcher was mid-build,
-     *                   flushed right after it is cached.
+     * @var list<object> Events raised while the dispatcher was mid-build, flushed right after it is cached.
      */
     private array $deferredEvents = [];
 
     /**
      * Create a new Container instance.
      *
-     * Infrastructure defaults are inserted directly (no events); user entries
-     * are registered through set(), which fires EntryRegistered.
+     * Infrastructure defaults (`self`, `ContainerInterface`, `EventDispatcherInterface`) are
+     * inserted directly without events; user entries are registered through `set()`, which fires
+     * `EntryRegistered`.
      *
      * @template T of object
      *
@@ -88,9 +90,10 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * Clone the container: every entry is cloned (singleton caches reset, registrations/
-     * decorators/metadata carry over) and the three self-referential auto defaults
-     * are re-pointed to the clone — their factory closures capture $this.
+     * Clone the container: every entry is cloned (singleton caches reset, registrations, decorators
+     * and metadata carry over) and the three self-referential auto defaults (`self::class`,
+     * `ContainerInterface::class`, `EventDispatcherInterface::class`) are re-pointed to the clone
+     * — their factory closures capture `$this`.
      *
      * @internal
      */
@@ -106,8 +109,8 @@ final class Container implements ContainerInterface
                 continue;
             }
 
-            // Recreate the factory closure against the clone; rebinding keeps any captured
-            // value (the ctor-provided dispatcher) while re-pointing the captured container.
+            // Recreate the factory closure against the clone; rebinding keeps any captured value
+            // (the ctor-provided dispatcher) while re-pointing the captured container.
             /** @var CallableEntry $entry */
             $entries[$id] = new CallableEntry(
                 $id,
@@ -123,7 +126,8 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * Hide list only registered entries as props from `var_dump()`
+     * Expose registered entries as properties in `var_dump()`, hiding only the two self-referential
+     * `auto` defaults (`self::class` and `ContainerInterface::class`).
      *
      * @internal
      */
@@ -144,10 +148,11 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * Retrieve a PSR-14 event dispatcher instance.
+     * Retrieve the effective PSR-14 event dispatcher.
      *
-     * When no implementation is provided by the developer, a minimalist
-     * internal implementation is built lazily on first use.
+     * Returns the dispatcher passed to the constructor, or the one registered through
+     * `setEventDispatcher()`; when neither exists, a minimalist internal `Events\Dispatcher` is
+     * built lazily on first use.
      */
     public function getEventDispatcher(): EventDispatcherInterface
     {
@@ -155,11 +160,11 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * Assign a PSR-14 event dispatcher implementation.
+     * Replace the PSR-14 event dispatcher implementation.
      *
-     * Dispatcher swapping is an infrastructure setter: it force-replaces the entry
-     * (bypassing duplicate strictness) and fires EntryRegistered like any other
-     * registration. The closure wrapper is mandatory — objects are not factories.
+     * Dispatcher swapping is an infrastructure setter: it force-replaces the entry (bypassing the
+     * duplicate-id strictness of `set()`) and fires `EntryRegistered` like any other registration.
+     * The closure wrapper is mandatory — plain objects are not factories.
      *
      * @link https://github.com/projek-xyz/container/wiki/event-lifecycle Event Lifecycle Wiki
      *
@@ -180,7 +185,9 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * Check if an entry is registered in the container.
+     * Check whether an entry id is registered in the container — `true` for anything registered
+     * through `set()` (including the built-in `auto` defaults and aliases). Never builds the entry
+     * and never throws.
      *
      * {@inheritdoc}
      *
@@ -194,7 +201,11 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * Resolve a registered entry, building and caching it on first use.
+     * Resolve a registered entry, building it on first use and handing back the cached singleton on
+     * every call after. Aliases resolve to their target, `ContainerAware` results get the container
+     * injected through the `EntryResolved` listener, and every fresh non-`auto`, non-alias object
+     * build dispatches `EntryResolved`. Exceptions raised inside user factories propagate
+     * untouched.
      *
      * {@inheritdoc}
      *
@@ -226,8 +237,8 @@ final class Container implements ContainerInterface
             $entry->endBuild();
         }
 
-        // Cache strictly before dispatch: an EntryResolved listener
-        // may re-enter get() for this very id.
+        // Cache strictly before dispatch: an `EntryResolved` listener may re-enter `get()` for this
+        // very `$id`.
         $entry->cache($value);
 
         if (! $entry->auto && ! $entry instanceof AliasEntry && \is_object($value)) {
@@ -251,8 +262,13 @@ final class Container implements ContainerInterface
     /**
      * Register a new service factory or class in the container.
      *
-     * The factory is classified but never built — registration is lazy.
-     * Duplicate user registrations throw; infrastructure (auto) defaults may be replaced.
+     * Registration is lazy: the factory is classified and stored, never built — no dependency
+     * resolution happens until the first `get()`. Accepted factories: a closure, a function name
+     * string, a `Class::method` string or `[class, method]` pair, an instantiable class-string, an
+     * `EntryFactory` instance, or any object with `__invoke()` (invoked as-is, never
+     * re-instantiated). A string naming an already-registered id becomes an alias; anything else
+     * — plain objects, scalars, `null`, malformed pairs — throws `InvalidArgumentException`. A
+     * duplicate id throws as well; only the built-in `auto` defaults may be replaced.
      *
      * @link https://github.com/projek-xyz/container/wiki/registering-an-instance Registering an Instance Wiki
      *
@@ -269,12 +285,13 @@ final class Container implements ContainerInterface
             throw InvalidArgumentException::alreadyRegistered($id);
         }
 
-        // The wrapping parens are load-bearing: Kahlan only records a statement's
-        // begin line when a paren group survives to the `;` — without them
-        // the closing `});` line can never be marked covered.
+        // The wrapping parens are load-bearing: Kahlan only records a statement's begin line when a
+        // paren group survives to the `;` — without them the closing `});` line can never be
+        // marked covered.
         $this->entries[$id] = (match (true) {
-            // Invokable shapes first — the is_object guard is load-bearing: a class-string naming
-            // an invokable class must fall through to the ClassName arm (build, never invoke).
+            // Invokable shapes first — the `is_object` guard is load-bearing: a class-string
+            // naming an invokable class must fall through to the `ClassName` arm (build, never
+            // invoke).
             FactoryEntry::isValid($factory) => new FactoryEntry($id, $factory),
             CallableEntry::isValid($factory) => new CallableEntry($id, $factory),
             ClassNameEntry::isValid($factory) => new ClassNameEntry($id, $factory),
@@ -284,10 +301,11 @@ final class Container implements ContainerInterface
             \is_string($factory) => $this->has($factory) && ! $this->isAliasReaches($factory, $id)
                 ? new AliasEntry($id, $factory)
                 : throw InvalidArgumentException::unresolvableString($id, $factory),
-            // Plain objects only; invokables matched the arm above. (\is_object, not
-            // `instanceof object` — the latter always evaluates false: `object` is parsed as a class name.)
+            // Plain objects only; invokables matched the arm above. (`\is_object`, not
+            // `instanceof object` — the latter always evaluates false: `object` is parsed as a
+            // class name.)
             \is_object($factory) => throw InvalidArgumentException::plainObjectNotAFactory($id, $factory),
-            // Invalid factory of type %s.
+            // Scalars, `null`, and anything else the arms above did not claim.
             default => throw InvalidArgumentException::invalidFactoryType($id, $factory),
         });
 
@@ -299,9 +317,11 @@ final class Container implements ContainerInterface
     /**
      * Create a new instance without registering it as a singleton.
      *
-     * Accepts exactly four families: a registered id, an unregistered instantiable
-     * class-string, a callable shape, or nothing else (throws). Results are never
-     * cached and no events are dispatched — ContainerAware injection is direct.
+     * Accepts exactly four families: a registered id, an unregistered instantiable class-string, a
+     * callable shape, or nothing else (throws `InvalidArgumentException`). Results are always fresh
+     * — never cached and never dispatching events — and `ContainerAware` injection is direct.
+     * `$args` feed the constructor for class entries (use `make([Class::class, '__invoke'], $args)`
+     * to invoke `__invoke()` instead).
      *
      * @link https://github.com/projek-xyz/container/wiki/create-an-instance Creating an Instance Wiki
      *
@@ -338,8 +358,8 @@ final class Container implements ContainerInterface
 
             $handler = $this->getHandler();
 
-            // The aliases' own decorators never ran — make() bypassed
-            // their build(); innermost first, mirroring get().
+            // The aliases' own decorators never ran — `make()` bypassed their `build()`;
+            // innermost first, mirroring `get()`.
             foreach (\array_reverse($aliases) as $alias) {
                 $value = $alias->applyDecorators($handler, $value);
             }
@@ -348,7 +368,7 @@ final class Container implements ContainerInterface
         }
 
         // An unregistered, instantiable class-string builds transiently through the same
-        // ClassNameEntry path as set() (never stored, no cache, no events, zero decorators).
+        // `ClassNameEntry` path as `set()` (never stored, no cache, no events, zero decorators).
         if (ClassNameEntry::isValid($instance)) {
             try {
                 $value = (new ClassNameEntry($instance, $instance))
@@ -360,9 +380,9 @@ final class Container implements ContainerInterface
             return $this->injectContainer($value);
         }
 
-        // Structural callable shape only; contents are validated by the package
-        // (an invokable class-string can never land here — the class-string arm
-        // runs first: build, never invoke).
+        // Structural callable shape only; contents are validated by the package (an invokable
+        // class-string can never land here — the class-string arm runs first: build, never
+        // invoke).
         if (CallableEntry::isValid($instance) || MethodPairEntry::isValid($instance)) {
             try {
                 /** @var callable $instance */
@@ -382,8 +402,10 @@ final class Container implements ContainerInterface
     /**
      * Extend an existing service with a decorator.
      *
-     * Never forces a build: a pending decorator joins the entry's list and applies inside
-     * the next build; an already-built entry is decorated immediately (apply-then-append) and re-cached.
+     * Never forces a build: a pending decorator joins the entry's list and applies inside the next
+     * build (`get()` or `make()`); an already-built entry is decorated immediately
+     * (apply-then-append) and re-cached, so the decorator list and the cached value can never drift
+     * apart.
      *
      * @link https://github.com/projek-xyz/container/wiki/extending-an-instance Extending an Instance Wiki
      *
@@ -415,9 +437,8 @@ final class Container implements ContainerInterface
         }
 
         if ($entry->isBuilt()) {
-            // Apply-then-append: the callback joins the list only after it ran
-            // successfully, then the result replaces the cached value — list
-            // and cache can never drift.
+            // Apply-then-append: the callback joins the list only after it ran successfully, then
+            // the result replaces the cached value — list and cache can never drift.
             $value = $this->getHandler()->handle($callback, [$entry->value()]);
 
             $entry->decorate($callback);
@@ -432,8 +453,8 @@ final class Container implements ContainerInterface
     /**
      * Send one event to the effective dispatcher. While the dispatcher entry itself is mid-build
      * (its build may run user code that registers further entries) the event waits in
-     * $deferredEvents instead of forcing a circular rebuild — get() flushes the queue
-     * right after caching it.
+     * `$deferredEvents` instead of forcing a circular rebuild — `get()` flushes the queue right
+     * after caching it.
      */
     private function dispatch(object $event): void
     {
@@ -447,9 +468,9 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * The error boundary shared by get() and make(): walk the previous chain
-     * for the genuine missing-id witness, keep an existing ResolutionException
-     * as-is, wrap package failures, rethrow user code untouched.
+     * The error boundary shared by `get()` and `make()`: walk the previous chain for the genuine
+     * missing-id witness, keep an existing `ResolutionException` as-is, wrap package failures in
+     * one, and rethrow user code untouched.
      */
     private function boundary(Throwable $e, string $label): Throwable
     {
@@ -474,8 +495,8 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * Label a make() target for boundary messages: the id/string as-is, a
-     * pair as Class::method, otherwise the debug type.
+     * Label a `make()` target for boundary messages: the `$id`/string as-is, a pair as
+     * `Class::method`, otherwise the debug type.
      */
     private function describeTarget(mixed $instance): string
     {
@@ -495,8 +516,8 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * Direct ContainerAware injection for make() results — option B: no event
-     * dispatch from make().
+     * Direct `ContainerAware` injection for `make()` results — `make()` never dispatches events,
+     * so it injects here instead of relying on the `EntryResolved` listener.
      */
     private function injectContainer(mixed $value): mixed
     {
@@ -508,9 +529,9 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * The shared handler, built lazily against the bundled Resolver bound to
-     * this container: resolver and handler are internal orchestration
-     * utilities — never entries, never overridable, nothing to rebind.
+     * The shared `Handler`, built lazily around the bundled `Resolver` bound to this container:
+     * both are internal orchestration utilities — never registered as entries, never overridable,
+     * nothing to rebind.
      */
     private function getHandler(): Handler
     {
@@ -518,7 +539,7 @@ final class Container implements ContainerInterface
     }
 
     /**
-     * Whether the entry $id is mid-build.
+     * Whether the entry `$id` is mid-build.
      *
      * @see Entry::building()
      */

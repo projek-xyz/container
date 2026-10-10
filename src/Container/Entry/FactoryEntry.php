@@ -12,15 +12,16 @@ use Psr\Container\ContainerInterface;
 use ReflectionMethod;
 
 /**
- * An EntryFactory instance — the explicit door for registering an
- * object instance: `new EntryFactory(fn () => $instance)`.
+ * An `EntryFactory` implementation — the explicit door for manual construction: `create()`
+ * receives the resolving container and builds the object itself, feeding its requirements from
+ * registered entries — not fetching one and returning it as-is.
  *
  * @internal
  */
 final class FactoryEntry extends Entry
 {
     /**
-     * Capture the factory's create() signature as the entry's metadata.
+     * Capture the factory's `create()` signature as the entry's metadata.
      *
      * @param  string  $id  The entry identifier.
      * @param  EntryFactory  $factory  The instance-producing factory; its create() signature becomes the entry metadata.
@@ -36,7 +37,7 @@ final class FactoryEntry extends Entry
     /**
      * {@inheritdoc}
      *
-     * $args never reach create(): its signature is fixed by EntryFactory.
+     * `$args` never reach `create()`: its signature is fixed by `EntryFactory`.
      */
     protected function produce(Handler $handler, ContainerInterface $container, array $args): mixed
     {

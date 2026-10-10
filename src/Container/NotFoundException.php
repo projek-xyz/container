@@ -7,7 +7,9 @@ namespace Projek\Container;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
- * Exception thrown when a requested entry is not found in the container.
+ * Exception thrown when `get()` or `extend()` asks for an id the container never registered —
+ * including a dangling alias target. Implements PSR-11's `NotFoundExceptionInterface`, so it is
+ * catchable as `Psr\Container\NotFoundExceptionInterface`; `getName()` returns the missing id.
  */
 final class NotFoundException extends \RuntimeException implements NotFoundExceptionInterface
 {
@@ -25,7 +27,7 @@ final class NotFoundException extends \RuntimeException implements NotFoundExcep
     }
 
     /**
-     * Retrieve the name of the missing entry.
+     * The id of the missing entry — the same value carried in the exception message.
      */
     public function getName(): string
     {

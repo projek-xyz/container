@@ -7,9 +7,10 @@ namespace Projek\Container\Events;
 use Projek\Container\Entry;
 
 /**
- * Dispatched at the end of every user registration (set(), including an
- * auto-entry replacement, and setEventDispatcher()); payloads are readonly —
- * listeners observe, they no longer mutate.
+ * Dispatched at the end of every user registration — `set()` (including an auto-entry replacement)
+ * and `setEventDispatcher()`. The payload is readonly: listeners observe the registration, they
+ * cannot redirect ids or replace entries. Infrastructure defaults inserted by the constructor,
+ * `extend()` and `make()` never dispatch it.
  */
 final class EntryRegistered
 {

@@ -10,8 +10,9 @@ use Projek\Container\EntryCollector;
 use Psr\Container\ContainerInterface;
 
 /**
- * Any other string — including non-buildable type symbols whose
- * target pre-exists. The target check belongs to Container::set(), not here.
+ * An alias entry: any string factory that names a pre-registered entry — including non-buildable
+ * type symbols (interface, trait, abstract class, enum). The target check belongs to
+ * `Container::set()`, not here.
  *
  * @internal
  */
@@ -26,9 +27,9 @@ final class AliasEntry extends Entry
     }
 
     /**
-     * Show only the target id from `var_dump()` — the inherited props are
-     * noise here: parameters and returnType are empty (no reflection at
-     * registration) and the value duplicates the target entry's.
+     * Show only the target id from `var_dump()` — the inherited props are noise here: parameters
+     * and returnType are empty (no reflection at registration) and the value duplicates the target
+     * entry's.
      */
     public function __debugInfo(): array
     {
@@ -38,8 +39,8 @@ final class AliasEntry extends Entry
     /**
      * {@inheritdoc}
      *
-     * get() path only: make() unwraps the alias chain first, so $args
-     * never reach this branch with a non-empty value.
+     * `get()` path only: `make()` unwraps the alias chain first, so `$args` never reach this branch
+     * with a non-empty value.
      */
     protected function produce(Handler $handler, ContainerInterface $container, array $args): mixed
     {
@@ -49,8 +50,8 @@ final class AliasEntry extends Entry
     /**
      * {@inheritdoc}
      *
-     * Follow the alias chain through the collector — acyclic by construction
-     * (each id registers once and a target must pre-exist); a dead end is not derivable.
+     * Follow the alias chain through the collector — acyclic by construction (each id registers
+     * once and a target must pre-exist); a dead end is not derivable.
      */
     public function extensionTarget(EntryCollector $entries): ?string
     {

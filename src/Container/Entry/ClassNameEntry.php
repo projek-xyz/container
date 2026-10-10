@@ -12,9 +12,9 @@ use Psr\Container\ContainerInterface;
 use ReflectionClass;
 
 /**
- * An instantiable class-string: binds and constructs itself through the
- * handler-bound resolver (Handler::$resolver, callable >= 0.4.1) — a bare
- * class-string is always built, never invoked: it never reaches Handler::handle().
+ * An instantiable class-string: binds and constructs itself through the handler-bound resolver
+ * (`Handler::$resolver`, callable >= 0.4.1) — a bare class-string is always built, never invoked:
+ * it never reaches `Handler::handle()`.
  *
  * @internal
  */
@@ -50,9 +50,9 @@ final class ClassNameEntry extends Entry
     /**
      * {@inheritdoc}
      *
-     * Construction delegates to the handler-bound resolver through Handler's
-     * public readonly $resolver property (callable >= 0.4.1): it never reaches
-     * Handler::handle() and never queries container entries.
+     * Construction delegates to the handler-bound resolver through `Handler`'s public readonly
+     * `$resolver` property (callable >= 0.4.1): it never reaches `Handler::handle()` and never
+     * queries container entries.
      */
     protected function produce(Handler $handler, ContainerInterface $container, array $args): mixed
     {

@@ -60,13 +60,36 @@ describe(Entry::class, function () {
         };
     };
 
+    it('should only expose decorators, parameters, returnType and value through its debug info', function () use ($subject) {
+        $entry = $subject(['dummy' => 'Stubs\Dummy'], 'Stubs\Dummy', true);
+        $debug = $entry->__debugInfo();
+
+        // Exact key list: proves id, auto, built, building and the child
+        // factory stay hidden as much as it proves the four shown props.
+        expect(array_keys($debug))->toBe(['decorators', 'parameters', 'returnType', 'value']);
+        expect($debug['decorators'])->toBe([]);
+        expect($debug['parameters'])->toBe(['dummy' => 'Stubs\Dummy']);
+        expect($debug['returnType'])->toBe('Stubs\Dummy');
+        expect($debug['value'])->toBeNull();
+
+        $entry->decorate(fn (mixed $value): mixed => $value);
+        $entry->cache('cached');
+
+        $debug = $entry->__debugInfo();
+
+        expect($debug['decorators'])->toHaveLength(1);
+        expect($debug['value'])->toBe('cached');
+    });
+
     it('should only show few properties on var_dump', function () use ($subject) {
         ob_start();
         var_dump($subject(['dummy' => 'Stubs\Dummy'], 'Stubs\Dummy', true));
         $output = preg_replace('/\e\[[\d;]*m/', '', ob_get_clean());
 
+        // Header line only, tolerating the anonymous class name and both the
+        // stock `object(FQCN)#N` and xdebug develop `class FQCN#N` shapes.
         expect($output)->toMatch(
-            '/(?:object\()?'.preg_quote(Entry::class, '/').'\)?#\d+ \(0\) \{\n\}\n/'
+            '/(?:object\()?'.preg_quote(Entry::class, '/').'(?:@anonymous.*?)?\)?#\d+ \(4\) \{\n/'
         );
     });
 

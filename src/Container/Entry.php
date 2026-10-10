@@ -91,8 +91,8 @@ abstract class Entry
 
     /**
      * Show only these props from `var_dump()`; decorators are reported as a
-     * count — dumping the closures themselves would traverse their bound
-     * `$this` and `use`d variables into arbitrary object graphs.
+     * count — dumping the closures themselves would traverse their bound `$this`
+     * and `use`d variables into arbitrary object graphs.
      */
     public function __debugInfo(): array
     {

@@ -9,7 +9,7 @@ use Psr\Container\NotFoundExceptionInterface;
 /**
  * Exception thrown when a requested entry is not found in the container.
  */
-class NotFoundException extends \RuntimeException implements NotFoundExceptionInterface
+final class NotFoundException extends \RuntimeException implements NotFoundExceptionInterface
 {
     /**
      * Create a new NotFoundException instance.
@@ -27,7 +27,7 @@ class NotFoundException extends \RuntimeException implements NotFoundExceptionIn
     /**
      * Retrieve the name of the missing entry.
      */
-    final public function getName(): string
+    public function getName(): string
     {
         return $this->name;
     }

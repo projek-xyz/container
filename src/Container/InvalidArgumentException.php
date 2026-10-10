@@ -7,15 +7,17 @@ namespace Projek\Container;
 /**
  * Exception thrown when an invalid argument is provided during service resolution.
  */
-class InvalidArgumentException extends \InvalidArgumentException
+final class InvalidArgumentException extends \InvalidArgumentException
 {
     /**
      * By-reference parameter rejection, shared byte-identically by
      * CallableEntry and ClassNameEntry.
+     *
+     * @internal
      */
     public static function byReferenceParam(string $id, string $param): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": by-reference parameter $%s is not allowed.',
             $id,
             $param
@@ -24,10 +26,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * Duplicate registration of a non-auto entry (set()).
+     *
+     * @internal
      */
     public static function alreadyRegistered(string $id): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": already registered.',
             $id
         ));
@@ -35,10 +39,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A string factory naming no registered entry, instantiable class, nor function (set()).
+     *
+     * @internal
      */
     public static function unresolvableString(string $id, string $factory): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": "%s" is neither a registered entry, an instantiable class, nor a function.',
             $id,
             $factory,
@@ -47,10 +53,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A plain object passed as a factory (shared by set() and CallableEntry).
+     *
+     * @internal
      */
     public static function plainObjectNotAFactory(string $id, mixed $factory): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": plain object %s is not a factory — register instances as "fn () => $instance" or "new EntryFactory(...)"',
             $id,
             \get_debug_type($factory),
@@ -59,10 +67,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A factory of an unsupported type: the catch-all arm of set()'s dispatch rejects it.
+     *
+     * @internal
      */
     public static function invalidFactoryType(string $id, mixed $factory): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": invalid factory of type %s',
             $id,
             \get_debug_type($factory),
@@ -71,10 +81,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A make() target that is a plain object without __invoke.
+     *
+     * @internal
      */
     public static function cannotMakePlainObject(string $target): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot make from "%s": %s',
             $target,
             'plain object has no __invoke — make() accepts a registered entry id, an instantiable class-string, or a callable; pass "fn () => …" instead.',
@@ -83,10 +95,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A make() target outside all accepted families.
+     *
+     * @internal
      */
     public static function cannotMakeUnsupported(string $target): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot make from "%s": %s',
             $target,
             'make() accepts a registered entry id, an instantiable class-string, or a callable.',
@@ -95,10 +109,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * An extend() target whose type is not derivable from the entry.
+     *
+     * @internal
      */
     public static function extensionTargetNotDerivable(string $id): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot extend entry "%s": extension target type is not derivable.',
             $id
         ));
@@ -106,10 +122,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * An extend() callback without an explicit, non-union, named return type.
+     *
+     * @internal
      */
     public static function callbackReturnTypeInvalid(string $id): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot extend entry "%s": callback must declare an explicit, non-union, named return type.',
             $id
         ));
@@ -120,7 +138,7 @@ class InvalidArgumentException extends \InvalidArgumentException
      */
     public static function callbackReturnMismatch(string $id, string $target): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot extend entry "%s": callback must return "%s"',
             $id,
             $target
@@ -129,10 +147,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * An attempt to remove an entry through EntryCollector::offsetUnset().
+     *
+     * @internal
      */
     public static function removalNotSupported(mixed $id): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Removing registered entry "%s" is not supported.',
             (string) $id
         ));
@@ -140,6 +160,8 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A string "Class::method" or array pair "[class, method]" factory.
+     *
+     * @internal
      *
      * @param  string|array{mixed,mixed}  $factory
      */
@@ -151,7 +173,7 @@ class InvalidArgumentException extends \InvalidArgumentException
             $factory = "[$class, $method]";
         }
 
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": method pair must contain exactly two elements [class, method] or Class::method, "%s" given.',
             $id,
             $factory
@@ -160,10 +182,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A pair whose class does not exist (MethodPairEntry).
+     *
+     * @internal
      */
     public static function pairClassNotFound(string $id, mixed $class): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": class "%s" does not exist.',
             $id,
             \is_string($class) ? $class : \get_debug_type($class)
@@ -172,10 +196,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A pair whose method does not exist on the class (MethodPairEntry).
+     *
+     * @internal
      */
     public static function pairMethodNotFound(string $id, string $class, mixed $method): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": method "%s::%s()" does not exist.',
             $id,
             $class,
@@ -185,10 +211,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A pair naming a non-public method (MethodPairEntry).
+     *
+     * @internal
      */
     public static function pairMethodNotPublic(string $id, string $class, string $method): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": method "%s::%s()" is not public.',
             $id,
             $class,
@@ -198,10 +226,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A class-string that is not an instantiable class (ClassNameEntry).
+     *
+     * @internal
      */
     public static function notInstantiable(string $id, string $factory): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": "%s" is not an instantiable class.',
             $id,
             $factory
@@ -210,10 +240,12 @@ class InvalidArgumentException extends \InvalidArgumentException
 
     /**
      * A string factory that is not a function (CallableEntry).
+     *
+     * @internal
      */
     public static function notAFunction(string $id, string $factory): static
     {
-        return new static(\sprintf(
+        return new self(\sprintf(
             'Cannot register entry "%s": "%s" is not a function.',
             $id,
             $factory

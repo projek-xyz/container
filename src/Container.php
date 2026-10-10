@@ -37,7 +37,7 @@ use Throwable;
  * `get()` builds singletons through the error boundary, `make()` always builds
  * fresh, and `extend()` appends decorators.
  */
-class Container implements ContainerInterface
+final class Container implements ContainerInterface
 {
     /**
      * @var EntryCollector Internal storage for registered entries.
@@ -91,6 +91,8 @@ class Container implements ContainerInterface
      * Clone the container: every entry is cloned (singleton caches reset, registrations/
      * decorators/metadata carry over) and the three self-referential auto defaults
      * are re-pointed to the clone — their factory closures capture $this.
+     *
+     * @internal
      */
     public function __clone()
     {
@@ -122,6 +124,8 @@ class Container implements ContainerInterface
 
     /**
      * Hide list only registered entries as props from `var_dump()`
+     *
+     * @internal
      */
     public function __debugInfo(): array
     {
@@ -145,7 +149,7 @@ class Container implements ContainerInterface
      * When no implementation is provided by the developer, a minimalist
      * internal implementation is built lazily on first use.
      */
-    final public function getEventDispatcher(): EventDispatcherInterface
+    public function getEventDispatcher(): EventDispatcherInterface
     {
         return $this->get(EventDispatcherInterface::class);
     }
@@ -161,7 +165,7 @@ class Container implements ContainerInterface
      *
      * @param  EventDispatcherInterface  $eventDispatcher  The event dispatcher instance.
      */
-    final public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): self
+    public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): self
     {
         $entry = new CallableEntry(
             EventDispatcherInterface::class,

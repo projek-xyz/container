@@ -11,7 +11,7 @@ use Psr\Container\ContainerExceptionInterface;
  * or a callable passed to make() — could not be built/resolved (anything but
  * a missing id).
  */
-class ResolutionException extends \RuntimeException implements ContainerExceptionInterface
+final class ResolutionException extends \RuntimeException implements ContainerExceptionInterface
 {
     /**
      * @param  \Throwable|null  $previous  The previous exception (the error boundary passes the original cause through).

@@ -87,8 +87,14 @@ tests/
 - All php files **must** have `declare(strict_types=1)`
 - Files are namespaced under `Projek\` (or `Stubs\` for test stubs, fixtures and helpers)
 - Classes and functions **must be explicitly qualified**: either a `use` import or a `\` prefix — **never a bare call in a `strict_types` file** (e.g. DO `use function sprintf;` + `sprintf();`, or `\sprintf();`; DON'T call `sprintf();` unqualified)
-- Documentation available in `.github/wiki/` is synced to the GitHub wiki by the `wiki` job in `.github/workflows/publish.yml` when a `v*.*.*` tag is pushed.
-- Sample PHPMD config is available in `tests/phpmd.xml`;
+- Documentation available in `.github/wiki/` is synced to the GitHub wiki by the `wiki` job in `.github/workflows/publish.yml` when a `v*.*.*` tag is pushed
+- Sample PHPMD config is available in `tests/phpmd.xml`
+- PHPDoc style — governs **comments and docblocks** in `src/` and `tests/`, never string literals, exception messages, or spec `describe()`/`it()` names. `composer lint` enforces only tag formatting (last bullet); **prose width and backticks are unchecked — verify yourself by counting characters** (`len()` in python; `awk 'length()'` counts **bytes** and misreports lines containing `—`/`…`):
+  - Prose — summaries, docblock descriptions, inline/trailing `//` comments (for a trailing comment the whole line counts) — wraps at **≤100 characters per line** (characters, not bytes): greedily fill each line before breaking; the only sanctioned early break is a token that cannot fit — a `backtick span` or URL. ```` ```php ```` fences inside docblocks are code samples: never wrap or reflow them. A non-final line at **≤80 chars** whose next token would still fit within 100 was wrapped at the old 80-width — re-flow it (a line forced short by a following span is fine; `tests/` still carries legacy wraps: re-flow only files you touch).
+  - Never split a backtick span across lines: `instanceof object`, `Failed to resolve "%s": %s` always start and end on the same line, even when breaking before the span costs a few columns.
+  - Prose wraps code-ish mentions in backticks like markdown (`$variables`, `function()`, `Class::method`, class names, `null`); **tag text stays plain** — no backticks or markdown in `@param`/`@return`/`@throws`/`@see`/`@var`/`@internal` descriptions or a single-line `{@inheritdoc}`.
+  - Tags stay unwrapped even past 100 chars, one tag per line; `@throws` entries sit on individual lines, one per line. Pint (`composer format`) owns tag layout: it aligns columns, separates tag groups with a blank `*` line, strips a leading `\` from class names in tags, and **deletes a descriptionless `@param`/`@return` whose type merely repeats the signature** (narrowing types — `@param string $id` over `mixed` — and any tag with a description survive). Pint never wraps prose and never unwraps a tag, so prose width and one-tag-per-line stay manual.
+  - **Applying this style — invoke the `phpdoc-comment-style` skill** where installed: worked failure example, Pint probe guidance, and the `check-prose-width.py` prose checker. This file stays authoritative on every rule.
 
 ## Container behaviors that bite (verified in code)
 

@@ -42,6 +42,17 @@ describe(Container::class, function () {
         $this->provider->setContainer($this->c);
     });
 
+    it('should only show entries as properties on var_dump', function () {
+        ob_start();
+        var_dump(new Container([]));
+        $output = preg_replace('/\e\[[\d;]*m/', '', ob_get_clean());
+
+        var_dump($output);
+        expect($output)->toMatch(
+            '/(?:object\()?'.preg_quote(Container::class, '/').'\)?#\d+ \(0\) \{\n\}\n/'
+        );
+    });
+
     context('::get', function () {
         it('should resolve a registered entry and cache it as a singleton', function () {
             $calls = 0;

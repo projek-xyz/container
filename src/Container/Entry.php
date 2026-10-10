@@ -90,6 +90,19 @@ abstract class Entry
     }
 
     /**
+     * Show only these props from `var_dump()`
+     */
+    public function __debugInfo(): array
+    {
+        return [
+            'decorators' => $this->decorators,
+            'parameters' => $this->parameters,
+            'returnType' => $this->returnType,
+            'value' => $this->value,
+        ];
+    }
+
+    /**
      * Adapt the child's factory shape and produce a raw value; never caches
      * and never dispatches events (get()/make() own that).
      *

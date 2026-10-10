@@ -60,6 +60,16 @@ describe(Entry::class, function () {
         };
     };
 
+    it('should only show few properties on var_dump', function () use ($subject) {
+        ob_start();
+        var_dump($subject(['dummy' => 'Stubs\Dummy'], 'Stubs\Dummy', true));
+        $output = preg_replace('/\e\[[\d;]*m/', '', ob_get_clean());
+
+        expect($output)->toMatch(
+            '/(?:object\()?'.preg_quote(Entry::class, '/').'\)?#\d+ \(0\) \{\n\}\n/'
+        );
+    });
+
     it('exposes identity, metadata and initial state through its accessors', function () use ($subject) {
         $entry = $subject(['dummy' => 'Stubs\Dummy'], 'Stubs\Dummy', true);
 

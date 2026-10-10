@@ -67,7 +67,7 @@ describe(Entry::class, function () {
         // Exact key list: proves id, auto, built, building and the child
         // factory stay hidden as much as it proves the four shown props.
         expect(array_keys($debug))->toBe(['decorators', 'parameters', 'returnType', 'value']);
-        expect($debug['decorators'])->toBe([]);
+        expect($debug['decorators'])->toBe(0);
         expect($debug['parameters'])->toBe(['dummy' => 'Stubs\Dummy']);
         expect($debug['returnType'])->toBe('Stubs\Dummy');
         expect($debug['value'])->toBeNull();
@@ -77,7 +77,7 @@ describe(Entry::class, function () {
 
         $debug = $entry->__debugInfo();
 
-        expect($debug['decorators'])->toHaveLength(1);
+        expect($debug['decorators'])->toBe(1);
         expect($debug['value'])->toBe('cached');
     });
 
